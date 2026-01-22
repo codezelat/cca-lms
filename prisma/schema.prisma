@@ -1,0 +1,400 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================================
+// User & Authentication Models
+// ============================================================================
+
+enum UserRole {
+  STUDENT
+  LECTURER
+  ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+  DELETED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?   // For credentials auth
+  role          UserRole  @default(STUDENT)
+  status        AccountStatus @default(ACTIVE)
+  inviteToken   String?   @unique
+  inviteExpires DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  courses       CourseEnrollment[]
+  submissions   Submission[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  files         UploadedFile[]
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================================================
+// Course Models
+// ============================================================================
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Course {
+  id          String       @id @default(cuid())
+  title       String
+  description String?      @db.Text
+  thumbnail   String?      // R2 file key
+  status      CourseStatus @default(DRAFT)
+  lecturerId  String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  enrollments CourseEnrollment[]
+  modules     Module[]
+
+  @@index([lecturerId])
+  @@index([status])
+}
+
+model Module {
+  id          String   @id @default(cuid())
+  courseId    String
+  title       String
+  description String?  @db.Text
+  order       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons   Lesson[]
+
+  @@index([courseId])
+  @@index([order])
+}
+
+model Lesson {
+  id          String   @id @default(cuid())
+  moduleId    String
+  title       String
+  description String?  @db.Text
+  videoUrl    String?  // R2 file key or external URL
+  order       Int
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  module      Module        @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  resources   LessonResource[]
+  submissions Submission[]
+
+  @@index([moduleId])
+  @@index([order])
+}
+
+model LessonResource {
+  id          String   @id @default(cuid())
+  lessonId    String
+  title       String
+  fileKey     String   // R2 file key
+  fileName    String
+  fileSize    Int
+  mimeType    String
+  createdAt   DateTime @default(now())
+
+  // Relations
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+}
+
+// ============================================================================
+// Enrollment & Progress Models
+// ============================================================================
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
+}
+
+model CourseEnrollment {
+  id            String            @id @default(cuid())
+  userId        String
+  courseId      String
+  status        EnrollmentStatus  @default(ACTIVE)
+  progress      Float             @default(0) // 0-100
+  enrolledAt    DateTime          @default(now())
+  completedAt   DateTime?
+  lastAccessedAt DateTime?
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+}
+
+model LessonProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  lessonId    String
+  completed   Boolean  @default(false)
+  watchedSeconds Int   @default(0)
+  lastAccessedAt DateTime @default(now())
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@index([lessonId])
+}
+
+// ============================================================================
+// Assignment Models
+// ============================================================================
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  GRADED
+  RETURNED
+}
+
+model Submission {
+  id          String           @id @default(cuid())
+  lessonId    String
+  userId      String
+  content     String?          @db.Text
+  status      SubmissionStatus @default(DRAFT)
+  grade       Int?
+  feedback    String?          @db.Text
+  submittedAt DateTime?
+  gradedAt    DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  // Relations
+  lesson   Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attachments SubmissionAttachment[]
+
+  @@unique([lessonId, userId])
+  @@index([userId])
+  @@index([lessonId])
+  @@index([status])
+}
+
+model SubmissionAttachment {
+  id           String   @id @default(cuid())
+  submissionId String
+  fileKey      String   // R2 file key
+  fileName     String
+  fileSize     Int
+  mimeType     String
+  createdAt    DateTime @default(now())
+
+  // Relations
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId])
+}
+
+// ============================================================================
+// File Storage Models
+// ============================================================================
+
+enum FileType {
+  PROFILE_IMAGE
+  COURSE_THUMBNAIL
+  LESSON_VIDEO
+  LESSON_RESOURCE
+  SUBMISSION_ATTACHMENT
+  DOCUMENT
+  OTHER
+}
+
+model UploadedFile {
+  id          String   @id @default(cuid())
+  userId      String
+  fileKey     String   @unique // R2 file key
+  fileName    String
+  fileSize    Int
+  mimeType    String
+  fileType    FileType
+  checksum    String?  // SHA-256 for integrity verification
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([fileType])
+  @@index([fileKey])
+}
+
+// ============================================================================
+// Notification Models
+// ============================================================================
+
+enum NotificationType {
+  COURSE_ENROLLMENT
+  LESSON_PUBLISHED
+  ASSIGNMENT_GRADED
+  ANNOUNCEMENT
+  SYSTEM
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String           @db.Text
+  link      String?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// Audit Log Models
+// ============================================================================
+
+enum AuditAction {
+  // User actions
+  USER_CREATED
+  USER_INVITED
+  USER_UPDATED
+  USER_DELETED
+  USER_LOGIN
+  USER_LOGOUT
+
+  // Course actions
+  COURSE_CREATED
+  COURSE_UPDATED
+  COURSE_DELETED
+  COURSE_PUBLISHED
+
+  // Enrollment actions
+  ENROLLMENT_CREATED
+  ENROLLMENT_UPDATED
+  ENROLLMENT_DELETED
+
+  // Content actions
+  LESSON_CREATED
+  LESSON_UPDATED
+  LESSON_DELETED
+  LESSON_PUBLISHED
+
+  // Submission actions
+  SUBMISSION_CREATED
+  SUBMISSION_UPDATED
+  SUBMISSION_GRADED
+
+  // File actions
+  FILE_UPLOADED
+  FILE_DOWNLOADED
+  FILE_DELETED
+
+  // System actions
+  SYSTEM_ERROR
+  SYSTEM_WARNING
+}
+
+model AuditLog {
+  id          String       @id @default(cuid())
+  userId      String?      // null for system actions
+  action      AuditAction
+  entityType  String       // e.g., "Course", "User", "Lesson"
+  entityId    String?      // ID of the affected entity
+  metadata    Json?        // Additional context
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime     @default(now())
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
