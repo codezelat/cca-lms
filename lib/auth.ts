@@ -7,30 +7,16 @@ import { auditActions } from "./audit";
 
 /**
  * NextAuth configuration
+ * NOTE: With trustHost: true, DO NOT set NEXTAUTH_URL environment variable
+ * It will automatically use the request host (works with Vercel preview URLs)
  */
 export const { handlers, signIn, signOut, auth } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
-  trustHost: true,
+  trustHost: true, // Allows auth to work on any domain (including Vercel preview URLs)
   session: { strategy: "jwt" },
   pages: {
     signIn: "/auth/login",
     error: "/auth/login",
-  },
-  // Ensure callbacks are compatible with Edge runtime
-  useSecureCookies: process.env.NODE_ENV === "production",
-  cookies: {
-    sessionToken: {
-      name:
-        process.env.NODE_ENV === "production"
-          ? "__Secure-next-auth.session-token"
-          : "next-auth.session-token",
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
-      },
-    },
   },
   providers: [
     Credentials({
