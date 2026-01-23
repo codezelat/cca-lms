@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   BookOpen,
   Users,
@@ -7,6 +8,9 @@ import {
   Terminal,
   Clock,
   ArrowRight,
+  GraduationCap,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import {
   Card,
@@ -26,66 +30,148 @@ interface AdminDashboardProps {
   };
 }
 
+interface DashboardStats {
+  totalStudents: number;
+  totalLecturers: number;
+  totalAdmins: number;
+  totalProgrammes: number;
+  totalEnrollments: number;
+  activeUsersToday: number;
+  activeUsersWeek: number;
+}
+
+interface RecentActivity {
+  id: string;
+  action: string;
+  entityType: string | null;
+  entityId: string | null;
+  createdAt: string;
+  user: {
+    name: string;
+    email: string;
+    role: string;
+  } | null;
+  metadata: any;
+}
+
 export default function AdminDashboard({ user }: AdminDashboardProps) {
-  const stats = [
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch("/api/admin/dashboard-stats");
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch dashboard data");
+      }
+
+      const data = await response.json();
+      setStats(data.stats);
+      setRecentActivity(data.recentActivity);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Format action text for display
+  const formatAction = (action: string): string => {
+    return action
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (l) => l.toUpperCase());
+  };
+
+  // Get time ago text
+  const getTimeAgo = (date: string): string => {
+    const now = new Date();
+    const past = new Date(date);
+    const diffMs = now.getTime() - past.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "just now";
+    if (diffMins < 60)
+      return `${diffMins} minute${diffMins > 1 ? "s" : ""} ago`;
+    if (diffHours < 24)
+      return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-terminal-dark flex items-center justify-center">
+        <div className="flex items-center gap-3 text-terminal-green">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="font-mono text-lg">Loading dashboard...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-terminal-dark flex items-center justify-center p-4">
+        <Card className="max-w-md w-full border-destructive">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+              <div>
+                <h3 className="font-mono font-semibold text-destructive mb-1">
+                  Error Loading Dashboard
+                </h3>
+                <p className="text-sm text-terminal-text-muted mb-4">{error}</p>
+                <Button
+                  onClick={fetchDashboardData}
+                  variant="outline"
+                  size="sm"
+                >
+                  Try Again
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const statCards = [
     {
       title: "Active Programmes",
-      value: "12",
+      value: stats?.totalProgrammes || 0,
       icon: BookOpen,
       color: "text-terminal-green",
     },
     {
       title: "Total Students",
-      value: "342",
+      value: stats?.totalStudents || 0,
       icon: Users,
       color: "text-blue-400",
     },
     {
       title: "Active Lecturers",
-      value: "18",
-      icon: Users,
+      value: stats?.totalLecturers || 0,
+      icon: GraduationCap,
       color: "text-yellow-400",
     },
     {
       title: "Total Enrolments",
-      value: "456",
+      value: stats?.totalEnrollments || 0,
       icon: Activity,
       color: "text-purple-400",
-    },
-  ];
-
-  const recentActivity = [
-    {
-      id: 1,
-      user: "Alice Johnson",
-      action: "enrolled in",
-      target: "Web Development Programme",
-      time: "5 minutes ago",
-      type: "info" as const,
-    },
-    {
-      id: 2,
-      user: "Bob Smith",
-      action: "completed",
-      target: "JavaScript Fundamentals Module",
-      time: "12 minutes ago",
-      type: "success" as const,
-    },
-    {
-      id: 3,
-      user: "Dr. Carol White",
-      action: "published",
-      target: "Advanced React Patterns Lesson",
-      time: "25 minutes ago",
-      type: "info" as const,
-    },
-    {
-      id: 4,
-      user: "David Brown",
-      action: "submitted",
-      target: "Final Project Assignment",
-      time: "1 hour ago",
-      type: "warning" as const,
     },
   ];
 
@@ -113,7 +199,7 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
 
         {/* Stats Grid */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-          {stats.map((stat, index) => {
+          {statCards.map((stat, index) => {
             const Icon = stat.icon;
             return (
               <Card
@@ -147,43 +233,58 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
               <CardDescription>Latest system events</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {recentActivity.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="flex items-start gap-3 p-3 rounded-md border border-terminal-green/10 bg-terminal-darker/30 hover:bg-terminal-green/5 transition-all"
-                  >
-                    <div
-                      className={`mt-1 h-2 w-2 rounded-full ${
-                        activity.type === "success"
-                          ? "bg-terminal-green"
-                          : activity.type === "warning"
-                            ? "bg-yellow-400"
-                            : "bg-blue-400"
-                      } animate-pulse shrink-0`}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-mono text-terminal-text">
-                        <span className="font-semibold">{activity.user}</span>{" "}
-                        <span className="text-terminal-text-muted">
-                          {activity.action}
-                        </span>{" "}
-                        <span className="text-terminal-green">
-                          {activity.target}
-                        </span>
-                      </p>
-                      <p className="text-xs font-mono text-terminal-text-muted mt-1 flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {activity.time}
-                      </p>
-                    </div>
+              {recentActivity.length === 0 ? (
+                <div className="text-center py-8 text-terminal-text-muted font-mono text-sm">
+                  No recent activity
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {recentActivity.map((activity) => (
+                      <div
+                        key={activity.id}
+                        className="flex items-start gap-3 p-3 rounded-md border border-terminal-green/10 bg-terminal-darker/30 hover:bg-terminal-green/5 transition-all"
+                      >
+                        <div
+                          className={`mt-1 h-2 w-2 rounded-full ${
+                            activity.action.includes("LOGIN")
+                              ? "bg-terminal-green"
+                              : activity.action.includes("CREATE")
+                                ? "bg-blue-400"
+                                : "bg-yellow-400"
+                          } animate-pulse shrink-0`}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-mono text-terminal-text">
+                            <span className="font-semibold">
+                              {activity.user?.name || "System"}
+                            </span>{" "}
+                            <span className="text-terminal-text-muted">
+                              {formatAction(activity.action)}
+                            </span>
+                            {activity.entityType && (
+                              <>
+                                {" "}
+                                <span className="text-terminal-green">
+                                  {activity.entityType}
+                                </span>
+                              </>
+                            )}
+                          </p>
+                          <p className="text-xs font-mono text-terminal-text-muted mt-1 flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {getTimeAgo(activity.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <Button variant="outline" className="w-full mt-4 gap-2">
-                View All Activity
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+                  <Button variant="outline" className="w-full mt-4 gap-2">
+                    View All Activity
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -225,16 +326,21 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
           <CardContent>
             <div className="rounded-md bg-terminal-darker/80 border border-terminal-green/20 p-4 font-mono text-sm space-y-1">
               <p className="text-terminal-text-muted">
-                <span className="text-terminal-green">$</span> [2026-01-23
-                14:32:15] System: Operational
+                <span className="text-terminal-green">$</span> [
+                {new Date().toISOString().split("T")[0]}{" "}
+                {new Date().toTimeString().split(" ")[0]}] System: Operational
               </p>
               <p className="text-terminal-text-muted">
-                <span className="text-terminal-green">$</span> [2026-01-23
-                14:32:16] Database: Connected
+                <span className="text-terminal-green">$</span> Database:
+                Connected
               </p>
               <p className="text-terminal-text-muted">
-                <span className="text-terminal-green">$</span> [2026-01-23
-                14:32:17] Active Sessions: 23
+                <span className="text-terminal-green">$</span> Active Users
+                Today: {stats?.activeUsersToday || 0}
+              </p>
+              <p className="text-terminal-text-muted">
+                <span className="text-terminal-green">$</span> Active Users (7
+                days): {stats?.activeUsersWeek || 0}
               </p>
             </div>
           </CardContent>
