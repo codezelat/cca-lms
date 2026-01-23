@@ -48,14 +48,25 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError(result.error);
+        // Map common error codes to user-friendly messages
+        const errorMessages: Record<string, string> = {
+          Configuration: "Server configuration error. Please contact administrator.",
+          CredentialsSignin: "Invalid email or password",
+          "Invalid credentials": "Invalid email or password",
+          "Account is not active": "Your account has been disabled",
+          "Email and password required": "Please enter email and password",
+        };
+        
+        const friendlyError = errorMessages[result.error] || result.error;
+        setError(friendlyError);
         setIsLoading(false);
       } else if (result?.ok) {
         // Success - use window.location for full page reload to ensure session is loaded
         window.location.href = callbackUrl;
       }
-    } catch {
-      setError("An unexpected error occurred");
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("An unexpected error occurred. Please try again.");
       setIsLoading(false);
     }
   };
