@@ -10,6 +10,17 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import type { UserRole } from "@prisma/client";
+
+interface LecturerDashboardProps {
+  user: {
+    id: string;
+    role: UserRole;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
+}
 
 const stats = [
   { title: "Assigned Programmes", value: "3", icon: BookOpen },
@@ -41,7 +52,7 @@ const myProgrammes = [
   },
 ];
 
-export default function LecturerDashboard() {
+export default function LecturerDashboard({ user }: LecturerDashboardProps) {
   return (
     <div className="min-h-screen bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">

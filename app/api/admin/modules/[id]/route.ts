@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export const runtime = "nodejs";
 
 // GET /api/admin/modules/[id] - Get single module
 export async function GET(

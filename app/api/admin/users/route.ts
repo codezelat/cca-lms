@@ -4,7 +4,6 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { auditActions } from "@/lib/audit";
 
-export const runtime = "nodejs";
 
 // GET /api/admin/users - List all users with filters
 export async function GET(request: Request) {

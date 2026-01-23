@@ -4,12 +4,10 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { auditActions } from "@/lib/audit";
 
-export const runtime = "nodejs";
-
 // GET /api/admin/users/[id] - Get single user
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth();
@@ -18,8 +16,10 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
+
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         name: true,
@@ -30,8 +30,8 @@ export async function GET(
         updatedAt: true,
         _count: {
           select: {
-            enrollments: true,
             courses: true,
+            submissions: true,
           },
         },
       },
@@ -54,7 +54,7 @@ export async function GET(
 // PUT /api/admin/users/[id] - Update user
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth();
@@ -63,12 +63,14 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
+
     const body = await request.json();
     const { name, email, role, status, resetPassword } = body;
 
     // Get existing user for audit log
     const existingUser = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingUser) {
@@ -130,7 +132,7 @@ export async function PUT(
 
     // Update user
     const user = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       select: {
         id: true,
@@ -176,7 +178,7 @@ export async function PUT(
 // DELETE /api/admin/users/[id] - Disable user (soft delete)
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth();
@@ -185,8 +187,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
+
     // Prevent self-disable
-    if (params.id === session.user.id) {
+    if (id === session.user.id) {
       return NextResponse.json(
         { error: "Cannot disable your own account" },
         { status: 400 },
@@ -194,8 +198,8 @@ export async function DELETE(
     }
 
     const user = await prisma.user.update({
-      where: { id: params.id },
-      data: { status: "DISABLED" },
+      where: { id },
+      data: { status: "SUSPENDED" },
       select: {
         id: true,
         email: true,

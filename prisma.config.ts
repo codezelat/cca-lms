@@ -10,6 +10,7 @@ export default defineConfig({
   },
   // Use direct connection for schema operations (migrations, push, seed)
   datasource: {
-    url: process.env["DIRECT_DATABASE_URL"] || process.env["DATABASE_URL"],
+    url:
+      process.env["DIRECT_DATABASE_URL"] || process.env["DATABASE_URL"] || "",
   },
 });

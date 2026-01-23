@@ -3,7 +3,6 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createAuditLog } from "@/lib/audit";
 
-export const runtime = "nodejs";
 
 // POST /api/admin/lessons - Create new lesson
 export async function POST(request: NextRequest) {

@@ -3,8 +3,6 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { auditActions } from "@/lib/audit";
 
-export const runtime = "nodejs";
-
 // GET /api/admin/programmes - List all programmes with pagination and filters
 export async function GET(request: NextRequest) {
   try {
@@ -25,11 +23,11 @@ export async function GET(request: NextRequest) {
 
     // Build where clause
     const where: {
-      status?: string;
       OR?: Array<{
         title?: { contains: string; mode: "insensitive" };
         description?: { contains: string; mode: "insensitive" };
       }>;
+      status?: "DRAFT" | "PUBLISHED" | "ARCHIVED";
     } = {};
 
     if (search) {
@@ -40,7 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (status && ["DRAFT", "PUBLISHED", "ARCHIVED"].includes(status)) {
-      where.status = status;
+      where.status = status as "DRAFT" | "PUBLISHED" | "ARCHIVED";
     }
 
     // Fetch programmes and total count

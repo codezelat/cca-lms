@@ -242,18 +242,16 @@ export default function ProgrammesClient() {
     }
   };
 
-  const getStatusColor = (
-    status: string,
-  ): "default" | "secondary" | "destructive" => {
+  const getStatusColor = (status: string): "success" | "warning" | "danger" => {
     switch (status) {
       case "PUBLISHED":
-        return "default";
+        return "success";
       case "DRAFT":
-        return "secondary";
+        return "warning";
       case "ARCHIVED":
-        return "destructive";
+        return "danger";
       default:
-        return "secondary";
+        return "warning";
     }
   };
 

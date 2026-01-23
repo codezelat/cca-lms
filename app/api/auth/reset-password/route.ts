@@ -3,8 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
 
-export const runtime = "nodejs";
-
 export async function POST(request: NextRequest) {
   try {
     const { token, password } = await request.json();
@@ -66,8 +64,7 @@ export async function POST(request: NextRequest) {
       entityType: "User",
       entityId: user.id,
       metadata: { action: "password_reset_completed" },
-      ipAddress:
-        request.headers.get("x-forwarded-for") || request.ip || "unknown",
+      ipAddress: request.headers.get("x-forwarded-for") || "unknown",
       userAgent: request.headers.get("user-agent") || "unknown",
     });
 

@@ -146,12 +146,18 @@ export async function getAuditLogs(filters: {
  */
 export const auditActions = {
   // User actions
-  userCreated: (userId: string, entityId: string) =>
+  userCreated: (
+    userId: string,
+    entityId: string,
+    email?: string,
+    role?: string,
+  ) =>
     createAuditLog({
       userId,
       action: "USER_CREATED",
       entityType: "User",
       entityId,
+      metadata: email && role ? { email, role } : undefined,
     }),
 
   userInvited: (userId: string, entityId: string, email: string) =>
@@ -281,21 +287,6 @@ export const auditActions = {
       entityType: "UploadedFile",
       entityId: fileId,
       metadata: { fileName },
-    }),
-
-  // User management actions
-  userCreated: (
-    userId: string,
-    targetUserId: string,
-    email: string,
-    role: string,
-  ) =>
-    createAuditLog({
-      userId,
-      action: "USER_CREATED",
-      entityType: "User",
-      entityId: targetUserId,
-      metadata: { email, role },
     }),
 
   userUpdated: (

@@ -3,7 +3,6 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { auditActions } from "@/lib/audit";
 
-export const runtime = "nodejs";
 
 // GET /api/admin/programmes/[id] - Get single programme
 export async function GET(

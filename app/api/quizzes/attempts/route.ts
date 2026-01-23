@@ -132,8 +132,8 @@ export async function POST(request: NextRequest) {
           if (!question) return null;
 
           maxScore += question.points;
-          let isCorrect = false;
-          let points = 0;
+          let isCorrect: boolean | null = false;
+          let points: number | null = 0;
 
           if (
             question.type === "MULTIPLE_CHOICE" ||

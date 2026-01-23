@@ -10,6 +10,17 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import type { UserRole } from "@prisma/client";
+
+interface StudentDashboardProps {
+  user: {
+    id: string;
+    role: UserRole;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
+}
 
 const enrolledProgrammes = [
   {
@@ -34,7 +45,7 @@ const recentActivity = [
   { id: 3, text: "Started module: Advanced React", time: "2 days ago" },
 ];
 
-export default function StudentDashboard() {
+export default function StudentDashboard({ user }: StudentDashboardProps) {
   return (
     <div className="min-h-screen bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
