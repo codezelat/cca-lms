@@ -49,6 +49,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { QuizBuilder } from "@/components/quizzes/quiz-builder";
+import { ResourceManager } from "@/components/resources/resource-manager";
 
 interface Module {
   id: string;
@@ -126,6 +129,7 @@ export default function ProgrammeContentClient({
 
   // Resource/Quiz management
   const [showResourceDialog, setShowResourceDialog] = useState(false);
+  const [showResourceManager, setShowResourceManager] = useState(false);
   const [showQuizBuilder, setShowQuizBuilder] = useState(false);
   const [selectedLessonId, setSelectedLessonId] = useState<string>("");
 
@@ -337,7 +341,7 @@ export default function ProgrammeContentClient({
 
   const openResourceDialog = (lessonId: string) => {
     setSelectedLessonId(lessonId);
-    setShowResourceDialog(true);
+    setShowResourceManager(true);
   };
 
   const openQuizBuilder = (lessonId: string) => {
@@ -950,30 +954,40 @@ export default function ProgrammeContentClient({
 
       {/* Quiz Builder Dialog */}
       <Dialog open={showQuizBuilder} onOpenChange={setShowQuizBuilder}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Quiz Builder</DialogTitle>
             <DialogDescription>
               Create and manage quiz questions, answers, and settings
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-muted-foreground mb-4">
-              Quiz builder UI coming soon. You can use the quiz API to create
-              questions.
-            </p>
-            {selectedLessonId && (
-              <div className="border rounded-lg p-4 bg-muted/50">
-                <p className="text-xs font-mono">
-                  Lesson ID: {selectedLessonId}
-                </p>
-              </div>
-            )}
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowQuizBuilder(false)}>
-              Close
-            </Button>
+          {selectedLessonId && (
+            <QuizBuilder
+              lessonId={selectedLessonId}
+              onSuccess={() => {
+                setShowQuizBuilder(false);
+                toast.success("Quiz saved successfully");
+              }}
+              onCancel={() => setShowQuizBuilder(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Resource Manager Dialog */}
+      <Dialog open={showResourceManager} onOpenChange={setShowResourceManager}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Lesson Resources</DialogTitle>
+            <DialogDescription>
+              Manage files, links, and materials for this lesson
+            </DialogDescription>
+          </DialogHeader>
+          {selectedLessonId && (
+            <ResourceManager lessonId={selectedLessonId} canEdit={true} />
+          )}
+          <div className="flex justify-end pt-4">
+            <Button onClick={() => setShowResourceManager(false)}>Done</Button>
           </div>
         </DialogContent>
       </Dialog>
