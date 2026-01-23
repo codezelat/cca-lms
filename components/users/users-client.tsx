@@ -72,7 +72,7 @@ export default function UsersClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  
+
   // Create
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -273,7 +273,7 @@ export default function UsersClient() {
 
   const handleToggleStatus = async (user: User) => {
     const newStatus = user.status === "ACTIVE" ? "DISABLED" : "ACTIVE";
-    
+
     try {
       const response = await fetch(`/api/admin/users/${user.id}`, {
         method: "PUT",
@@ -305,7 +305,7 @@ export default function UsersClient() {
   };
 
   const openCreateDialog = () => {
-    setCreateForm(prev => ({ ...prev, role: activeTab }));
+    setCreateForm((prev) => ({ ...prev, role: activeTab }));
     setShowCreateDialog(true);
   };
 
@@ -399,10 +399,13 @@ export default function UsersClient() {
               className="pl-10"
             />
           </div>
-          <Select value={statusFilter} onValueChange={(value) => {
-            setStatusFilter(value);
-            setPage(1);
-          }}>
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              setStatusFilter(value);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-45">
               <Filter className="h-4 w-4 mr-2" />
               <SelectValue />
@@ -435,7 +438,8 @@ export default function UsersClient() {
                 <div className="text-center py-12">
                   <Users className="h-12 w-12 text-terminal-text-muted mx-auto mb-4" />
                   <p className="font-mono text-terminal-text-muted">
-                    No {activeTab === "STUDENT" ? "students" : "lecturers"} found
+                    No {activeTab === "STUDENT" ? "students" : "lecturers"}{" "}
+                    found
                   </p>
                   <Button
                     variant="outline"
@@ -484,13 +488,15 @@ export default function UsersClient() {
                       <div className="flex items-center gap-6">
                         <div className="text-center">
                           <p className="text-xs font-mono text-terminal-text-muted mb-1">
-                            {activeTab === "STUDENT" ? "Enrolled" : "Programmes"}
+                            {activeTab === "STUDENT"
+                              ? "Enrolled"
+                              : "Programmes"}
                           </p>
                           <p className="text-lg font-mono font-bold text-terminal-green">
                             {user._count.courses}
                           </p>
                         </div>
-                        
+
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -504,16 +510,22 @@ export default function UsersClient() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleViewUser(user)}>
+                            <DropdownMenuItem
+                              onClick={() => handleViewUser(user)}
+                            >
                               <Eye className="h-4 w-4 mr-2" />
                               View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditUser(user)}>
+                            <DropdownMenuItem
+                              onClick={() => handleEditUser(user)}
+                            >
                               <Edit className="h-4 w-4 mr-2" />
                               Edit User
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleToggleStatus(user)}>
+                            <DropdownMenuItem
+                              onClick={() => handleToggleStatus(user)}
+                            >
                               {user.status === "ACTIVE" ? (
                                 <>
                                   <PowerOff className="h-4 w-4 mr-2" />
@@ -563,13 +575,18 @@ export default function UsersClient() {
       </div>
 
       {/* Create Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={(open) => {
-        if (!open) closeCreateDialog();
-      }}>
+      <Dialog
+        open={showCreateDialog}
+        onOpenChange={(open) => {
+          if (!open) closeCreateDialog();
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {createdUserData ? "Login Credentials Created" : `Add New ${activeTab === "STUDENT" ? "Student" : "Lecturer"}`}
+              {createdUserData
+                ? "Login Credentials Created"
+                : `Add New ${activeTab === "STUDENT" ? "Student" : "Lecturer"}`}
             </DialogTitle>
             <DialogDescription>
               {createdUserData
@@ -583,18 +600,24 @@ export default function UsersClient() {
               <div className="rounded-lg border-2 border-terminal-green bg-terminal-green/5 p-4 space-y-3">
                 <div className="flex items-center gap-2 text-terminal-green mb-3">
                   <CheckCircle2 className="h-5 w-5" />
-                  <span className="font-mono font-semibold">Account Created Successfully</span>
+                  <span className="font-mono font-semibold">
+                    Account Created Successfully
+                  </span>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div>
-                    <Label className="text-xs text-terminal-text-muted">Email</Label>
+                    <Label className="text-xs text-terminal-text-muted">
+                      Email
+                    </Label>
                     <p className="font-mono text-sm text-terminal-text bg-terminal-darker p-2 rounded border border-terminal-green/20">
                       {createdUserData.email}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-xs text-terminal-text-muted">Temporary Password</Label>
+                    <Label className="text-xs text-terminal-text-muted">
+                      Temporary Password
+                    </Label>
                     <p className="font-mono text-sm text-terminal-text bg-terminal-darker p-2 rounded border border-terminal-green/20 break-all">
                       {createdUserData.password}
                     </p>
@@ -602,13 +625,19 @@ export default function UsersClient() {
                 </div>
 
                 <p className="text-xs text-terminal-text-muted italic">
-                  ⚠️ Save these credentials now. The password won&apos;t be shown again.
+                  ⚠️ Save these credentials now. The password won&apos;t be
+                  shown again.
                 </p>
               </div>
 
               <div className="flex gap-2">
                 <Button
-                  onClick={() => copyCredentials(createdUserData.email, createdUserData.password)}
+                  onClick={() =>
+                    copyCredentials(
+                      createdUserData.email,
+                      createdUserData.password,
+                    )
+                  }
                   className="flex-1 gap-2"
                   variant="default"
                 >
@@ -677,16 +706,17 @@ export default function UsersClient() {
               </div>
 
               <div className="rounded-md border border-terminal-green/20 bg-terminal-green/5 p-3 text-xs text-terminal-text-muted">
-                <p className="font-semibold mb-1">📧 Password will be auto-generated</p>
-                <p>A secure password will be created and displayed after account creation.</p>
+                <p className="font-semibold mb-1">
+                  📧 Password will be auto-generated
+                </p>
+                <p>
+                  A secure password will be created and displayed after account
+                  creation.
+                </p>
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button
-                  type="submit"
-                  disabled={isCreating}
-                  className="flex-1"
-                >
+                <Button type="submit" disabled={isCreating} className="flex-1">
                   {isCreating ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -718,7 +748,7 @@ export default function UsersClient() {
               {resetPasswordData ? "Password Reset Successful" : "Edit User"}
             </DialogTitle>
             <DialogDescription>
-              {resetPasswordData 
+              {resetPasswordData
                 ? "Copy the new password and send it to the user"
                 : "Update user information and settings"}
             </DialogDescription>
@@ -729,18 +759,24 @@ export default function UsersClient() {
               <div className="rounded-lg border-2 border-terminal-green bg-terminal-green/5 p-4 space-y-3">
                 <div className="flex items-center gap-2 text-terminal-green mb-3">
                   <CheckCircle2 className="h-5 w-5" />
-                  <span className="font-mono font-semibold">Password Reset</span>
+                  <span className="font-mono font-semibold">
+                    Password Reset
+                  </span>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div>
-                    <Label className="text-xs text-terminal-text-muted">Email</Label>
+                    <Label className="text-xs text-terminal-text-muted">
+                      Email
+                    </Label>
                     <p className="font-mono text-sm text-terminal-text bg-terminal-darker p-2 rounded border border-terminal-green/20">
                       {resetPasswordData.email}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-xs text-terminal-text-muted">New Password</Label>
+                    <Label className="text-xs text-terminal-text-muted">
+                      New Password
+                    </Label>
                     <p className="font-mono text-sm text-terminal-text bg-terminal-darker p-2 rounded border border-terminal-green/20 break-all">
                       {resetPasswordData.password}
                     </p>
@@ -750,17 +786,22 @@ export default function UsersClient() {
 
               <div className="flex gap-2">
                 <Button
-                  onClick={() => copyCredentials(resetPasswordData.email, resetPasswordData.password)}
+                  onClick={() =>
+                    copyCredentials(
+                      resetPasswordData.email,
+                      resetPasswordData.password,
+                    )
+                  }
                   className="flex-1 gap-2"
                 >
                   <Copy className="h-4 w-4" />
                   Copy Password
                 </Button>
-                <Button 
+                <Button
                   onClick={() => {
                     setResetPasswordData(null);
                     setShowEditDialog(false);
-                  }} 
+                  }}
                   variant="outline"
                 >
                   Close
@@ -841,11 +882,7 @@ export default function UsersClient() {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button
-                  type="submit"
-                  disabled={isEditing}
-                  className="flex-1"
-                >
+                <Button type="submit" disabled={isEditing} className="flex-1">
                   {isEditing ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -898,7 +935,11 @@ export default function UsersClient() {
                     {viewingUser.email}
                   </p>
                   <div className="flex gap-2">
-                    <Badge variant={viewingUser.status === "ACTIVE" ? "default" : "outline"}>
+                    <Badge
+                      variant={
+                        viewingUser.status === "ACTIVE" ? "default" : "outline"
+                      }
+                    >
                       {viewingUser.status}
                     </Badge>
                     <Badge variant="outline">{viewingUser.role}</Badge>
@@ -908,22 +949,36 @@ export default function UsersClient() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label className="text-xs text-terminal-text-muted">Account Created</Label>
-                  <p className="font-mono text-sm">{formatDateTime(viewingUser.createdAt)}</p>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-terminal-text-muted">Last Updated</Label>
-                  <p className="font-mono text-sm">{formatDateTime(viewingUser.updatedAt)}</p>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-terminal-text-muted">Email Verified</Label>
+                  <Label className="text-xs text-terminal-text-muted">
+                    Account Created
+                  </Label>
                   <p className="font-mono text-sm">
-                    {viewingUser.emailVerified ? formatDateTime(viewingUser.emailVerified) : "Not verified"}
+                    {formatDateTime(viewingUser.createdAt)}
                   </p>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-terminal-text-muted">
-                    {viewingUser.role === "LECTURER" ? "Programmes Assigned" : "Enrollments"}
+                    Last Updated
+                  </Label>
+                  <p className="font-mono text-sm">
+                    {formatDateTime(viewingUser.updatedAt)}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-terminal-text-muted">
+                    Email Verified
+                  </Label>
+                  <p className="font-mono text-sm">
+                    {viewingUser.emailVerified
+                      ? formatDateTime(viewingUser.emailVerified)
+                      : "Not verified"}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-terminal-text-muted">
+                    {viewingUser.role === "LECTURER"
+                      ? "Programmes Assigned"
+                      : "Enrollments"}
                   </Label>
                   <p className="font-mono text-sm text-terminal-green font-bold">
                     {viewingUser._count.courses}
@@ -932,20 +987,28 @@ export default function UsersClient() {
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={() => {
-                  setShowViewDialog(false);
-                  handleEditUser(viewingUser);
-                }} className="flex-1">
+                <Button
+                  onClick={() => {
+                    setShowViewDialog(false);
+                    handleEditUser(viewingUser);
+                  }}
+                  className="flex-1"
+                >
                   <Edit className="h-4 w-4 mr-2" />
                   Edit User
                 </Button>
-                <Button variant="outline" onClick={() => setShowViewDialog(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowViewDialog(false)}
+                >
                   Close
                 </Button>
               </div>
             </div>
           ) : (
-            <p className="text-center py-8 text-terminal-text-muted">Failed to load user details</p>
+            <p className="text-center py-8 text-terminal-text-muted">
+              Failed to load user details
+            </p>
           )}
         </DialogContent>
       </Dialog>

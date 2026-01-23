@@ -96,12 +96,15 @@ export default function ProgrammesClient() {
 
   // View dialog
   const [showViewDialog, setShowViewDialog] = useState(false);
-  const [viewingProgramme, setViewingProgramme] = useState<ProgrammeDetails | null>(null);
+  const [viewingProgramme, setViewingProgramme] =
+    useState<ProgrammeDetails | null>(null);
   const [isLoadingView, setIsLoadingView] = useState(false);
 
   // Edit dialog
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const [editingProgramme, setEditingProgramme] = useState<Programme | null>(null);
+  const [editingProgramme, setEditingProgramme] = useState<Programme | null>(
+    null,
+  );
   const [isEditing, setIsEditing] = useState(false);
   const [editError, setEditError] = useState("");
   const [editForm, setEditForm] = useState({
@@ -190,11 +193,14 @@ export default function ProgrammesClient() {
     setIsEditing(true);
 
     try {
-      const response = await fetch(`/api/admin/programmes/${editingProgramme.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editForm),
-      });
+      const response = await fetch(
+        `/api/admin/programmes/${editingProgramme.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(editForm),
+        },
+      );
 
       const data = await response.json();
 
@@ -230,11 +236,15 @@ export default function ProgrammesClient() {
       fetchProgrammes();
     } catch (error) {
       console.error("Error archiving programme:", error);
-      alert(error instanceof Error ? error.message : "Failed to archive programme");
+      alert(
+        error instanceof Error ? error.message : "Failed to archive programme",
+      );
     }
   };
 
-  const getStatusColor = (status: string): "default" | "secondary" | "destructive" => {
+  const getStatusColor = (
+    status: string,
+  ): "default" | "secondary" | "destructive" => {
     switch (status) {
       case "PUBLISHED":
         return "default";
@@ -381,7 +391,9 @@ export default function ProgrammesClient() {
                             {programme.description || "No description"}
                           </p>
                           <div className="flex items-center gap-4 text-xs font-mono text-terminal-text-muted mt-1">
-                            <span>Created {formatDate(programme.createdAt)}</span>
+                            <span>
+                              Created {formatDate(programme.createdAt)}
+                            </span>
                           </div>
                         </div>
                       </div>
