@@ -1,5 +1,5 @@
 import { prisma } from "./prisma";
-import type { AuditAction, Prisma } from "@prisma/client";
+import type { AuditAction, Prisma } from "@/generated/prisma";
 
 /**
  * Create an audit log entry

@@ -20,14 +20,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import type { $Enums } from "@prisma/client";
+import type { UserRole } from "@/generated/prisma";
 
 interface AdminDashboardProps {
   user: {
     id: string;
     name?: string | null;
     email?: string | null;
-    role: $Enums.UserRole;
+    role: UserRole;
   };
 }
 
