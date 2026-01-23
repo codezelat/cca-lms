@@ -19,7 +19,7 @@ import { toast } from "sonner";
 
 interface FileUploadProps {
   lessonId: string;
-  onSuccess?: (resource: any) => void;
+  onSuccess?: (resource: Record<string, unknown>) => void;
   onCancel?: () => void;
 }
 

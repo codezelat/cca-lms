@@ -13,19 +13,54 @@ import {
   FileText,
   Bell,
   LogOut,
+  GraduationCap,
+  FolderOpen,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { ThemeToggle } from "./theme-toggle";
 
-const navItems = [
+// Role-based navigation items
+const adminNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/programmes", label: "Programmes", icon: BookOpen },
   { href: "/users", label: "Users", icon: Users },
+  { href: "/analytics", label: "Analytics", icon: BarChart3 },
+];
+
+const lecturerNavItems = [
+  { href: "/dashboard", label: "Dashboard", icon: Home },
+  { href: "/programmes", label: "My Programmes", icon: BookOpen },
+  { href: "/students", label: "Students", icon: GraduationCap },
+  { href: "/resources", label: "Resources", icon: FolderOpen },
+];
+
+const studentNavItems = [
+  { href: "/dashboard", label: "Dashboard", icon: Home },
+  { href: "/courses", label: "My Courses", icon: BookOpen },
+  { href: "/resources", label: "Resources", icon: FolderOpen },
 ];
 
 export function Navbar() {
   const pathname = usePathname();
   const { data: session } = useSession();
+
+  // Determine nav items based on user role
+  const getNavItems = () => {
+    if (!session?.user?.role) return [];
+
+    switch (session.user.role) {
+      case "ADMIN":
+        return adminNavItems;
+      case "LECTURER":
+        return lecturerNavItems;
+      case "STUDENT":
+        return studentNavItems;
+      default:
+        return [];
+    }
+  };
+
+  const navItems = getNavItems();
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: "/auth/login" });
@@ -51,31 +86,33 @@ export function Navbar() {
             </span>
           </Link>
 
-          {/* Navigation Links */}
-          <div className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-md font-mono text-sm transition-all",
-                    isActive
-                      ? "bg-terminal-green/20 text-terminal-green border border-terminal-green/40 shadow-[0_0_10px_rgba(34,197,94,0.3)]"
-                      : "text-terminal-text-muted hover:text-terminal-green hover:bg-terminal-green/10 hover:border-terminal-green/20 border border-transparent",
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{item.label}</span>
-                  {isActive && (
-                    <span className="ml-1 h-1.5 w-1.5 rounded-full bg-terminal-green animate-pulse" />
-                  )}
-                </Link>
-              );
-            })}
-          </div>
+          {/* Navigation Links - Only show when logged in */}
+          {session?.user && navItems.length > 0 && (
+            <div className="hidden md:flex items-center gap-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-md font-mono text-sm transition-all",
+                      isActive
+                        ? "bg-terminal-green/20 text-terminal-green border border-terminal-green/40 shadow-[0_0_10px_rgba(34,197,94,0.3)]"
+                        : "text-terminal-text-muted hover:text-terminal-green hover:bg-terminal-green/10 hover:border-terminal-green/20 border border-transparent",
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{item.label}</span>
+                    {isActive && (
+                      <span className="ml-1 h-1.5 w-1.5 rounded-full bg-terminal-green animate-pulse" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
 
           {/* Right side actions */}
           <div className="flex items-center gap-3">
@@ -102,30 +139,32 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Navigation */}
-      <div className="md:hidden border-t border-terminal-green/20 px-4 py-2">
-        <div className="flex items-center gap-1 overflow-x-auto">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md font-mono text-xs whitespace-nowrap transition-all",
-                  isActive
-                    ? "bg-terminal-green/20 text-terminal-green border border-terminal-green/40"
-                    : "text-terminal-text-muted hover:text-terminal-green hover:bg-terminal-green/10 border border-transparent",
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
+      {/* Mobile Navigation - Only show when logged in */}
+      {session?.user && navItems.length > 0 && (
+        <div className="md:hidden border-t border-terminal-green/20 px-4 py-2">
+          <div className="flex items-center gap-1 overflow-x-auto">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md font-mono text-xs whitespace-nowrap transition-all",
+                    isActive
+                      ? "bg-terminal-green/20 text-terminal-green border border-terminal-green/40"
+                      : "text-terminal-text-muted hover:text-terminal-green hover:bg-terminal-green/10 border border-transparent",
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </nav>
   );
 }
