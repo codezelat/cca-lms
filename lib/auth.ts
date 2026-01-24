@@ -26,41 +26,52 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Email and password required");
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            return null; // Return null instead of throwing to avoid Configuration error
+          }
+
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email as string },
+          });
+
+          if (!user || !user.password) {
+            return null; // Return null for invalid user
+          }
+
+          const isPasswordValid = await bcrypt.compare(
+            credentials.password as string,
+            user.password,
+          );
+
+          if (!isPasswordValid) {
+            return null; // Return null for invalid password
+          }
+
+          if (user.status !== "ACTIVE") {
+            throw new Error("Account is not active"); // Keep this as an error since it's a specific account status issue
+          }
+
+          // Log the login
+          await auditActions.userLogin(user.id);
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            image: user.image,
+          };
+        } catch (error) {
+          // Only throw specific account status errors, return null for credential issues
+          if (
+            error instanceof Error &&
+            error.message === "Account is not active"
+          ) {
+            throw error;
+          }
+          return null;
         }
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        });
-
-        if (!user || !user.password) {
-          throw new Error("Invalid credentials");
-        }
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password as string,
-          user.password,
-        );
-
-        if (!isPasswordValid) {
-          throw new Error("Invalid credentials");
-        }
-
-        if (user.status !== "ACTIVE") {
-          throw new Error("Account is not active");
-        }
-
-        // Log the login
-        await auditActions.userLogin(user.id);
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          image: user.image,
-        };
       },
     }),
   ],
