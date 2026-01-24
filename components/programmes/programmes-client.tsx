@@ -59,7 +59,7 @@ interface Programme {
   description: string | null;
   thumbnail: string | null;
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
-  lecturerId: string;
+  lecturerId: string | null;
   createdAt: string;
   updatedAt: string;
   _count: {
@@ -73,7 +73,7 @@ interface ProgrammeDetails extends Programme {
     id: string;
     name: string | null;
     email: string;
-  };
+  } | null;
   modules: Array<{
     id: string;
     title: string;
@@ -136,7 +136,12 @@ export default function ProgrammesClient() {
   );
   const [isEditing, setIsEditing] = useState(false);
   const [editError, setEditError] = useState("");
-  const [editForm, setEditForm] = useState({
+  const [editForm, setEditForm] = useState<{
+    title: string;
+    description: string;
+    lecturerId: string | null;
+    status: string;
+  }>({
     title: "",
     description: "",
     lecturerId: "",
@@ -234,7 +239,7 @@ export default function ProgrammesClient() {
     setEditForm({
       title: programme.title,
       description: programme.description || "",
-      lecturerId: programme.lecturerId,
+      lecturerId: programme.lecturerId || "",
       status: programme.status,
     });
     setEditError("");
@@ -254,7 +259,10 @@ export default function ProgrammesClient() {
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(editForm),
+          body: JSON.stringify({
+            ...editForm,
+            lecturerId: editForm.lecturerId || null, // Convert empty string to null
+          }),
         },
       );
 
@@ -797,12 +805,16 @@ export default function ProgrammesClient() {
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-terminal-green" />
                     <p className="font-mono text-sm">
-                      {viewingProgramme.lecturer.name || "Unknown"}
+                      {viewingProgramme.lecturer?.name ||
+                        viewingProgramme.lecturer?.email ||
+                        "Not Assigned"}
                     </p>
                   </div>
-                  <p className="font-mono text-xs text-terminal-text-muted pl-6">
-                    {viewingProgramme.lecturer.email}
-                  </p>
+                  {viewingProgramme.lecturer && (
+                    <p className="font-mono text-xs text-terminal-text-muted pl-6">
+                      {viewingProgramme.lecturer.email}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-terminal-text-muted">
@@ -948,18 +960,19 @@ export default function ProgrammesClient() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-lecturer">Assigned Lecturer *</Label>
+              <Label htmlFor="edit-lecturer">Assigned Lecturer</Label>
               <Select
-                value={editForm.lecturerId}
+                value={editForm.lecturerId || ""}
                 onValueChange={(value) =>
-                  setEditForm({ ...editForm, lecturerId: value })
+                  setEditForm({ ...editForm, lecturerId: value || null })
                 }
                 disabled={isEditing}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select lecturer" />
+                  <SelectValue placeholder="Select lecturer (optional)" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="">No Lecturer Assigned</SelectItem>
                   {lecturers.map((lecturer) => (
                     <SelectItem key={lecturer.id} value={lecturer.id}>
                       {lecturer.name || lecturer.email}
