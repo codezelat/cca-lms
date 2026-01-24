@@ -18,6 +18,8 @@ import {
   Power,
   PowerOff,
   KeyRound,
+  GraduationCap,
+  Trash2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,6 +48,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface User {
   id: string;
@@ -62,6 +65,26 @@ interface User {
 
 interface UserDetails extends User {
   emailVerified: string | null;
+}
+
+interface Programme {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  thumbnail: string | null;
+  _count: {
+    modules: number;
+  };
+}
+
+interface Enrollment {
+  id: string;
+  status: string;
+  progress: number;
+  enrolledAt: string;
+  completedAt: string | null;
+  course: Programme;
 }
 
 export default function UsersClient() {
@@ -109,6 +132,20 @@ export default function UsersClient() {
     email: string;
     password: string;
   } | null>(null);
+
+  // Programme assignment
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [assigningUser, setAssigningUser] = useState<User | null>(null);
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [assignError, setAssignError] = useState("");
+  const [programmes, setProgrammes] = useState<Programme[]>([]);
+  const [isLoadingProgrammes, setIsLoadingProgrammes] = useState(false);
+  const [selectedProgrammes, setSelectedProgrammes] = useState<string[]>([]);
+  const [programmeSearch, setProgrammeSearch] = useState("");
+  
+  // View enrollments
+  const [userEnrollments, setUserEnrollments] = useState<Enrollment[]>([]);
+  const [isLoadingEnrollments, setIsLoadingEnrollments] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -179,11 +216,20 @@ export default function UsersClient() {
     setIsLoadingView(true);
 
     try {
-      const response = await fetch(`/api/admin/users/${user.id}`);
-      if (!response.ok) throw new Error("Failed to fetch user details");
+      const [userResponse, enrollmentsResponse] = await Promise.all([
+        fetch(`/api/admin/users/${user.id}`),
+        fetch(`/api/admin/users/${user.id}/enrollments`),
+      ]);
 
-      const data = await response.json();
-      setViewingUser(data.user);
+      if (!userResponse.ok) throw new Error("Failed to fetch user details");
+
+      const userData = await userResponse.json();
+      setViewingUser(userData.user);
+
+      if (enrollmentsResponse.ok) {
+        const enrollmentsData = await enrollmentsResponse.json();
+        setUserEnrollments(enrollmentsData.enrollments);
+      }
     } catch (error) {
       console.error("Error fetching user details:", error);
     } finally {
@@ -295,6 +341,119 @@ export default function UsersClient() {
     const text = `Login Credentials\n\nEmail: ${email}\nPassword: ${password}\n\nPlease change your password after first login.`;
     navigator.clipboard.writeText(text);
   };
+
+  const handleAssignProgrammes = (user: User) => {
+    setAssigningUser(user);
+    setSelectedProgrammes([]);
+    setProgrammeSearch("");
+    setAssignError("");
+    setShowAssignDialog(true);
+    fetchProgrammes();
+    fetchUserEnrollments(user.id);
+  };
+
+  const fetchProgrammes = async () => {
+    try {
+      setIsLoadingProgrammes(true);
+      const response = await fetch("/api/admin/programmes?limit=100&status=PUBLISHED");
+      if (!response.ok) throw new Error("Failed to fetch programmes");
+
+      const data = await response.json();
+      setProgrammes(data.programmes);
+    } catch (error) {
+      console.error("Error fetching programmes:", error);
+      setAssignError("Failed to load programmes");
+    } finally {
+      setIsLoadingProgrammes(false);
+    }
+  };
+
+  const fetchUserEnrollments = async (userId: string) => {
+    try {
+      setIsLoadingEnrollments(true);
+      const response = await fetch(`/api/admin/users/${userId}/enrollments`);
+      if (!response.ok) throw new Error("Failed to fetch enrollments");
+
+      const data = await response.json();
+      setUserEnrollments(data.enrollments);
+    } catch (error) {
+      console.error("Error fetching enrollments:", error);
+    } finally {
+      setIsLoadingEnrollments(false);
+    }
+  };
+
+  const handleSubmitAssignment = async () => {
+    if (!assigningUser) return;
+    if (selectedProgrammes.length === 0) {
+      setAssignError("Please select at least one programme");
+      return;
+    }
+
+    setIsAssigning(true);
+    setAssignError("");
+
+    try {
+      const response = await fetch(`/api/admin/users/${assigningUser.id}/enrollments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseIds: selectedProgrammes }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to assign programmes");
+      }
+
+      // Refresh user list and enrollments
+      fetchUsers();
+      fetchUserEnrollments(assigningUser.id);
+      setSelectedProgrammes([]);
+      
+      // Show success message in the UI
+      if (data.skipped > 0) {
+        setAssignError(`✓ ${data.message}`);
+      }
+    } catch (err) {
+      setAssignError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  const handleRemoveEnrollment = async (userId: string, courseId: string) => {
+    if (!confirm("Remove this programme assignment?")) return;
+
+    try {
+      const response = await fetch(
+        `/api/admin/users/${userId}/enrollments?courseId=${courseId}`,
+        { method: "DELETE" },
+      );
+
+      if (!response.ok) throw new Error("Failed to remove enrollment");
+
+      fetchUsers();
+      fetchUserEnrollments(userId);
+    } catch (error) {
+      console.error("Error removing enrollment:", error);
+      alert("Failed to remove programme assignment");
+    }
+  };
+
+  const toggleProgrammeSelection = (programmeId: string) => {
+    setSelectedProgrammes((prev) =>
+      prev.includes(programmeId)
+        ? prev.filter((id) => id !== programmeId)
+        : [...prev, programmeId],
+    );
+  };
+
+  const filteredProgrammes = programmes.filter((prog) =>
+    prog.title.toLowerCase().includes(programmeSearch.toLowerCase()),
+  );
+
+  const enrolledProgrammeIds = new Set(userEnrollments.map((e) => e.course.id));
 
   const closeCreateDialog = () => {
     setShowCreateDialog(false);
@@ -521,6 +680,12 @@ export default function UsersClient() {
                             >
                               <Edit className="h-4 w-4 mr-2" />
                               Edit User
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleAssignProgrammes(user)}
+                            >
+                              <GraduationCap className="h-4 w-4 mr-2" />
+                              Assign Programmes
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
@@ -986,16 +1151,86 @@ export default function UsersClient() {
                 </div>
               </div>
 
+              {userEnrollments.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">
+                    {viewingUser.role === "LECTURER" 
+                      ? "Assigned Programmes" 
+                      : "Enrolled Programmes"}
+                  </Label>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {userEnrollments.map((enrollment) => (
+                      <div
+                        key={enrollment.id}
+                        className="flex items-center justify-between p-3 rounded-lg border border-terminal-green/20 bg-terminal-darker/50"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <BookOpen className="h-4 w-4 text-terminal-green" />
+                            <span className="font-mono text-sm font-semibold">
+                              {enrollment.course.title}
+                            </span>
+                            <Badge
+                              variant={
+                                enrollment.course.status === "PUBLISHED"
+                                  ? "default"
+                                  : "outline"
+                              }
+                              className="text-[10px]"
+                            >
+                              {enrollment.course.status}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs font-mono text-terminal-text-muted">
+                            <span>
+                              Enrolled {formatDate(enrollment.enrolledAt)}
+                            </span>
+                            {viewingUser.role === "STUDENT" && (
+                              <span className="text-terminal-green">
+                                {Math.round(enrollment.progress)}% complete
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            handleRemoveEnrollment(
+                              viewingUser.id,
+                              enrollment.course.id,
+                            )
+                          }
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <Button
                   onClick={() => {
                     setShowViewDialog(false);
                     handleEditUser(viewingUser);
                   }}
-                  className="flex-1"
+                  variant="outline"
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Edit User
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowViewDialog(false);
+                    handleAssignProgrammes(viewingUser);
+                  }}
+                  className="flex-1"
+                >
+                  <GraduationCap className="h-4 w-4 mr-2" />
+                  Assign Programmes
                 </Button>
                 <Button
                   variant="outline"
@@ -1009,6 +1244,197 @@ export default function UsersClient() {
             <p className="text-center py-8 text-terminal-text-muted">
               Failed to load user details
             </p>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Programmes Dialog */}
+      <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Assign Programmes</DialogTitle>
+            <DialogDescription>
+              {assigningUser
+                ? `Select programmes to assign to ${assigningUser.name || assigningUser.email}`
+                : "Select programmes"}
+            </DialogDescription>
+          </DialogHeader>
+
+          {isLoadingProgrammes ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-terminal-green" />
+            </div>
+          ) : (
+            <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+              {assignError && (
+                <div
+                  className={`rounded-md border p-3 text-sm ${
+                    assignError.startsWith("✓")
+                      ? "border-terminal-green bg-terminal-green/10 text-terminal-green"
+                      : "border-destructive bg-destructive/10 text-destructive"
+                  }`}
+                >
+                  {assignError}
+                </div>
+              )}
+
+              {/* Current Enrollments */}
+              {isLoadingEnrollments ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-terminal-green" />
+                </div>
+              ) : userEnrollments.length > 0 ? (
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">
+                    Currently Enrolled ({userEnrollments.length})
+                  </Label>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {userEnrollments.map((enrollment) => (
+                      <div
+                        key={enrollment.id}
+                        className="flex items-center justify-between p-2 rounded border border-terminal-green/20 bg-terminal-green/5 text-xs"
+                      >
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="h-3 w-3 text-terminal-green" />
+                          <span className="font-mono">
+                            {enrollment.course.title}
+                          </span>
+                          <Badge variant="outline" className="text-[10px]">
+                            {enrollment.course.status}
+                          </Badge>
+                        </div>
+                        <span className="font-mono text-terminal-text-muted">
+                          {Math.round(enrollment.progress)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Search */}
+              <div className="space-y-2">
+                <Label htmlFor="programme-search">
+                  Select Programmes to Assign
+                </Label>
+                <Input
+                  id="programme-search"
+                  type="text"
+                  placeholder="$ search programmes..."
+                  value={programmeSearch}
+                  onChange={(e) => setProgrammeSearch(e.target.value)}
+                  className="font-mono"
+                />
+              </div>
+
+              {/* Programme List */}
+              <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
+                {filteredProgrammes.length === 0 ? (
+                  <div className="text-center py-8">
+                    <BookOpen className="h-8 w-8 text-terminal-text-muted mx-auto mb-2" />
+                    <p className="font-mono text-sm text-terminal-text-muted">
+                      {programmes.length === 0
+                        ? "No published programmes available"
+                        : "No programmes match your search"}
+                    </p>
+                  </div>
+                ) : (
+                  filteredProgrammes.map((programme) => {
+                    const isEnrolled = enrolledProgrammeIds.has(programme.id);
+                    const isSelected = selectedProgrammes.includes(programme.id);
+
+                    return (
+                      <div
+                        key={programme.id}
+                        className={`flex items-start gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
+                          isEnrolled
+                            ? "border-terminal-green/40 bg-terminal-green/5 opacity-60"
+                            : isSelected
+                              ? "border-terminal-green bg-terminal-green/10"
+                              : "border-terminal-green/20 bg-terminal-darker/50 hover:border-terminal-green/40"
+                        }`}
+                        onClick={() =>
+                          !isEnrolled && toggleProgrammeSelection(programme.id)
+                        }
+                      >
+                        <Checkbox
+                          checked={isSelected || isEnrolled}
+                          disabled={isEnrolled}
+                          onCheckedChange={() =>
+                            !isEnrolled &&
+                            toggleProgrammeSelection(programme.id)
+                          }
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <BookOpen className="h-4 w-4 text-terminal-green" />
+                            <span className="font-mono text-sm font-semibold">
+                              {programme.title}
+                            </span>
+                            <Badge
+                              variant={
+                                programme.status === "PUBLISHED"
+                                  ? "default"
+                                  : "outline"
+                              }
+                              className="text-[10px]"
+                            >
+                              {programme.status}
+                            </Badge>
+                            {isEnrolled && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] text-terminal-green"
+                              >
+                                Enrolled
+                              </Badge>
+                            )}
+                          </div>
+                          {programme.description && (
+                            <p className="text-xs text-terminal-text-muted font-mono line-clamp-2">
+                              {programme.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 mt-1 text-xs text-terminal-text-muted font-mono">
+                            <span>{programme._count.modules} modules</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-4 border-t">
+                <Button
+                  onClick={handleSubmitAssignment}
+                  disabled={isAssigning || selectedProgrammes.length === 0}
+                  className="flex-1"
+                >
+                  {isAssigning ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Assigning...
+                    </>
+                  ) : (
+                    <>
+                      <GraduationCap className="h-4 w-4 mr-2" />
+                      Assign {selectedProgrammes.length} Programme
+                      {selectedProgrammes.length !== 1 ? "s" : ""}
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAssignDialog(false)}
+                  disabled={isAssigning}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>

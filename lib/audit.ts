@@ -265,6 +265,32 @@ export const auditActions = {
       metadata: { courseId },
     }),
 
+  programmeEnrollmentCreated: (
+    userId: string,
+    enrollmentId: string,
+    programmeTitle: string,
+  ) =>
+    createAuditLog({
+      userId,
+      action: "ENROLLMENT_CREATED",
+      entityType: "CourseEnrollment",
+      entityId: enrollmentId,
+      metadata: { programmeTitle },
+    }),
+
+  programmeEnrollmentDeleted: (
+    userId: string,
+    enrollmentId: string,
+    programmeTitle: string,
+  ) =>
+    createAuditLog({
+      userId,
+      action: "ENROLLMENT_DELETED",
+      entityType: "CourseEnrollment",
+      entityId: enrollmentId,
+      metadata: { programmeTitle },
+    }),
+
   // File actions
   fileUploaded: (
     userId: string,
