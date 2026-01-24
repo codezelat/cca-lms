@@ -82,7 +82,7 @@ export function Navbar() {
               CCA_LMS
             </span>
             <span className="hidden sm:inline font-mono text-sm text-terminal-text-muted">
-              v1.0.0
+              v2.0.0
             </span>
           </Link>
 
