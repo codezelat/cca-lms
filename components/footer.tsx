@@ -14,11 +14,11 @@ export function Footer() {
             <div className="flex items-center gap-2">
               <Terminal className="h-6 w-6 text-terminal-green" />
               <span className="font-mono text-lg font-bold text-terminal-green">
-                CCA_LMS
+                Codezela_LMS
               </span>
             </div>
             <p className="text-sm font-mono text-terminal-text-muted">
-              Learning Management System by CodeZela
+              Codezela Career Accelerator - Learning Management System
             </p>
           </div>
 
@@ -80,11 +80,11 @@ export function Footer() {
         <div className="mt-8 pt-8 border-t border-terminal-green/20">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <p className="text-sm font-mono text-terminal-text-muted">
-              © {currentYear} CCA_LMS. All rights reserved.
+              © {currentYear} Codezela Career Accelerator. All rights reserved.
             </p>
-            <p className="text-xs font-mono text-terminal-text-muted">
-              <span className="text-terminal-green">$</span> Built with Next.js,
-              TypeScript & Prisma
+            <p className="text-sm font-mono text-terminal-text-muted">
+              Developed with <span className="text-red-500">❤️</span> by{" "}
+              <span className="text-terminal-green">Codezela Technologies</span>
             </p>
           </div>
         </div>

@@ -1,17 +1,16 @@
 import { Metadata } from "next";
 
-export const runtime = "nodejs";
-
 export const metadata: Metadata = {
-  title: "Dashboard",
-  description: "Codezela Career Accelerator - Your learning dashboard",
+  title: "Login",
+  description:
+    "Sign in to access Codezela Career Accelerator Learning Management System",
   robots: {
     index: false,
     follow: false,
   },
 };
 
-export default function DashboardLayout({
+export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;

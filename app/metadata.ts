@@ -1,11 +1,37 @@
 export const metadata = {
-  title: "CCA LMS - Terminal Edition",
-  description: "Modern Learning Management System with terminal aesthetics",
-  keywords: ["LMS", "Learning", "Education", "Terminal", "Next.js"],
-  authors: [{ name: "CCA Team" }],
-  viewport: "width=device-width, initial-scale=1",
+  title: {
+    default: "Codezela Career Accelerator - LMS",
+    template: "%s | Codezela Career Accelerator",
+  },
+  description:
+    "Codezela Career Accelerator Learning Management System - Empowering future tech leaders with comprehensive programming courses, career development, and hands-on learning experiences.",
+  keywords: [
+    "Codezela",
+    "Career Accelerator",
+    "LMS",
+    "Learning Management System",
+    "Programming Courses",
+    "Tech Education",
+    "Online Learning",
+    "Career Development",
+    "Skill Building",
+    "Tech Training",
+  ],
+  authors: [{ name: "Codezela" }],
+  creator: "Codezela",
+  publisher: "Codezela",
+  applicationName: "Codezela Career Accelerator LMS",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
+  robots: "noindex, nofollow",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f0f4f0" },
     { media: "(prefers-color-scheme: dark)", color: "#0a0f0a" },
   ],
+  openGraph: {
+    type: "website",
+    siteName: "Codezela Career Accelerator",
+    title: "Codezela Career Accelerator - LMS",
+    description:
+      "Empowering future tech leaders with comprehensive programming courses and career development.",
+  },
 };

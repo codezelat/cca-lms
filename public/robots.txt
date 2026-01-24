@@ -1,0 +1,19 @@
+User-agent: *
+Disallow: /
+
+# Block all search engines from indexing
+User-agent: Googlebot
+Disallow: /
+
+User-agent: Bingbot
+Disallow: /
+
+User-agent: Slurp
+Disallow: /
+
+User-agent: DuckDuckBot
+Disallow: /
+
+# Codezela Career Accelerator LMS
+# This is a private learning management system
+# Not intended for public search engine indexing

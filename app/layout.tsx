@@ -17,8 +17,36 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CCA LMS - Terminal Edition",
-  description: "Modern Learning Management System with a terminal aesthetic",
+  title: {
+    default: "Codezela Career Accelerator - LMS",
+    template: "%s | Codezela Career Accelerator",
+  },
+  description:
+    "Codezela Career Accelerator Learning Management System - Empowering future tech leaders with comprehensive programming courses, career development, and hands-on learning experiences.",
+  keywords: [
+    "Codezela",
+    "Career Accelerator",
+    "LMS",
+    "Learning Management System",
+    "Programming Courses",
+    "Tech Education",
+    "Online Learning",
+    "Career Development",
+  ],
+  authors: [{ name: "Codezela" }],
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+  },
 };
 
 export default function RootLayout({
