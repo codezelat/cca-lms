@@ -323,7 +323,7 @@ export default function UsersClient() {
   };
 
   const handleToggleStatus = async (user: User) => {
-    const newStatus = user.status === "ACTIVE" ? "DISABLED" : "ACTIVE";
+    const newStatus = user.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
 
     try {
       const response = await fetch(`/api/admin/users/${user.id}`, {
@@ -592,7 +592,7 @@ export default function UsersClient() {
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="disabled">Disabled</SelectItem>
+              <SelectItem value="suspended">Suspended</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -647,11 +647,15 @@ export default function UsersClient() {
                             </h3>
                             <Badge
                               variant={
-                                user.status === "ACTIVE" ? "default" : "outline"
+                                user.status === "ACTIVE"
+                                  ? "default"
+                                  : "destructive"
                               }
                               className="text-[10px]"
                             >
-                              {user.status}
+                              {user.status === "ACTIVE"
+                                ? "Active"
+                                : "Suspended"}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-4 text-xs font-mono text-terminal-text-muted">
@@ -714,12 +718,12 @@ export default function UsersClient() {
                               {user.status === "ACTIVE" ? (
                                 <>
                                   <PowerOff className="h-4 w-4 mr-2" />
-                                  Disable Account
+                                  Suspend Account
                                 </>
                               ) : (
                                 <>
                                   <Power className="h-4 w-4 mr-2" />
-                                  Enable Account
+                                  Activate Account
                                 </>
                               )}
                             </DropdownMenuItem>
@@ -1082,7 +1086,6 @@ export default function UsersClient() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ACTIVE">Active</SelectItem>
-                    <SelectItem value="DISABLED">Disabled</SelectItem>
                     <SelectItem value="SUSPENDED">Suspended</SelectItem>
                   </SelectContent>
                 </Select>
@@ -1144,10 +1147,17 @@ export default function UsersClient() {
                   <div className="flex gap-2">
                     <Badge
                       variant={
-                        viewingUser.status === "ACTIVE" ? "default" : "outline"
+                        viewingUser.status === "ACTIVE"
+                          ? "default"
+                          : "destructive"
+                      }
+                      className={
+                        viewingUser.status === "SUSPENDED"
+                          ? "bg-red-500/20 text-red-300 border-red-500/40"
+                          : ""
                       }
                     >
-                      {viewingUser.status}
+                      {viewingUser.status === "ACTIVE" ? "Active" : "Suspended"}
                     </Badge>
                     <Badge variant="outline">{viewingUser.role}</Badge>
                   </div>
