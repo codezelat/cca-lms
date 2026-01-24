@@ -17,6 +17,11 @@ import {
   Calendar,
   User,
   X,
+  UserPlus,
+  Trash2,
+  Mail,
+  CheckCircle2,
+  GraduationCap,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,6 +51,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Programme {
   id: string;
@@ -84,6 +90,29 @@ interface Lecturer {
   email: string;
 }
 
+interface Enrollment {
+  id: string;
+  status: string;
+  progress: number;
+  enrolledAt: string;
+  completedAt: string | null;
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+    role: string;
+    status: string;
+  };
+}
+
+interface AvailableUser {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string;
+  status: string;
+}
+
 export default function ProgrammesClient() {
   const router = useRouter();
   const [programmes, setProgrammes] = useState<Programme[]>([]);
@@ -113,6 +142,33 @@ export default function ProgrammesClient() {
     lecturerId: "",
     status: "",
   });
+
+  // Enrollments dialog
+  const [showEnrollmentsDialog, setShowEnrollmentsDialog] = useState(false);
+  const [enrollmentsProgramme, setEnrollmentsProgramme] =
+    useState<Programme | null>(null);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [isLoadingEnrollments, setIsLoadingEnrollments] = useState(false);
+  const [enrollmentRoleFilter, setEnrollmentRoleFilter] = useState<
+    "all" | "STUDENT" | "LECTURER"
+  >("all");
+  const [enrollmentSearch, setEnrollmentSearch] = useState("");
+
+  // Add users dialog
+  const [showAddUsersDialog, setShowAddUsersDialog] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [userSearch, setUserSearch] = useState("");
+  const [userRoleFilter, setUserRoleFilter] = useState<"STUDENT" | "LECTURER">(
+    "STUDENT",
+  );
+  const [isEnrolling, setIsEnrolling] = useState(false);
+  const [enrollError, setEnrollError] = useState("");
+
+  // Bulk remove
+  const [selectedToRemove, setSelectedToRemove] = useState<string[]>([]);
+  const [isRemovingBulk, setIsRemovingBulk] = useState(false);
 
   useEffect(() => {
     fetchProgrammes();
@@ -239,6 +295,208 @@ export default function ProgrammesClient() {
       alert(
         error instanceof Error ? error.message : "Failed to archive programme",
       );
+    }
+  };
+
+  const handleViewEnrollments = (programme: Programme) => {
+    setEnrollmentsProgramme(programme);
+    setEnrollmentRoleFilter("all");
+    setEnrollmentSearch("");
+    setSelectedToRemove([]);
+    setShowEnrollmentsDialog(true);
+    fetchEnrollments(programme.id);
+  };
+
+  const fetchEnrollments = async (programmeId: string, role?: string) => {
+    try {
+      setIsLoadingEnrollments(true);
+      const params = new URLSearchParams();
+      if (role && role !== "all") {
+        params.append("role", role);
+      }
+
+      const response = await fetch(
+        `/api/admin/programmes/${programmeId}/enrollments?${params}`,
+      );
+      if (!response.ok) throw new Error("Failed to fetch enrollments");
+
+      const data = await response.json();
+      setEnrollments(data.enrollments);
+    } catch (error) {
+      console.error("Error fetching enrollments:", error);
+    } finally {
+      setIsLoadingEnrollments(false);
+    }
+  };
+
+  const handleRemoveEnrollment = async (
+    programmeId: string,
+    userId: string,
+  ) => {
+    if (!confirm("Remove this user from the programme?")) return;
+
+    try {
+      const response = await fetch(
+        `/api/admin/programmes/${programmeId}/enrollments?userId=${userId}`,
+        { method: "DELETE" },
+      );
+
+      if (!response.ok) throw new Error("Failed to remove enrollment");
+
+      fetchEnrollments(programmeId);
+      fetchProgrammes();
+    } catch (error) {
+      console.error("Error removing enrollment:", error);
+      alert("Failed to remove user from programme");
+    }
+  };
+
+  const handleOpenAddUsers = () => {
+    setShowAddUsersDialog(true);
+    setSelectedUsers([]);
+    setUserSearch("");
+    setEnrollError("");
+    fetchAvailableUsers();
+  };
+
+  const fetchAvailableUsers = async () => {
+    try {
+      setIsLoadingUsers(true);
+      const response = await fetch(
+        `/api/admin/users?role=${userRoleFilter}&limit=100&status=ACTIVE`,
+      );
+      if (!response.ok) throw new Error("Failed to fetch users");
+
+      const data = await response.json();
+      setAvailableUsers(data.users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      setEnrollError("Failed to load users");
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  const handleEnrollUsers = async () => {
+    if (!enrollmentsProgramme) return;
+    if (selectedUsers.length === 0) {
+      setEnrollError("Please select at least one user");
+      return;
+    }
+
+    setIsEnrolling(true);
+    setEnrollError("");
+
+    try {
+      const response = await fetch(
+        `/api/admin/programmes/${enrollmentsProgramme.id}/enrollments`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userIds: selectedUsers }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to enroll users");
+      }
+
+      fetchEnrollments(enrollmentsProgramme.id);
+      fetchProgrammes();
+      setSelectedUsers([]);
+      setShowAddUsersDialog(false);
+
+      if (data.skipped > 0) {
+        alert(data.message);
+      }
+    } catch (err) {
+      setEnrollError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setIsEnrolling(false);
+    }
+  };
+
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUsers((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId],
+    );
+  };
+
+  const handleSelectAllUsers = () => {
+    const enrolledIds = new Set(enrollments.map((e) => e.user.id));
+    const filteredUsers = availableUsers
+      .filter(
+        (user) =>
+          !userSearch ||
+          user.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
+          user.email.toLowerCase().includes(userSearch.toLowerCase()),
+      )
+      .filter((user) => !enrolledIds.has(user.id))
+      .map((user) => user.id);
+    setSelectedUsers(filteredUsers);
+  };
+
+  const handleDeselectAllUsers = () => {
+    setSelectedUsers([]);
+  };
+
+  const toggleRemoveSelection = (userId: string) => {
+    setSelectedToRemove((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId],
+    );
+  };
+
+  const handleSelectAllToRemove = () => {
+    const filteredEnrollments = enrollments
+      .filter(
+        (e) =>
+          !enrollmentSearch ||
+          e.user.name?.toLowerCase().includes(enrollmentSearch.toLowerCase()) ||
+          e.user.email.toLowerCase().includes(enrollmentSearch.toLowerCase()),
+      )
+      .map((e) => e.user.id);
+    setSelectedToRemove(filteredEnrollments);
+  };
+
+  const handleDeselectAllToRemove = () => {
+    setSelectedToRemove([]);
+  };
+
+  const handleBulkRemove = async () => {
+    if (!enrollmentsProgramme || selectedToRemove.length === 0) return;
+
+    if (
+      !confirm(`Remove ${selectedToRemove.length} user(s) from this programme?`)
+    ) {
+      return;
+    }
+
+    setIsRemovingBulk(true);
+
+    try {
+      await Promise.all(
+        selectedToRemove.map((userId) =>
+          fetch(
+            `/api/admin/programmes/${enrollmentsProgramme.id}/enrollments?userId=${userId}`,
+            { method: "DELETE" },
+          ),
+        ),
+      );
+
+      fetchEnrollments(enrollmentsProgramme.id);
+      fetchProgrammes();
+      setSelectedToRemove([]);
+    } catch (error) {
+      console.error("Error removing enrollments:", error);
+      alert("Failed to remove some enrollments");
+    } finally {
+      setIsRemovingBulk(false);
     }
   };
 
@@ -433,6 +691,13 @@ export default function ProgrammesClient() {
                               <Eye className="h-4 w-4 mr-2" />
                               View Details
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleViewEnrollments(programme)}
+                            >
+                              <Users className="h-4 w-4 mr-2" />
+                              View Enrollments ({programme._count.enrollments})
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={() => handleEditProgramme(programme)}
                             >
@@ -745,6 +1010,475 @@ export default function ProgrammesClient() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Enrollments Dialog */}
+      <Dialog
+        open={showEnrollmentsDialog}
+        onOpenChange={setShowEnrollmentsDialog}
+      >
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Programme Enrollments</DialogTitle>
+            <DialogDescription>
+              {enrollmentsProgramme
+                ? `Manage users enrolled in "${enrollmentsProgramme.title}"`
+                : "View and manage programme enrollments"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+            {/* Filters */}
+            <div className="flex gap-2">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-terminal-text-muted" />
+                <Input
+                  type="text"
+                  placeholder="$ search by name or email..."
+                  value={enrollmentSearch}
+                  onChange={(e) => setEnrollmentSearch(e.target.value)}
+                  className="pl-10 font-mono"
+                />
+              </div>
+              <Select
+                value={enrollmentRoleFilter}
+                onValueChange={(value: "all" | "STUDENT" | "LECTURER") => {
+                  setEnrollmentRoleFilter(value);
+                  setSelectedToRemove([]);
+                  if (enrollmentsProgramme) {
+                    fetchEnrollments(
+                      enrollmentsProgramme.id,
+                      value === "all" ? undefined : value,
+                    );
+                  }
+                }}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Users</SelectItem>
+                  <SelectItem value="STUDENT">Students Only</SelectItem>
+                  <SelectItem value="LECTURER">Lecturers Only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Bulk Actions */}
+            {enrollments.length > 0 && (
+              <div className="flex items-center gap-2 p-3 rounded-lg border border-terminal-green/20 bg-terminal-darker/50">
+                <Checkbox
+                  checked={
+                    selectedToRemove.length > 0 &&
+                    selectedToRemove.length ===
+                      enrollments.filter(
+                        (e) =>
+                          !enrollmentSearch ||
+                          e.user.name
+                            ?.toLowerCase()
+                            .includes(enrollmentSearch.toLowerCase()) ||
+                          e.user.email
+                            .toLowerCase()
+                            .includes(enrollmentSearch.toLowerCase()),
+                      ).length
+                  }
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      handleSelectAllToRemove();
+                    } else {
+                      handleDeselectAllToRemove();
+                    }
+                  }}
+                />
+                <span className="font-mono text-sm text-terminal-text-muted flex-1">
+                  {selectedToRemove.length > 0
+                    ? `${selectedToRemove.length} selected`
+                    : "Select users to remove"}
+                </span>
+                {selectedToRemove.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    onClick={handleBulkRemove}
+                    disabled={isRemovingBulk}
+                    className="gap-2"
+                  >
+                    {isRemovingBulk ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Removing...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4" />
+                        Remove {selectedToRemove.length}
+                      </>
+                    )}
+                  </Button>
+                )}
+                <Button
+                  onClick={handleOpenAddUsers}
+                  size="sm"
+                  className="gap-2"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Add Users
+                </Button>
+              </div>
+            )}
+
+            {/* Enrollments List */}
+            {isLoadingEnrollments ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-terminal-green" />
+              </div>
+            ) : enrollments.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Users className="h-12 w-12 text-terminal-text-muted mb-4" />
+                <p className="font-mono text-terminal-text-muted mb-2">
+                  No enrollments found
+                </p>
+                <Button onClick={handleOpenAddUsers} variant="outline">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add Users to Programme
+                </Button>
+              </div>
+            ) : (
+              <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
+                {enrollments
+                  .filter(
+                    (e) =>
+                      !enrollmentSearch ||
+                      e.user.name
+                        ?.toLowerCase()
+                        .includes(enrollmentSearch.toLowerCase()) ||
+                      e.user.email
+                        .toLowerCase()
+                        .includes(enrollmentSearch.toLowerCase()),
+                  )
+                  .map((enrollment) => (
+                    <div
+                      key={enrollment.id}
+                      className="flex items-center justify-between p-4 rounded-lg border border-terminal-green/20 bg-terminal-darker/50 hover:bg-terminal-green/5 transition-colors"
+                    >
+                      <div className="flex items-center gap-4 flex-1">
+                        <Checkbox
+                          checked={selectedToRemove.includes(
+                            enrollment.user.id,
+                          )}
+                          onCheckedChange={() =>
+                            toggleRemoveSelection(enrollment.user.id)
+                          }
+                        />
+                        <div className="h-10 w-10 rounded-full border-2 border-terminal-green bg-terminal-green/10 flex items-center justify-center font-mono font-bold text-terminal-green text-sm">
+                          {enrollment.user.name?.[0]?.toUpperCase() || "?"}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-mono font-semibold text-sm text-terminal-text">
+                              {enrollment.user.name || "No Name"}
+                            </span>
+                            <Badge
+                              variant={
+                                enrollment.user.role === "STUDENT"
+                                  ? "default"
+                                  : "outline"
+                              }
+                              className="text-[10px]"
+                            >
+                              {enrollment.user.role}
+                            </Badge>
+                            <Badge
+                              variant={
+                                enrollment.user.status === "ACTIVE"
+                                  ? "default"
+                                  : "outline"
+                              }
+                              className="text-[10px]"
+                            >
+                              {enrollment.user.status}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs font-mono text-terminal-text-muted">
+                            <span className="flex items-center gap-1">
+                              <Mail className="h-3 w-3" />
+                              {enrollment.user.email}
+                            </span>
+                            <span>
+                              Enrolled {formatDate(enrollment.enrolledAt)}
+                            </span>
+                            {enrollment.user.role === "STUDENT" && (
+                              <span className="text-terminal-green">
+                                {Math.round(enrollment.progress)}% complete
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            {/* Summary */}
+            {enrollments.length > 0 && (
+              <div className="flex items-center justify-between pt-4 border-t font-mono text-sm">
+                <div className="flex gap-4">
+                  <span className="text-terminal-text-muted">
+                    Total:{" "}
+                    <span className="text-terminal-green font-bold">
+                      {enrollments.length}
+                    </span>
+                  </span>
+                  <span className="text-terminal-text-muted">
+                    Students:{" "}
+                    <span className="text-terminal-green font-bold">
+                      {
+                        enrollments.filter((e) => e.user.role === "STUDENT")
+                          .length
+                      }
+                    </span>
+                  </span>
+                  <span className="text-terminal-text-muted">
+                    Lecturers:{" "}
+                    <span className="text-terminal-green font-bold">
+                      {
+                        enrollments.filter((e) => e.user.role === "LECTURER")
+                          .length
+                      }
+                    </span>
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowEnrollmentsDialog(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Users Dialog */}
+      <Dialog open={showAddUsersDialog} onOpenChange={setShowAddUsersDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Add Users to Programme</DialogTitle>
+            <DialogDescription>
+              {enrollmentsProgramme
+                ? `Select users to enroll in "${enrollmentsProgramme.title}"`
+                : "Select users to enroll"}
+            </DialogDescription>
+          </DialogHeader>
+
+          {isLoadingUsers ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-terminal-green" />
+            </div>
+          ) : (
+            <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+              {enrollError && (
+                <div className="rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                  {enrollError}
+                </div>
+              )}
+
+              {/* Role Filter and Search */}
+              <div className="flex gap-2">
+                <div className="flex gap-2">
+                  <Button
+                    variant={
+                      userRoleFilter === "STUDENT" ? "default" : "outline"
+                    }
+                    size="sm"
+                    onClick={() => {
+                      setUserRoleFilter("STUDENT");
+                      setSelectedUsers([]);
+                    }}
+                  >
+                    <GraduationCap className="h-4 w-4 mr-2" />
+                    Students
+                  </Button>
+                  <Button
+                    variant={
+                      userRoleFilter === "LECTURER" ? "default" : "outline"
+                    }
+                    size="sm"
+                    onClick={() => {
+                      setUserRoleFilter("LECTURER");
+                      setSelectedUsers([]);
+                    }}
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Lecturers
+                  </Button>
+                </div>
+                <Input
+                  type="text"
+                  placeholder="$ search users..."
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  className="flex-1 font-mono"
+                />
+                <Button
+                  onClick={fetchAvailableUsers}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Loader2
+                    className={`h-4 w-4 mr-2 ${isLoadingUsers ? "animate-spin" : ""}`}
+                  />
+                  Load
+                </Button>
+              </div>
+
+              {/* Bulk Selection */}
+              {availableUsers.length > 0 && (
+                <div className="flex items-center gap-2 p-3 rounded-lg border border-terminal-green/20 bg-terminal-darker/50">
+                  <span className="font-mono text-sm text-terminal-text-muted flex-1">
+                    {selectedUsers.length > 0
+                      ? `${selectedUsers.length} selected`
+                      : "Select users to enroll"}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleSelectAllUsers}
+                    disabled={availableUsers.length === 0}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Select All Visible
+                  </Button>
+                  {selectedUsers.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleDeselectAllUsers}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Deselect All
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* Users List */}
+              <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
+                {availableUsers.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="h-8 w-8 text-terminal-text-muted mx-auto mb-2" />
+                    <p className="font-mono text-sm text-terminal-text-muted">
+                      Click "Load" to fetch available users
+                    </p>
+                  </div>
+                ) : (
+                  availableUsers
+                    .filter(
+                      (user) =>
+                        !userSearch ||
+                        user.name
+                          ?.toLowerCase()
+                          .includes(userSearch.toLowerCase()) ||
+                        user.email
+                          .toLowerCase()
+                          .includes(userSearch.toLowerCase()),
+                    )
+                    .map((user) => {
+                      const isSelected = selectedUsers.includes(user.id);
+                      const isAlreadyEnrolled = enrollments.some(
+                        (e) => e.user.id === user.id,
+                      );
+
+                      return (
+                        <div
+                          key={user.id}
+                          className={`flex items-start gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
+                            isAlreadyEnrolled
+                              ? "border-terminal-green/40 bg-terminal-green/5 opacity-60"
+                              : isSelected
+                                ? "border-terminal-green bg-terminal-green/10"
+                                : "border-terminal-green/20 bg-terminal-darker/50 hover:border-terminal-green/40"
+                          }`}
+                          onClick={() =>
+                            !isAlreadyEnrolled && toggleUserSelection(user.id)
+                          }
+                        >
+                          <Checkbox
+                            checked={isSelected || isAlreadyEnrolled}
+                            disabled={isAlreadyEnrolled}
+                            onCheckedChange={() =>
+                              !isAlreadyEnrolled && toggleUserSelection(user.id)
+                            }
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-mono text-sm font-semibold">
+                                {user.name || "No Name"}
+                              </span>
+                              <Badge
+                                variant={
+                                  user.role === "STUDENT"
+                                    ? "default"
+                                    : "outline"
+                                }
+                                className="text-[10px]"
+                              >
+                                {user.role}
+                              </Badge>
+                              {isAlreadyEnrolled && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] text-terminal-green"
+                                >
+                                  Already Enrolled
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-terminal-text-muted font-mono">
+                              {user.email}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-4 border-t">
+                <Button
+                  onClick={handleEnrollUsers}
+                  disabled={isEnrolling || selectedUsers.length === 0}
+                  className="flex-1"
+                >
+                  {isEnrolling ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Enrolling...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Enroll {selectedUsers.length} User
+                      {selectedUsers.length !== 1 ? "s" : ""}
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAddUsersDialog(false)}
+                  disabled={isEnrolling}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

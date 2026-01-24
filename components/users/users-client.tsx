@@ -142,7 +142,7 @@ export default function UsersClient() {
   const [isLoadingProgrammes, setIsLoadingProgrammes] = useState(false);
   const [selectedProgrammes, setSelectedProgrammes] = useState<string[]>([]);
   const [programmeSearch, setProgrammeSearch] = useState("");
-  
+
   // View enrollments
   const [userEnrollments, setUserEnrollments] = useState<Enrollment[]>([]);
   const [isLoadingEnrollments, setIsLoadingEnrollments] = useState(false);
@@ -355,7 +355,9 @@ export default function UsersClient() {
   const fetchProgrammes = async () => {
     try {
       setIsLoadingProgrammes(true);
-      const response = await fetch("/api/admin/programmes?limit=100&status=PUBLISHED");
+      const response = await fetch(
+        "/api/admin/programmes?limit=100&status=PUBLISHED",
+      );
       if (!response.ok) throw new Error("Failed to fetch programmes");
 
       const data = await response.json();
@@ -394,11 +396,14 @@ export default function UsersClient() {
     setAssignError("");
 
     try {
-      const response = await fetch(`/api/admin/users/${assigningUser.id}/enrollments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseIds: selectedProgrammes }),
-      });
+      const response = await fetch(
+        `/api/admin/users/${assigningUser.id}/enrollments`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ courseIds: selectedProgrammes }),
+        },
+      );
 
       const data = await response.json();
 
@@ -410,7 +415,7 @@ export default function UsersClient() {
       fetchUsers();
       fetchUserEnrollments(assigningUser.id);
       setSelectedProgrammes([]);
-      
+
       // Show success message in the UI
       if (data.skipped > 0) {
         setAssignError(`✓ ${data.message}`);
@@ -1154,8 +1159,8 @@ export default function UsersClient() {
               {userEnrollments.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold">
-                    {viewingUser.role === "LECTURER" 
-                      ? "Assigned Programmes" 
+                    {viewingUser.role === "LECTURER"
+                      ? "Assigned Programmes"
                       : "Enrolled Programmes"}
                   </Label>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -1341,7 +1346,9 @@ export default function UsersClient() {
                 ) : (
                   filteredProgrammes.map((programme) => {
                     const isEnrolled = enrolledProgrammeIds.has(programme.id);
-                    const isSelected = selectedProgrammes.includes(programme.id);
+                    const isSelected = selectedProgrammes.includes(
+                      programme.id,
+                    );
 
                     return (
                       <div
