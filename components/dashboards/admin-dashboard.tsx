@@ -244,12 +244,6 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
       description: "Register new lecturer",
     },
     {
-      label: "View Reports",
-      icon: BarChart3,
-      href: "/reports",
-      description: "Analytics and insights",
-    },
-    {
       label: "Audit Logs",
       icon: Shield,
       href: "/activity-logs",
