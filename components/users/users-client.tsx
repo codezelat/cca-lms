@@ -1145,9 +1145,7 @@ export default function UsersClient() {
                   <div className="flex gap-2">
                     <Badge
                       variant={
-                        viewingUser.status === "ACTIVE"
-                          ? "default"
-                          : "destructive"
+                        viewingUser.status === "ACTIVE" ? "default" : "danger"
                       }
                       className={
                         viewingUser.status === "SUSPENDED"
