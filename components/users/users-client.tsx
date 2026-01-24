@@ -647,9 +647,7 @@ export default function UsersClient() {
                             </h3>
                             <Badge
                               variant={
-                                user.status === "ACTIVE"
-                                  ? "default"
-                                  : "destructive"
+                                user.status === "ACTIVE" ? "default" : "danger"
                               }
                               className="text-[10px]"
                             >
