@@ -6,11 +6,8 @@ import {
   BookOpen,
   CheckCircle2,
   Clock,
-  Search,
-  Filter,
   Loader2,
   Play,
-  Lock,
 } from "lucide-react";
 import {
   Card,
@@ -21,15 +18,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface Programme {
   id: string;
@@ -53,23 +42,16 @@ export default function MyProgrammesPage() {
   const router = useRouter();
   const [programmes, setProgrammes] = useState<Programme[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("enrolled");
-  const [enrollingId, setEnrollingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProgrammes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, filter]);
+  }, []);
 
   const fetchProgrammes = async () => {
     try {
       setIsLoading(true);
-      const params = new URLSearchParams();
-      if (search) params.set("search", search);
-      if (filter) params.set("filter", filter);
-
-      const response = await fetch(`/api/student/programmes?${params}`);
+      // Only fetch enrolled programmes
+      const response = await fetch(`/api/student/programmes?filter=enrolled`);
       if (!response.ok) throw new Error("Failed to fetch programmes");
 
       const data = await response.json();
@@ -81,30 +63,7 @@ export default function MyProgrammesPage() {
     }
   };
 
-  const handleEnroll = async (programmeId: string) => {
-    try {
-      setEnrollingId(programmeId);
-      const response = await fetch(
-        `/api/student/programmes/${programmeId}/enroll`,
-        {
-          method: "POST",
-        },
-      );
 
-      if (!response.ok) throw new Error("Failed to enroll");
-
-      // Refresh programmes list
-      await fetchProgrammes();
-
-      // Navigate to the programme
-      router.push(`/learn/${programmeId}`);
-    } catch (error) {
-      console.error("Error enrolling:", error);
-      alert("Failed to enroll in programme");
-    } finally {
-      setEnrollingId(null);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-terminal-dark">
@@ -114,37 +73,9 @@ export default function MyProgrammesPage() {
             $ my-programmes
           </h1>
           <p className="font-mono text-sm text-terminal-text-muted">
-            Programmes you are enrolled in
+            Your assigned learning programmes
           </p>
         </div>
-
-        {/* Filters */}
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-terminal-text-muted" />
-                <Input
-                  placeholder="Search programmes..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <Select value={filter} onValueChange={setFilter}>
-                <SelectTrigger className="w-full sm:w-50">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filter" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Programmes</SelectItem>
-                  <SelectItem value="enrolled">My Programmes</SelectItem>
-                  <SelectItem value="available">Available</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Programmes Grid */}
         {isLoading ? (
@@ -156,8 +87,13 @@ export default function MyProgrammesPage() {
             <CardContent className="py-12">
               <div className="text-center">
                 <BookOpen className="h-12 w-12 text-terminal-text-muted mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">
+                  No Programmes Assigned
+                </h3>
                 <p className="font-mono text-terminal-text-muted">
-                  No programmes found
+                  You haven&apos;t been enrolled in any programmes yet.
+                  <br />
+                  Contact your administrator to get started.
                 </p>
               </div>
             </CardContent>
@@ -224,40 +160,16 @@ export default function MyProgrammesPage() {
                 </CardContent>
 
                 <CardFooter>
-                  {programme.isEnrolled ? (
-                    <Button
-                      className="w-full gap-2"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/learn/${programme.id}`);
-                      }}
-                    >
-                      <Play className="h-4 w-4" />
-                      Continue Learning
-                    </Button>
-                  ) : (
-                    <Button
-                      className="w-full gap-2"
-                      variant="outline"
-                      disabled={enrollingId === programme.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEnroll(programme.id);
-                      }}
-                    >
-                      {enrollingId === programme.id ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Enrolling...
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="h-4 w-4" />
-                          Enroll Now
-                        </>
-                      )}
-                    </Button>
-                  )}
+                  <Button
+                    className="w-full gap-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(`/learn/${programme.id}`);
+                    }}
+                  >
+                    <Play className="h-4 w-4" />
+                    Continue Learning
+                  </Button>
                 </CardFooter>
               </Card>
             ))}
