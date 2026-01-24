@@ -46,16 +46,18 @@ export async function POST(request: NextRequest) {
     // Hash new password
     const hashedPassword = await hashPassword(password);
 
-    // Update user password
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { password: hashedPassword },
-    });
-
-    // Delete used token
-    await prisma.verificationToken.delete({
-      where: { token },
-    });
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: user.id },
+        data: { password: hashedPassword },
+      }),
+      prisma.verificationToken.deleteMany({
+        where: { identifier: verificationToken.identifier },
+      }),
+      prisma.session.deleteMany({
+        where: { userId: user.id },
+      }),
+    ]);
 
     // Log the password change
     await createAuditLog({

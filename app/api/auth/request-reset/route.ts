@@ -2,18 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { nanoid } from "nanoid";
 import { createAuditLog } from "@/lib/audit";
+import { sendPasswordResetEmail } from "@/lib/resend";
 
 export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json();
+    const normalizedEmail =
+      typeof email === "string" ? email.trim().toLowerCase() : "";
 
-    if (!email) {
+    if (!normalizedEmail || !normalizedEmail.includes("@")) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
     // Find user
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     // Don't reveal if user exists or not (security best practice)
@@ -30,9 +33,13 @@ export async function POST(request: NextRequest) {
     expires.setHours(expires.getHours() + 1); // 1 hour expiry
 
     // Store token
+    await prisma.verificationToken.deleteMany({
+      where: { identifier: normalizedEmail },
+    });
+
     await prisma.verificationToken.create({
       data: {
-        identifier: email,
+        identifier: normalizedEmail,
         token,
         expires,
       },
@@ -41,18 +48,27 @@ export async function POST(request: NextRequest) {
     // Log the request
     await createAuditLog({
       userId: user.id,
-      action: "USER_LOGIN", // We'll add PASSWORD_RESET_REQUESTED to enum later
+      action: "USER_UPDATED", // TODO: add PASSWORD_RESET_REQUESTED to enum
       entityType: "User",
       entityId: user.id,
       metadata: { action: "password_reset_requested" },
-      ipAddress: request.headers.get("x-forwarded-for") || "unknown",
+      ipAddress:
+        request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        request.headers.get("x-real-ip") ||
+        "unknown",
       userAgent: request.headers.get("user-agent") || "unknown",
     });
 
-    // TODO: Send email with reset link
-    // For now, we'll just log it (in production, use Resend)
-    const resetLink = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}`;
-    console.log(`Password reset link for ${email}: ${resetLink}`);
+    const emailResult = await sendPasswordResetEmail(
+      normalizedEmail,
+      token,
+      user.name || user.email,
+      user.id,
+    );
+
+    if (!emailResult.success) {
+      console.warn("Failed to send password reset email:", emailResult.error);
+    }
 
     return NextResponse.json({
       message:
