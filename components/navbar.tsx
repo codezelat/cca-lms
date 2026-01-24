@@ -16,7 +16,7 @@ import {
   FolderOpen,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { ThemeToggle } from "./theme-toggle";
+import { ThemeSelector } from "./theme-selector";
 
 // Role-based navigation items
 const adminNavItems = [
@@ -126,7 +126,7 @@ export function Navbar() {
                 <span className="hidden sm:inline">Logout</span>
               </button>
             )}
-            <ThemeToggle />
+            <ThemeSelector />
           </div>
         </div>
       </div>
