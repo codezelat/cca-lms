@@ -68,23 +68,34 @@ interface ProgrammeData {
 export default function ProgrammeDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const router = useRouter();
+  const [courseId, setCourseId] = useState<string | null>(null);
   const [programme, setProgramme] = useState<ProgrammeData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
   const [enrolling, setEnrolling] = useState(false);
 
   useEffect(() => {
-    fetchProgramme();
+    params.then(({ id }) => {
+      setCourseId(id);
+    });
+  }, [params]);
+
+  useEffect(() => {
+    if (courseId) {
+      fetchProgramme();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id]);
+  }, [courseId]);
 
   const fetchProgramme = async () => {
+    if (!courseId) return;
+
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/student/programmes/${params.id}`);
+      const response = await fetch(`/api/student/programmes/${courseId}`);
       if (!response.ok) throw new Error("Failed to fetch programme");
 
       const data = await response.json();
@@ -102,10 +113,12 @@ export default function ProgrammeDetailPage({
   };
 
   const handleEnroll = async () => {
+    if (!courseId) return;
+
     try {
       setEnrolling(true);
       const response = await fetch(
-        `/api/student/programmes/${params.id}/enroll`,
+        `/api/student/programmes/${courseId}/enroll`,
         {
           method: "POST",
         },
@@ -135,7 +148,8 @@ export default function ProgrammeDetailPage({
   };
 
   const startLesson = (lessonId: string) => {
-    router.push(`/learn/${params.id}/lesson/${lessonId}`);
+    if (!courseId) return;
+    router.push(`/learn/${courseId}/lesson/${lessonId}`);
   };
 
   if (isLoading) {

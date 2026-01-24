@@ -50,23 +50,36 @@ interface LessonData {
 export default function LessonPage({
   params,
 }: {
-  params: { id: string; lessonId: string };
+  params: Promise<{ id: string; lessonId: string }>;
 }) {
   const router = useRouter();
+  const [courseId, setCourseId] = useState<string | null>(null);
+  const [lessonId, setLessonId] = useState<string | null>(null);
   const [lesson, setLesson] = useState<LessonData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
 
   useEffect(() => {
-    fetchLesson();
+    params.then(({ id, lessonId: lid }) => {
+      setCourseId(id);
+      setLessonId(lid);
+    });
+  }, [params]);
+
+  useEffect(() => {
+    if (courseId && lessonId) {
+      fetchLesson();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.lessonId]);
+  }, [courseId, lessonId]);
 
   const fetchLesson = async () => {
+    if (!courseId || !lessonId) return;
+
     try {
       setIsLoading(true);
       const response = await fetch(
-        `/api/student/programmes/${params.id}/lessons/${params.lessonId}`,
+        `/api/student/programmes/${courseId}/lessons/${lessonId}`,
       );
       if (!response.ok) throw new Error("Failed to fetch lesson");
 
@@ -80,12 +93,12 @@ export default function LessonPage({
   };
 
   const markComplete = async () => {
-    if (!lesson || lesson.completed) return;
+    if (!lesson || lesson.completed || !lessonId) return;
 
     try {
       setIsCompleting(true);
       const response = await fetch(
-        `/api/student/lessons/${params.lessonId}/progress`,
+        `/api/student/lessons/${lessonId}/progress`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -127,7 +140,11 @@ export default function LessonPage({
         <div className="mb-6">
           <Button
             variant="ghost"
-            onClick={() => router.push(`/learn/${params.id}`)}
+            onClick={() => {
+              if (courseId) {
+                router.push(`/learn/${courseId}`);
+              }
+            }}
             className="gap-2 mb-4"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -265,11 +282,13 @@ export default function LessonPage({
               {lesson.navigation.previous ? (
                 <Button
                   variant="outline"
-                  onClick={() =>
-                    router.push(
-                      `/learn/${params.id}/lesson/${lesson.navigation.previous!.id}`,
-                    )
-                  }
+                  onClick={() => {
+                    if (courseId) {
+                      router.push(
+                        `/learn/${courseId}/lesson/${lesson.navigation.previous!.id}`,
+                      );
+                    }
+                  }}
                   className="gap-2"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -281,11 +300,13 @@ export default function LessonPage({
 
               {lesson.navigation.next ? (
                 <Button
-                  onClick={() =>
-                    router.push(
-                      `/learn/${params.id}/lesson/${lesson.navigation.next!.id}`,
-                    )
-                  }
+                  onClick={() => {
+                    if (courseId) {
+                      router.push(
+                        `/learn/${courseId}/lesson/${lesson.navigation.next!.id}`,
+                      );
+                    }
+                  }}
                   className="gap-2"
                 >
                   Next: {lesson.navigation.next.title}
@@ -294,7 +315,11 @@ export default function LessonPage({
               ) : (
                 <Button
                   variant="outline"
-                  onClick={() => router.push(`/learn/${params.id}`)}
+                  onClick={() => {
+                    if (courseId) {
+                      router.push(`/learn/${courseId}`);
+                    }
+                  }}
                 >
                   Back to Programme
                 </Button>

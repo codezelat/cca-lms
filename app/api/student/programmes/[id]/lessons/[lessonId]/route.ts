@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getSignedUrl } from "@/lib/r2";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string; lessonId: string } },
+  { params }: { params: Promise<{ id: string; lessonId: string }> },
 ) {
   try {
     const session = await auth();
@@ -13,7 +14,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id: courseId, lessonId } = params;
+    const { id: courseId, lessonId } = await params;
 
     // Fetch lesson with module and course info
     const lesson = await prisma.lesson.findUnique({
@@ -71,6 +72,22 @@ export async function GET(
         ? lesson.module.lessons[currentIndex + 1]
         : null;
 
+    // Generate signed URLs for FILE type resources
+    const resources = await Promise.all(
+      lesson.resources.map(async (r) => {
+        let url = r.externalUrl || "";
+        if (r.type === "FILE" && r.fileKey) {
+          url = await getSignedUrl(r.fileKey, 3600); // 1 hour expiry
+        }
+        return {
+          id: r.id,
+          title: r.title,
+          url,
+          type: r.type,
+        };
+      }),
+    );
+
     return NextResponse.json({
       id: lesson.id,
       title: lesson.title,
@@ -79,12 +96,7 @@ export async function GET(
       duration: lesson.duration,
       completed: progress?.completed || false,
       watchedSeconds: progress?.watchedSeconds || 0,
-      resources: lesson.resources.map((r) => ({
-        id: r.id,
-        title: r.title,
-        url: r.fileKey || r.externalUrl || "",
-        type: r.type,
-      })),
+      resources,
       navigation: {
         previous: previous ? { id: previous.id, title: previous.title } : null,
         next: next ? { id: next.id, title: next.title } : null,

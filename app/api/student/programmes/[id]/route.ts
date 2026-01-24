@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getSignedUrl } from "@/lib/r2";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth();
@@ -13,7 +14,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const courseId = params.id;
+    const { id: courseId } = await params;
 
     // Fetch course with modules and lessons
     const course = await prisma.course.findUnique({
@@ -68,32 +69,45 @@ export async function GET(
     const totalLessons = allLessonIds.length;
     const completedLessons = lessonProgress.filter((p) => p.completed).length;
 
-    // Build response with progress
-    const modules = course.modules.map((module) => ({
-      id: module.id,
-      title: module.title,
-      description: module.description,
-      order: module.order,
-      lessons: module.lessons.map((lesson) => {
-        const progress = progressMap.get(lesson.id);
-        return {
-          id: lesson.id,
-          title: lesson.title,
-          description: lesson.description,
-          order: lesson.order,
-          duration: lesson.duration,
-          videoUrl: lesson.videoUrl,
-          completed: progress?.completed || false,
-          watchedSeconds: progress?.watchedSeconds || 0,
-          resources: lesson.resources.map((r) => ({
-            id: r.id,
-            title: r.title,
-            url: r.fileKey || r.externalUrl || "",
-            type: r.type,
-          })),
-        };
-      }),
-    }));
+    // Build response with progress - generate signed URLs for FILE resources
+    const modules = await Promise.all(
+      course.modules.map(async (module) => ({
+        id: module.id,
+        title: module.title,
+        description: module.description,
+        order: module.order,
+        lessons: await Promise.all(
+          module.lessons.map(async (lesson) => {
+            const progress = progressMap.get(lesson.id);
+            const resources = await Promise.all(
+              lesson.resources.map(async (r) => {
+                let url = r.externalUrl || "";
+                if (r.type === "FILE" && r.fileKey) {
+                  url = await getSignedUrl(r.fileKey, 3600); // 1 hour expiry
+                }
+                return {
+                  id: r.id,
+                  title: r.title,
+                  url,
+                  type: r.type,
+                };
+              }),
+            );
+            return {
+              id: lesson.id,
+              title: lesson.title,
+              description: lesson.description,
+              order: lesson.order,
+              duration: lesson.duration,
+              videoUrl: lesson.videoUrl,
+              completed: progress?.completed || false,
+              watchedSeconds: progress?.watchedSeconds || 0,
+              resources,
+            };
+          }),
+        ),
+      })),
+    );
 
     return NextResponse.json({
       id: course.id,
