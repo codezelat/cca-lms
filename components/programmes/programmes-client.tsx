@@ -71,11 +71,6 @@ interface Programme {
 }
 
 interface ProgrammeDetails extends Programme {
-  lecturer: {
-    id: string;
-    name: string | null;
-    email: string;
-  } | null;
   lecturers: Lecturer[]; // Array of assigned lecturers
   modules: Array<{
     id: string;
@@ -827,19 +822,40 @@ export default function ProgrammesClient() {
                 <div className="space-y-1">
                   <Label className="text-xs text-terminal-text-muted">
                     Lecturer
+                    {viewingProgramme.lecturers &&
+                    viewingProgramme.lecturers.length > 1
+                      ? "s"
+                      : ""}
                   </Label>
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-terminal-green" />
-                    <p className="font-mono text-sm">
-                      {viewingProgramme.lecturer?.name ||
-                        viewingProgramme.lecturer?.email ||
-                        "Not Assigned"}
-                    </p>
-                  </div>
-                  {viewingProgramme.lecturer && (
-                    <p className="font-mono text-xs text-terminal-text-muted pl-6">
-                      {viewingProgramme.lecturer.email}
-                    </p>
+                  {viewingProgramme.lecturers &&
+                  viewingProgramme.lecturers.length > 0 ? (
+                    <div className="space-y-2">
+                      {viewingProgramme.lecturers.map((lecturer) => (
+                        <div
+                          key={lecturer.id}
+                          className="flex items-center gap-2"
+                        >
+                          <User className="h-4 w-4 text-terminal-green" />
+                          <div>
+                            <p className="font-mono text-sm">
+                              {lecturer.name || lecturer.email}
+                            </p>
+                            {lecturer.name && (
+                              <p className="font-mono text-xs text-terminal-text-muted pl-6">
+                                {lecturer.email}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-terminal-green" />
+                      <p className="font-mono text-sm text-terminal-text-muted">
+                        Not Assigned
+                      </p>
+                    </div>
                   )}
                 </div>
                 <div className="space-y-1">
