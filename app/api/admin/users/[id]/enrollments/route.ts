@@ -143,9 +143,7 @@ export async function POST(
       const existingCourseIds = new Set(
         existingAssignments.map((a) => a.courseId),
       );
-      const newCourseIds = courseIds.filter(
-        (id) => !existingCourseIds.has(id),
-      );
+      const newCourseIds = courseIds.filter((id) => !existingCourseIds.has(id));
 
       // Create new lecturer assignments
       if (newCourseIds.length > 0) {
