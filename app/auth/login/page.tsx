@@ -33,6 +33,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const turnstileRef = useRef<HTMLDivElement>(null);
+  const turnstileWidgetIdRef = useRef<string | null>(null);
 
   // Turnstile callbacks
   const handleTurnstileSuccess = (token: string) => {
@@ -49,17 +50,18 @@ export default function LoginPage() {
 
   // Initialize Turnstile widget
   useEffect(() => {
-    let widgetId: string | null = null;
-
     const initTurnstile = () => {
       if ((window as any).turnstile && turnstileRef.current) {
-        widgetId = (window as any).turnstile.render(turnstileRef.current, {
-          sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
-          callback: handleTurnstileSuccess,
-          "error-callback": handleTurnstileError,
-          "expired-callback": handleTurnstileExpired,
-          theme: "dark",
-        });
+        turnstileWidgetIdRef.current = (window as any).turnstile.render(
+          turnstileRef.current,
+          {
+            sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+            callback: handleTurnstileSuccess,
+            "error-callback": handleTurnstileError,
+            "expired-callback": handleTurnstileExpired,
+            theme: "dark",
+          },
+        );
       }
     };
 
@@ -82,11 +84,19 @@ export default function LoginPage() {
     }
 
     return () => {
-      if (widgetId && (window as any).turnstile) {
-        (window as any).turnstile.remove(widgetId);
+      if (turnstileWidgetIdRef.current && (window as any).turnstile) {
+        (window as any).turnstile.remove(turnstileWidgetIdRef.current);
       }
     };
   }, []);
+
+  // Function to reset CAPTCHA widget
+  const resetCaptcha = () => {
+    if (turnstileWidgetIdRef.current && (window as any).turnstile) {
+      (window as any).turnstile.reset(turnstileWidgetIdRef.current);
+      setTurnstileToken(null);
+    }
+  };
 
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
@@ -124,6 +134,7 @@ export default function LoginPage() {
         const friendlyError =
           errorMessages[result.error] || "Invalid email or password";
         setError(friendlyError);
+        resetCaptcha(); // Reset CAPTCHA on error since token is consumed
         setIsLoading(false);
       } else if (result?.ok) {
         // Success - use window.location for full page reload to ensure session is loaded
@@ -131,11 +142,13 @@ export default function LoginPage() {
       } else {
         // Handle case where result is returned but no specific error (likely null from authorize)
         setError("Invalid email or password");
+        resetCaptcha(); // Reset CAPTCHA on error since token is consumed
         setIsLoading(false);
       }
     } catch (err) {
       console.error("Login error:", err);
       setError("An unexpected error occurred. Please try again.");
+      resetCaptcha(); // Reset CAPTCHA on error since token is consumed
       setIsLoading(false);
     }
   };

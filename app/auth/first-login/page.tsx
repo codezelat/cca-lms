@@ -30,6 +30,7 @@ export default function FirstLoginPage() {
   const [error, setError] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const turnstileRef = useRef<HTMLDivElement>(null);
+  const turnstileWidgetIdRef = useRef<string | null>(null);
 
   // Turnstile callbacks
   const handleTurnstileSuccess = (token: string) => {
@@ -46,17 +47,18 @@ export default function FirstLoginPage() {
 
   // Expose callbacks to window for Turnstile
   useEffect(() => {
-    let widgetId: string | null = null;
-
     const initTurnstile = () => {
       if ((window as any).turnstile && turnstileRef.current) {
-        widgetId = (window as any).turnstile.render(turnstileRef.current, {
-          sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
-          callback: handleTurnstileSuccess,
-          "error-callback": handleTurnstileError,
-          "expired-callback": handleTurnstileExpired,
-          theme: "dark",
-        });
+        turnstileWidgetIdRef.current = (window as any).turnstile.render(
+          turnstileRef.current,
+          {
+            sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+            callback: handleTurnstileSuccess,
+            "error-callback": handleTurnstileError,
+            "expired-callback": handleTurnstileExpired,
+            theme: "dark",
+          },
+        );
       }
     };
 
@@ -79,11 +81,19 @@ export default function FirstLoginPage() {
     }
 
     return () => {
-      if (widgetId && (window as any).turnstile) {
-        (window as any).turnstile.remove(widgetId);
+      if (turnstileWidgetIdRef.current && (window as any).turnstile) {
+        (window as any).turnstile.remove(turnstileWidgetIdRef.current);
       }
     };
   }, []);
+
+  // Function to reset CAPTCHA widget
+  const resetCaptcha = () => {
+    if (turnstileWidgetIdRef.current && (window as any).turnstile) {
+      (window as any).turnstile.reset(turnstileWidgetIdRef.current);
+      setTurnstileToken(null);
+    }
+  };
 
   const passwordRequirements = [
     { text: "At least 8 characters", met: newPassword.length >= 8 },
@@ -126,9 +136,11 @@ export default function FirstLoginPage() {
         router.push("/dashboard");
       } else {
         setError(data.error || "Failed to change password");
+        resetCaptcha(); // Reset CAPTCHA on error since token is consumed
       }
     } catch (err) {
       setError("An unexpected error occurred");
+      resetCaptcha(); // Reset CAPTCHA on error since token is consumed
     } finally {
       setIsLoading(false);
     }

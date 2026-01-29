@@ -47,6 +47,8 @@ export default function ResetPasswordPage() {
   );
   const resetTurnstileRef = useRef<HTMLDivElement>(null);
   const requestTurnstileRef = useRef<HTMLDivElement>(null);
+  const resetTurnstileWidgetIdRef = useRef<string | null>(null);
+  const requestTurnstileWidgetIdRef = useRef<string | null>(null);
 
   // Turnstile callbacks for reset password
   const handleResetTurnstileSuccess = (token: string) => {
@@ -76,14 +78,11 @@ export default function ResetPasswordPage() {
 
   // Expose callbacks to window for Turnstile
   useEffect(() => {
-    let resetWidgetId: string | null = null;
-    let requestWidgetId: string | null = null;
-
     const initTurnstile = () => {
       if ((window as any).turnstile) {
         // Initialize reset password widget
         if (resetTurnstileRef.current) {
-          resetWidgetId = (window as any).turnstile.render(
+          resetTurnstileWidgetIdRef.current = (window as any).turnstile.render(
             resetTurnstileRef.current,
             {
               sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
@@ -97,16 +96,15 @@ export default function ResetPasswordPage() {
 
         // Initialize request reset widget
         if (requestTurnstileRef.current) {
-          requestWidgetId = (window as any).turnstile.render(
-            requestTurnstileRef.current,
-            {
-              sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
-              callback: handleRequestTurnstileSuccess,
-              "error-callback": handleRequestTurnstileError,
-              "expired-callback": handleRequestTurnstileExpired,
-              theme: "dark",
-            },
-          );
+          requestTurnstileWidgetIdRef.current = (
+            window as any
+          ).turnstile.render(requestTurnstileRef.current, {
+            sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+            callback: handleRequestTurnstileSuccess,
+            "error-callback": handleRequestTurnstileError,
+            "expired-callback": handleRequestTurnstileExpired,
+            theme: "dark",
+          });
         }
       }
     };
@@ -130,14 +128,29 @@ export default function ResetPasswordPage() {
     }
 
     return () => {
-      if (resetWidgetId && (window as any).turnstile) {
-        (window as any).turnstile.remove(resetWidgetId);
+      if (resetTurnstileWidgetIdRef.current && (window as any).turnstile) {
+        (window as any).turnstile.remove(resetTurnstileWidgetIdRef.current);
       }
-      if (requestWidgetId && (window as any).turnstile) {
-        (window as any).turnstile.remove(requestWidgetId);
+      if (requestTurnstileWidgetIdRef.current && (window as any).turnstile) {
+        (window as any).turnstile.remove(requestTurnstileWidgetIdRef.current);
       }
     };
   }, []);
+
+  // Function to reset CAPTCHA widgets
+  const resetRequestCaptcha = () => {
+    if (requestTurnstileWidgetIdRef.current && (window as any).turnstile) {
+      (window as any).turnstile.reset(requestTurnstileWidgetIdRef.current);
+      setRequestTurnstileToken(null);
+    }
+  };
+
+  const resetResetCaptcha = () => {
+    if (resetTurnstileWidgetIdRef.current && (window as any).turnstile) {
+      (window as any).turnstile.reset(resetTurnstileWidgetIdRef.current);
+      setResetTurnstileToken(null);
+    }
+  };
 
   const handleRequestReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -171,11 +184,13 @@ export default function ResetPasswordPage() {
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
+      resetResetCaptcha(); // Reset CAPTCHA on validation error
       return;
     }
 
     if (password.length < 8) {
       setError("Password must be at least 8 characters long");
+      resetResetCaptcha(); // Reset CAPTCHA on validation error
       return;
     }
 
@@ -196,6 +211,7 @@ export default function ResetPasswordPage() {
 
       if (!response.ok) {
         setError(data.error || "Failed to reset password");
+        resetResetCaptcha(); // Reset CAPTCHA on error since token is consumed
         return;
       }
 
@@ -208,6 +224,7 @@ export default function ResetPasswordPage() {
     } catch (error) {
       console.error("Reset password error:", error);
       setError("Failed to reset password. Please try again.");
+      resetResetCaptcha(); // Reset CAPTCHA on error since token is consumed
     } finally {
       setIsLoading(false);
     }
@@ -403,7 +420,7 @@ export default function ResetPasswordPage() {
       const response = await fetch("/api/auth/request-reset", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, turnstileToken: requestTurnstileToken }),
       });
 
       if (response.ok) {

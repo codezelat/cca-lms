@@ -120,6 +120,7 @@ export default function UsersClient() {
     string | null
   >(null);
   const createTurnstileRef = useRef<HTMLDivElement>(null);
+  const createTurnstileWidgetIdRef = useRef<string | null>(null);
 
   // Turnstile callbacks for create form
   const handleCreateTurnstileSuccess = (token: string) => {
@@ -136,11 +137,9 @@ export default function UsersClient() {
 
   // Expose create callbacks to window for Turnstile
   useEffect(() => {
-    let widgetId: string | null = null;
-
     const initTurnstile = () => {
       if ((window as any).turnstile && createTurnstileRef.current) {
-        widgetId = (window as any).turnstile.render(
+        createTurnstileWidgetIdRef.current = (window as any).turnstile.render(
           createTurnstileRef.current,
           {
             sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
@@ -172,11 +171,19 @@ export default function UsersClient() {
     }
 
     return () => {
-      if (widgetId && (window as any).turnstile) {
-        (window as any).turnstile.remove(widgetId);
+      if (createTurnstileWidgetIdRef.current && (window as any).turnstile) {
+        (window as any).turnstile.remove(createTurnstileWidgetIdRef.current);
       }
     };
   }, []);
+
+  // Function to reset create CAPTCHA widget
+  const resetCreateCaptcha = () => {
+    if (createTurnstileWidgetIdRef.current && (window as any).turnstile) {
+      (window as any).turnstile.reset(createTurnstileWidgetIdRef.current);
+      setCreateTurnstileToken(null);
+    }
+  };
 
   // Edit
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -278,6 +285,7 @@ export default function UsersClient() {
       fetchUsers();
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "An error occurred");
+      resetCreateCaptcha(); // Reset CAPTCHA on error since token is consumed
       setIsCreating(false);
     }
   };
