@@ -68,14 +68,14 @@ export async function GET(request: Request) {
       prisma.user.count({ where }),
     ]);
 
-    // Combine counts for lecturers (they can have both CourseEnrollment and CourseLecturer)
+    // Map counts correctly: Students show CourseEnrollment, Lecturers show CourseLecturer
     const usersWithCorrectCount = users.map((user) => ({
       ...user,
       _count: {
         courses:
           user.role === "LECTURER"
-            ? user._count.courses + user._count.lecturerCourses
-            : user._count.courses,
+            ? user._count.lecturerCourses // Only lecturer assignments
+            : user._count.courses, // Student enrollments
       },
     }));
 
