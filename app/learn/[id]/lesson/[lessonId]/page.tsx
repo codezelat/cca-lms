@@ -396,7 +396,7 @@ export default function LessonPage({
             )}
           </div>
 
-          {lesson.type === "VIDEO" && lesson.duration && (
+          {lesson.type === "VIDEO" && lesson.duration && lesson.duration > 0 && (
             <div className="flex items-center gap-2 mt-3 text-sm font-mono text-terminal-text-muted">
               <Clock className="h-4 w-4" />
               {lesson.duration} minutes
@@ -404,8 +404,8 @@ export default function LessonPage({
           )}
         </div>
 
-        {/* Video Player - Only show for VIDEO type lessons */}
-        {lesson.type === "VIDEO" && lesson.videoUrl && (
+        {/* Video Player - Only show for VIDEO type lessons with valid video URLs */}
+        {lesson.type === "VIDEO" && lesson.videoUrl && lesson.videoUrl.trim() && (
           <Card className="mb-6">
             <CardContent className="p-0">
               <div className="aspect-video bg-terminal-darker rounded-lg overflow-hidden">
