@@ -42,6 +42,7 @@ interface LessonData {
   id: string;
   title: string;
   description: string | null;
+  type: "VIDEO" | "READING" | "QUIZ" | "ASSIGNMENT";
   videoUrl: string | null;
   duration: number | null;
   completed: boolean;
@@ -395,7 +396,7 @@ export default function LessonPage({
             )}
           </div>
 
-          {lesson.duration && (
+          {lesson.type === "VIDEO" && lesson.duration && (
             <div className="flex items-center gap-2 mt-3 text-sm font-mono text-terminal-text-muted">
               <Clock className="h-4 w-4" />
               {lesson.duration} minutes
@@ -403,8 +404,8 @@ export default function LessonPage({
           )}
         </div>
 
-        {/* Video Player - Smart renderer for YouTube, Vimeo, or direct video */}
-        {lesson.videoUrl && (
+        {/* Video Player - Only show for VIDEO type lessons */}
+        {lesson.type === "VIDEO" && lesson.videoUrl && (
           <Card className="mb-6">
             <CardContent className="p-0">
               <div className="aspect-video bg-terminal-darker rounded-lg overflow-hidden">

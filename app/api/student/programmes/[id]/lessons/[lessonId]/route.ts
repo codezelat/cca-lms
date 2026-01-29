@@ -99,6 +99,7 @@ export async function GET(
       id: lesson.id,
       title: lesson.title,
       description: lesson.description,
+      type: lesson.type,
       videoUrl: lesson.videoUrl,
       duration: lesson.duration,
       completed: progress?.completed || false,
