@@ -46,6 +46,60 @@ export default function ResetPasswordPage() {
     null,
   );
 
+  // Turnstile callbacks for reset password
+  const handleResetTurnstileSuccess = (token: string) => {
+    console.log("Reset password Turnstile success, token received");
+    setResetTurnstileToken(token);
+  };
+
+  const handleResetTurnstileError = () => {
+    console.log("Reset password Turnstile error");
+    setResetTurnstileToken(null);
+  };
+
+  const handleResetTurnstileExpired = () => {
+    console.log("Reset password Turnstile expired");
+    setResetTurnstileToken(null);
+  };
+
+  // Turnstile callbacks for request reset
+  const handleRequestTurnstileSuccess = (token: string) => {
+    console.log("Request reset Turnstile success, token received");
+    setRequestTurnstileToken(token);
+  };
+
+  const handleRequestTurnstileError = () => {
+    console.log("Request reset Turnstile error");
+    setRequestTurnstileToken(null);
+  };
+
+  const handleRequestTurnstileExpired = () => {
+    console.log("Request reset Turnstile expired");
+    setRequestTurnstileToken(null);
+  };
+
+  // Expose callbacks to window for Turnstile
+  useEffect(() => {
+    console.log("Setting up reset password Turnstile callbacks");
+    (window as any).handleResetTurnstileSuccess = handleResetTurnstileSuccess;
+    (window as any).handleResetTurnstileError = handleResetTurnstileError;
+    (window as any).handleResetTurnstileExpired = handleResetTurnstileExpired;
+    (window as any).handleRequestTurnstileSuccess =
+      handleRequestTurnstileSuccess;
+    (window as any).handleRequestTurnstileError = handleRequestTurnstileError;
+    (window as any).handleRequestTurnstileExpired =
+      handleRequestTurnstileExpired;
+
+    return () => {
+      delete (window as any).handleResetTurnstileSuccess;
+      delete (window as any).handleResetTurnstileError;
+      delete (window as any).handleResetTurnstileExpired;
+      delete (window as any).handleRequestTurnstileSuccess;
+      delete (window as any).handleRequestTurnstileError;
+      delete (window as any).handleRequestTurnstileExpired;
+    };
+  }, []);
+
   const handleRequestReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -267,11 +321,16 @@ export default function ResetPasswordPage() {
                   <div
                     className="cf-turnstile"
                     data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                    data-callback={(token: string) =>
-                      setResetTurnstileToken(token)
-                    }
+                    data-callback="handleResetTurnstileSuccess"
+                    data-error-callback="handleResetTurnstileError"
+                    data-expired-callback="handleResetTurnstileExpired"
                     data-theme="dark"
                   />
+                  {/* Debug info */}
+                  <div className="text-xs font-mono text-terminal-text-muted">
+                    CAPTCHA Status:{" "}
+                    {resetTurnstileToken ? "✅ Completed" : "⏳ Pending"}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -382,11 +441,16 @@ export default function ResetPasswordPage() {
                     <div
                       className="cf-turnstile"
                       data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                      data-callback={(token: string) =>
-                        setRequestTurnstileToken(token)
-                      }
+                      data-callback="handleRequestTurnstileSuccess"
+                      data-error-callback="handleRequestTurnstileError"
+                      data-expired-callback="handleRequestTurnstileExpired"
                       data-theme="dark"
                     />
+                    {/* Debug info */}
+                    <div className="text-xs font-mono text-terminal-text-muted">
+                      CAPTCHA Status:{" "}
+                      {requestTurnstileToken ? "✅ Completed" : "⏳ Pending"}
+                    </div>
                   </div>
 
                   <div className="space-y-2">

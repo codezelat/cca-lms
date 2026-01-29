@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Terminal,
   Lock,
@@ -32,6 +32,52 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+
+  // Turnstile callbacks
+  const handleTurnstileSuccess = (token: string) => {
+    console.log("Turnstile success, token received");
+    setTurnstileToken(token);
+  };
+
+  const handleTurnstileError = () => {
+    console.log("Turnstile error");
+    setTurnstileToken(null);
+  };
+
+  const handleTurnstileExpired = () => {
+    console.log("Turnstile expired");
+    setTurnstileToken(null);
+  };
+
+  // Expose callbacks to window for Turnstile
+  useEffect(() => {
+    console.log(
+      "Setting up Turnstile callbacks, site key:",
+      process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+    );
+    (window as any).handleTurnstileSuccess = handleTurnstileSuccess;
+    (window as any).handleTurnstileError = handleTurnstileError;
+    (window as any).handleTurnstileExpired = handleTurnstileExpired;
+
+    // Check if Turnstile is loaded
+    const checkTurnstile = () => {
+      if ((window as any).turnstile) {
+        console.log("Turnstile script loaded successfully");
+      } else {
+        console.log("Turnstile script not loaded yet");
+      }
+    };
+
+    checkTurnstile();
+    const timeout = setTimeout(checkTurnstile, 2000);
+
+    return () => {
+      delete (window as any).handleTurnstileSuccess;
+      delete (window as any).handleTurnstileError;
+      delete (window as any).handleTurnstileExpired;
+      clearTimeout(timeout);
+    };
+  }, []);
 
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
@@ -188,9 +234,16 @@ export default function LoginPage() {
                 <div
                   className="cf-turnstile"
                   data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                  data-callback={(token: string) => setTurnstileToken(token)}
+                  data-callback="handleTurnstileSuccess"
+                  data-error-callback="handleTurnstileError"
+                  data-expired-callback="handleTurnstileExpired"
                   data-theme="dark"
                 />
+                {/* Debug info */}
+                <div className="text-xs font-mono text-terminal-text-muted">
+                  CAPTCHA Status:{" "}
+                  {turnstileToken ? "✅ Completed" : "⏳ Pending"}
+                </div>
               </div>
 
               {/* Submit Button */}
@@ -198,6 +251,9 @@ export default function LoginPage() {
                 type="submit"
                 className="w-full gap-2"
                 disabled={isLoading || !turnstileToken}
+                onClick={() =>
+                  console.log("Button clicked, token:", turnstileToken)
+                }
               >
                 {isLoading ? (
                   <>

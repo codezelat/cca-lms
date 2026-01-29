@@ -120,6 +120,36 @@ export default function UsersClient() {
     string | null
   >(null);
 
+  // Turnstile callbacks for create form
+  const handleCreateTurnstileSuccess = (token: string) => {
+    console.log("Create Turnstile success, token received");
+    setCreateTurnstileToken(token);
+  };
+
+  const handleCreateTurnstileError = () => {
+    console.log("Create Turnstile error");
+    setCreateTurnstileToken(null);
+  };
+
+  const handleCreateTurnstileExpired = () => {
+    console.log("Create Turnstile expired");
+    setCreateTurnstileToken(null);
+  };
+
+  // Expose create callbacks to window for Turnstile
+  useEffect(() => {
+    console.log("Setting up create Turnstile callbacks");
+    (window as any).handleCreateTurnstileSuccess = handleCreateTurnstileSuccess;
+    (window as any).handleCreateTurnstileError = handleCreateTurnstileError;
+    (window as any).handleCreateTurnstileExpired = handleCreateTurnstileExpired;
+
+    return () => {
+      delete (window as any).handleCreateTurnstileSuccess;
+      delete (window as any).handleCreateTurnstileError;
+      delete (window as any).handleCreateTurnstileExpired;
+    };
+  }, []);
+
   // Edit
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -928,11 +958,16 @@ export default function UsersClient() {
                 <div
                   className="cf-turnstile"
                   data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                  data-callback={(token: string) =>
-                    setCreateTurnstileToken(token)
-                  }
+                  data-callback="handleCreateTurnstileSuccess"
+                  data-error-callback="handleCreateTurnstileError"
+                  data-expired-callback="handleCreateTurnstileExpired"
                   data-theme="dark"
                 />
+                {/* Debug info */}
+                <div className="text-xs font-mono text-terminal-text-muted">
+                  CAPTCHA Status:{" "}
+                  {createTurnstileToken ? "✅ Completed" : "⏳ Pending"}
+                </div>
               </div>
 
               <div className="flex gap-2 pt-2">

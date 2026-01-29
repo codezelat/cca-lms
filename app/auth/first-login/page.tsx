@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Terminal,
@@ -29,6 +29,36 @@ export default function FirstLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+
+  // Turnstile callbacks
+  const handleTurnstileSuccess = (token: string) => {
+    console.log("First login Turnstile success, token received");
+    setTurnstileToken(token);
+  };
+
+  const handleTurnstileError = () => {
+    console.log("First login Turnstile error");
+    setTurnstileToken(null);
+  };
+
+  const handleTurnstileExpired = () => {
+    console.log("First login Turnstile expired");
+    setTurnstileToken(null);
+  };
+
+  // Expose callbacks to window for Turnstile
+  useEffect(() => {
+    console.log("Setting up first login Turnstile callbacks");
+    (window as any).handleFirstLoginTurnstileSuccess = handleTurnstileSuccess;
+    (window as any).handleFirstLoginTurnstileError = handleTurnstileError;
+    (window as any).handleFirstLoginTurnstileExpired = handleTurnstileExpired;
+
+    return () => {
+      delete (window as any).handleFirstLoginTurnstileSuccess;
+      delete (window as any).handleFirstLoginTurnstileError;
+      delete (window as any).handleFirstLoginTurnstileExpired;
+    };
+  }, []);
 
   const passwordRequirements = [
     { text: "At least 8 characters", met: newPassword.length >= 8 },
@@ -206,9 +236,16 @@ export default function FirstLoginPage() {
                 <div
                   className="cf-turnstile"
                   data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                  data-callback={(token: string) => setTurnstileToken(token)}
+                  data-callback="handleFirstLoginTurnstileSuccess"
+                  data-error-callback="handleFirstLoginTurnstileError"
+                  data-expired-callback="handleFirstLoginTurnstileExpired"
                   data-theme="dark"
                 />
+                {/* Debug info */}
+                <div className="text-xs font-mono text-terminal-text-muted">
+                  CAPTCHA Status:{" "}
+                  {turnstileToken ? "✅ Completed" : "⏳ Pending"}
+                </div>
               </div>
 
               {/* Submit */}
