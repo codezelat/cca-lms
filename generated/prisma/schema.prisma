@@ -121,16 +121,14 @@ model Course {
   description String?      @db.Text
   thumbnail   String? // R2 file key
   status      CourseStatus @default(DRAFT)
-  lecturerId  String? // Kept for backward compatibility, will be deprecated
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
   // Relations
   enrollments CourseEnrollment[]
   modules     Module[]
-  lecturers   CourseLecturer[] // New many-to-many relationship
+  lecturers   CourseLecturer[] // Many-to-many relationship with lecturers
 
-  @@index([lecturerId])
   @@index([status])
 }
 

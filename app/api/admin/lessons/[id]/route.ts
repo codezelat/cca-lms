@@ -25,7 +25,14 @@ export async function GET(
         module: {
           include: {
             course: {
-              select: { lecturerId: true },
+              select: {
+                id: true,
+                lecturers: {
+                  select: {
+                    lecturerId: true,
+                  },
+                },
+              },
             },
           },
         },
@@ -45,11 +52,13 @@ export async function GET(
     }
 
     // Lecturers can only access lessons for their own courses
-    if (
-      session.user.role === "LECTURER" &&
-      lesson.module.course.lecturerId !== session.user.id
-    ) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (session.user.role === "LECTURER") {
+      const isAssigned = lesson.module.course.lecturers.some(
+        (l) => l.lecturerId === session.user.id,
+      );
+      if (!isAssigned) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
     }
 
     return NextResponse.json({ lesson });
@@ -87,12 +96,20 @@ export async function PUT(
         where: { id },
         include: {
           module: {
-            include: { course: { select: { lecturerId: true } } },
+            include: {
+              course: {
+                select: {
+                  lecturers: {
+                    where: { lecturerId: session.user.id },
+                  },
+                },
+              },
+            },
           },
         },
       });
 
-      if (!lesson || lesson.module.course.lecturerId !== session.user.id) {
+      if (!lesson || lesson.module.course.lecturers.length === 0) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
     }

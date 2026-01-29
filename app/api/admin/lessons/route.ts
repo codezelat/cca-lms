@@ -29,10 +29,18 @@ export async function POST(request: NextRequest) {
     if (session.user.role === "LECTURER") {
       const module = await prisma.module.findUnique({
         where: { id: moduleId },
-        include: { course: { select: { lecturerId: true } } },
+        include: {
+          course: {
+            select: {
+              lecturers: {
+                where: { lecturerId: session.user.id },
+              },
+            },
+          },
+        },
       });
 
-      if (!module || module.course.lecturerId !== session.user.id) {
+      if (!module || module.course.lecturers.length === 0) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
     }

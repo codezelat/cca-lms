@@ -141,14 +141,12 @@ export default function ProgrammesClient() {
   const [editForm, setEditForm] = useState<{
     title: string;
     description: string;
-    lecturerId: string | null;
-    lecturerIds: string[]; // New: Array of lecturer IDs
+    lecturerIds: string[];
     status: string;
   }>({
     title: "",
     description: "",
-    lecturerId: "",
-    lecturerIds: [], // Initialize as empty array
+    lecturerIds: [],
     status: "",
   });
 
@@ -243,8 +241,7 @@ export default function ProgrammesClient() {
     setEditForm({
       title: programme.title,
       description: programme.description || "",
-      lecturerId: programme.lecturerId || "",
-      lecturerIds: programme.lecturers?.map((l) => l.id) || [], // Initialize with existing lecturers
+      lecturerIds: programme.lecturers?.map((l) => l.id) || [],
       status: programme.status,
     });
     setEditError("");
@@ -268,7 +265,7 @@ export default function ProgrammesClient() {
             title: editForm.title,
             description: editForm.description,
             status: editForm.status,
-            lecturerIds: editForm.lecturerIds, // Send the array of lecturer IDs
+            lecturerIds: editForm.lecturerIds,
           }),
         },
       );

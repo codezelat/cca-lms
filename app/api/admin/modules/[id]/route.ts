@@ -23,7 +23,11 @@ export async function GET(
       where: { id },
       include: {
         course: {
-          select: { lecturerId: true },
+          select: {
+            lecturers: {
+              select: { lecturerId: true },
+            },
+          },
         },
         lessons: {
           orderBy: { order: "asc" },
@@ -48,11 +52,13 @@ export async function GET(
     }
 
     // Lecturers can only access modules for their own courses
-    if (
-      session.user.role === "LECTURER" &&
-      module.course.lecturerId !== session.user.id
-    ) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (session.user.role === "LECTURER") {
+      const isAssigned = module.course.lecturers.some(
+        (l) => l.lecturerId === session.user.id,
+      );
+      if (!isAssigned) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
     }
 
     return NextResponse.json({ module });
@@ -88,10 +94,18 @@ export async function PUT(
     if (session.user.role === "LECTURER") {
       const module = await prisma.module.findUnique({
         where: { id },
-        include: { course: { select: { lecturerId: true } } },
+        include: {
+          course: {
+            select: {
+              lecturers: {
+                where: { lecturerId: session.user.id },
+              },
+            },
+          },
+        },
       });
 
-      if (!module || module.course.lecturerId !== session.user.id) {
+      if (!module || module.course.lecturers.length === 0) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
     }

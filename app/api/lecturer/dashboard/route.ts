@@ -12,21 +12,14 @@ export async function GET() {
 
     const lecturerId = session.user.id;
 
-    // Get lecturer's courses from both old and new relationships
+    // Get lecturer's courses from CourseLecturer table
     const courses = await prisma.course.findMany({
       where: {
-        OR: [
-          {
-            lecturers: {
-              some: {
-                lecturerId,
-              },
-            },
+        lecturers: {
+          some: {
+            lecturerId,
           },
-          {
-            lecturerId, // Backward compatibility
-          },
-        ],
+        },
       },
       include: {
         _count: {
@@ -48,18 +41,11 @@ export async function GET() {
     const totalStudents = await prisma.courseEnrollment.count({
       where: {
         course: {
-          OR: [
-            {
-              lecturers: {
-                some: {
-                  lecturerId,
-                },
-              },
+          lecturers: {
+            some: {
+              lecturerId,
             },
-            {
-              lecturerId, // Backward compatibility
-            },
-          ],
+          },
         },
         status: {
           in: ["ACTIVE", "COMPLETED"],
@@ -74,18 +60,11 @@ export async function GET() {
     const totalModules = await prisma.module.count({
       where: {
         course: {
-          OR: [
-            {
-              lecturers: {
-                some: {
-                  lecturerId,
-                },
-              },
+          lecturers: {
+            some: {
+              lecturerId,
             },
-            {
-              lecturerId, // Backward compatibility
-            },
-          ],
+          },
         },
       },
     });
@@ -94,18 +73,11 @@ export async function GET() {
     const recentEnrollments = await prisma.courseEnrollment.findMany({
       where: {
         course: {
-          OR: [
-            {
-              lecturers: {
-                some: {
-                  lecturerId,
-                },
-              },
+          lecturers: {
+            some: {
+              lecturerId,
             },
-            {
-              lecturerId, // Backward compatibility
-            },
-          ],
+          },
         },
         user: {
           role: "STUDENT",

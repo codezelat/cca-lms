@@ -22,10 +22,15 @@ export default async function ProgrammeDetailPage({
   if (session.user.role === "LECTURER") {
     const course = await prisma.course.findUnique({
       where: { id },
-      select: { lecturerId: true },
+      select: {
+        lecturers: {
+          where: { lecturerId: session.user.id },
+          select: { lecturerId: true },
+        },
+      },
     });
 
-    if (!course || course.lecturerId !== session.user.id) {
+    if (!course || course.lecturers.length === 0) {
       redirect("/programmes");
     }
   } else if (session.user.role !== "ADMIN") {

@@ -105,18 +105,11 @@ export async function GET() {
       const whereClause =
         user.role === "LECTURER"
           ? {
-              OR: [
-                {
-                  lecturers: {
-                    some: {
-                      lecturerId: user.id,
-                    },
-                  },
+              lecturers: {
+                some: {
+                  lecturerId: user.id,
                 },
-                {
-                  lecturerId: user.id, // Backward compatibility
-                },
-              ],
+              },
             }
           : {};
 
@@ -152,18 +145,11 @@ export async function GET() {
                 courses: {
                   some: {
                     course: {
-                      OR: [
-                        {
-                          lecturers: {
-                            some: {
-                              lecturerId: user.id,
-                            },
-                          },
+                      lecturers: {
+                        some: {
+                          lecturerId: user.id,
                         },
-                        {
-                          lecturerId: user.id, // Backward compatibility
-                        },
-                      ],
+                      },
                     },
                   },
                 },

@@ -7947,7 +7947,6 @@ export namespace Prisma {
     description: string | null
     thumbnail: string | null
     status: $Enums.CourseStatus | null
-    lecturerId: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -7958,7 +7957,6 @@ export namespace Prisma {
     description: string | null
     thumbnail: string | null
     status: $Enums.CourseStatus | null
-    lecturerId: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -7969,7 +7967,6 @@ export namespace Prisma {
     description: number
     thumbnail: number
     status: number
-    lecturerId: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -7982,7 +7979,6 @@ export namespace Prisma {
     description?: true
     thumbnail?: true
     status?: true
-    lecturerId?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -7993,7 +7989,6 @@ export namespace Prisma {
     description?: true
     thumbnail?: true
     status?: true
-    lecturerId?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -8004,7 +7999,6 @@ export namespace Prisma {
     description?: true
     thumbnail?: true
     status?: true
-    lecturerId?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -8088,7 +8082,6 @@ export namespace Prisma {
     description: string | null
     thumbnail: string | null
     status: $Enums.CourseStatus
-    lecturerId: string | null
     createdAt: Date
     updatedAt: Date
     _count: CourseCountAggregateOutputType | null
@@ -8116,7 +8109,6 @@ export namespace Prisma {
     description?: boolean
     thumbnail?: boolean
     status?: boolean
-    lecturerId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     enrollments?: boolean | Course$enrollmentsArgs<ExtArgs>
@@ -8131,7 +8123,6 @@ export namespace Prisma {
     description?: boolean
     thumbnail?: boolean
     status?: boolean
-    lecturerId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["course"]>
@@ -8142,7 +8133,6 @@ export namespace Prisma {
     description?: boolean
     thumbnail?: boolean
     status?: boolean
-    lecturerId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["course"]>
@@ -8153,12 +8143,11 @@ export namespace Prisma {
     description?: boolean
     thumbnail?: boolean
     status?: boolean
-    lecturerId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type CourseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "title" | "description" | "thumbnail" | "status" | "lecturerId" | "createdAt" | "updatedAt", ExtArgs["result"]["course"]>
+  export type CourseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "title" | "description" | "thumbnail" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["course"]>
   export type CourseInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     enrollments?: boolean | Course$enrollmentsArgs<ExtArgs>
     modules?: boolean | Course$modulesArgs<ExtArgs>
@@ -8181,7 +8170,6 @@ export namespace Prisma {
       description: string | null
       thumbnail: string | null
       status: $Enums.CourseStatus
-      lecturerId: string | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["course"]>
@@ -8615,7 +8603,6 @@ export namespace Prisma {
     readonly description: FieldRef<"Course", 'String'>
     readonly thumbnail: FieldRef<"Course", 'String'>
     readonly status: FieldRef<"Course", 'CourseStatus'>
-    readonly lecturerId: FieldRef<"Course", 'String'>
     readonly createdAt: FieldRef<"Course", 'DateTime'>
     readonly updatedAt: FieldRef<"Course", 'DateTime'>
   }
@@ -28984,7 +28971,6 @@ export namespace Prisma {
     description: 'description',
     thumbnail: 'thumbnail',
     status: 'status',
-    lecturerId: 'lecturerId',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -29864,7 +29850,6 @@ export namespace Prisma {
     description?: StringNullableFilter<"Course"> | string | null
     thumbnail?: StringNullableFilter<"Course"> | string | null
     status?: EnumCourseStatusFilter<"Course"> | $Enums.CourseStatus
-    lecturerId?: StringNullableFilter<"Course"> | string | null
     createdAt?: DateTimeFilter<"Course"> | Date | string
     updatedAt?: DateTimeFilter<"Course"> | Date | string
     enrollments?: CourseEnrollmentListRelationFilter
@@ -29878,7 +29863,6 @@ export namespace Prisma {
     description?: SortOrderInput | SortOrder
     thumbnail?: SortOrderInput | SortOrder
     status?: SortOrder
-    lecturerId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     enrollments?: CourseEnrollmentOrderByRelationAggregateInput
@@ -29895,7 +29879,6 @@ export namespace Prisma {
     description?: StringNullableFilter<"Course"> | string | null
     thumbnail?: StringNullableFilter<"Course"> | string | null
     status?: EnumCourseStatusFilter<"Course"> | $Enums.CourseStatus
-    lecturerId?: StringNullableFilter<"Course"> | string | null
     createdAt?: DateTimeFilter<"Course"> | Date | string
     updatedAt?: DateTimeFilter<"Course"> | Date | string
     enrollments?: CourseEnrollmentListRelationFilter
@@ -29909,7 +29892,6 @@ export namespace Prisma {
     description?: SortOrderInput | SortOrder
     thumbnail?: SortOrderInput | SortOrder
     status?: SortOrder
-    lecturerId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: CourseCountOrderByAggregateInput
@@ -29926,7 +29908,6 @@ export namespace Prisma {
     description?: StringNullableWithAggregatesFilter<"Course"> | string | null
     thumbnail?: StringNullableWithAggregatesFilter<"Course"> | string | null
     status?: EnumCourseStatusWithAggregatesFilter<"Course"> | $Enums.CourseStatus
-    lecturerId?: StringNullableWithAggregatesFilter<"Course"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Course"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Course"> | Date | string
   }
@@ -31640,7 +31621,6 @@ export namespace Prisma {
     description?: string | null
     thumbnail?: string | null
     status?: $Enums.CourseStatus
-    lecturerId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     enrollments?: CourseEnrollmentCreateNestedManyWithoutCourseInput
@@ -31654,7 +31634,6 @@ export namespace Prisma {
     description?: string | null
     thumbnail?: string | null
     status?: $Enums.CourseStatus
-    lecturerId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     enrollments?: CourseEnrollmentUncheckedCreateNestedManyWithoutCourseInput
@@ -31668,7 +31647,6 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     thumbnail?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumCourseStatusFieldUpdateOperationsInput | $Enums.CourseStatus
-    lecturerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     enrollments?: CourseEnrollmentUpdateManyWithoutCourseNestedInput
@@ -31682,7 +31660,6 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     thumbnail?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumCourseStatusFieldUpdateOperationsInput | $Enums.CourseStatus
-    lecturerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     enrollments?: CourseEnrollmentUncheckedUpdateManyWithoutCourseNestedInput
@@ -31696,7 +31673,6 @@ export namespace Prisma {
     description?: string | null
     thumbnail?: string | null
     status?: $Enums.CourseStatus
-    lecturerId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -31707,7 +31683,6 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     thumbnail?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumCourseStatusFieldUpdateOperationsInput | $Enums.CourseStatus
-    lecturerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -31718,7 +31693,6 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     thumbnail?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumCourseStatusFieldUpdateOperationsInput | $Enums.CourseStatus
-    lecturerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -33636,7 +33610,6 @@ export namespace Prisma {
     description?: SortOrder
     thumbnail?: SortOrder
     status?: SortOrder
-    lecturerId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -33647,7 +33620,6 @@ export namespace Prisma {
     description?: SortOrder
     thumbnail?: SortOrder
     status?: SortOrder
-    lecturerId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -33658,7 +33630,6 @@ export namespace Prisma {
     description?: SortOrder
     thumbnail?: SortOrder
     status?: SortOrder
-    lecturerId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -37661,7 +37632,6 @@ export namespace Prisma {
     description?: string | null
     thumbnail?: string | null
     status?: $Enums.CourseStatus
-    lecturerId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     enrollments?: CourseEnrollmentCreateNestedManyWithoutCourseInput
@@ -37674,7 +37644,6 @@ export namespace Prisma {
     description?: string | null
     thumbnail?: string | null
     status?: $Enums.CourseStatus
-    lecturerId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     enrollments?: CourseEnrollmentUncheckedCreateNestedManyWithoutCourseInput
@@ -37752,7 +37721,6 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     thumbnail?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumCourseStatusFieldUpdateOperationsInput | $Enums.CourseStatus
-    lecturerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     enrollments?: CourseEnrollmentUpdateManyWithoutCourseNestedInput
@@ -37765,7 +37733,6 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     thumbnail?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumCourseStatusFieldUpdateOperationsInput | $Enums.CourseStatus
-    lecturerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     enrollments?: CourseEnrollmentUncheckedUpdateManyWithoutCourseNestedInput
@@ -37833,7 +37800,6 @@ export namespace Prisma {
     description?: string | null
     thumbnail?: string | null
     status?: $Enums.CourseStatus
-    lecturerId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     enrollments?: CourseEnrollmentCreateNestedManyWithoutCourseInput
@@ -37846,7 +37812,6 @@ export namespace Prisma {
     description?: string | null
     thumbnail?: string | null
     status?: $Enums.CourseStatus
-    lecturerId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     enrollments?: CourseEnrollmentUncheckedCreateNestedManyWithoutCourseInput
@@ -37919,7 +37884,6 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     thumbnail?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumCourseStatusFieldUpdateOperationsInput | $Enums.CourseStatus
-    lecturerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     enrollments?: CourseEnrollmentUpdateManyWithoutCourseNestedInput
@@ -37932,7 +37896,6 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     thumbnail?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumCourseStatusFieldUpdateOperationsInput | $Enums.CourseStatus
-    lecturerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     enrollments?: CourseEnrollmentUncheckedUpdateManyWithoutCourseNestedInput
@@ -39376,7 +39339,6 @@ export namespace Prisma {
     description?: string | null
     thumbnail?: string | null
     status?: $Enums.CourseStatus
-    lecturerId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     modules?: ModuleCreateNestedManyWithoutCourseInput
@@ -39389,7 +39351,6 @@ export namespace Prisma {
     description?: string | null
     thumbnail?: string | null
     status?: $Enums.CourseStatus
-    lecturerId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     modules?: ModuleUncheckedCreateNestedManyWithoutCourseInput
@@ -39473,7 +39434,6 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     thumbnail?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumCourseStatusFieldUpdateOperationsInput | $Enums.CourseStatus
-    lecturerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     modules?: ModuleUpdateManyWithoutCourseNestedInput
@@ -39486,7 +39446,6 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     thumbnail?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumCourseStatusFieldUpdateOperationsInput | $Enums.CourseStatus
-    lecturerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     modules?: ModuleUncheckedUpdateManyWithoutCourseNestedInput

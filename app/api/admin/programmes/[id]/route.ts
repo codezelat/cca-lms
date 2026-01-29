@@ -72,9 +72,9 @@ export async function GET(
 
     // Lecturers can only access their own programmes
     if (session.user.role === "LECTURER") {
-      const isAssigned =
-        programme.lecturers.some((l) => l.lecturerId === session.user.id) ||
-        programme.lecturerId === session.user.id; // Check both new and old relationship
+      const isAssigned = programme.lecturers.some(
+        (l) => l.lecturerId === session.user.id,
+      );
 
       if (!isAssigned) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -114,8 +114,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { title, description, thumbnail, lecturerId, lecturerIds, status } =
-      body;
+    const { title, description, thumbnail, lecturerIds, status } = body;
 
     // Get existing programme for audit
     const existingProgramme = await prisma.course.findUnique({
@@ -158,7 +157,6 @@ export async function PUT(
           ...(title && { title }),
           ...(description !== undefined && { description }),
           ...(thumbnail !== undefined && { thumbnail }),
-          ...(lecturerId !== undefined && { lecturerId }), // Keep for backward compatibility
           ...(status && { status }),
         },
       });

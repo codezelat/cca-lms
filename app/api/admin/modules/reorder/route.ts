@@ -28,10 +28,18 @@ export async function POST(request: NextRequest) {
     if (session.user.role === "LECTURER" && modules.length > 0) {
       const firstModule = await prisma.module.findUnique({
         where: { id: modules[0].id },
-        include: { course: { select: { lecturerId: true } } },
+        include: {
+          course: {
+            select: {
+              lecturers: {
+                where: { lecturerId: session.user.id },
+              },
+            },
+          },
+        },
       });
 
-      if (!firstModule || firstModule.course.lecturerId !== session.user.id) {
+      if (!firstModule || firstModule.course.lecturers.length === 0) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
     }

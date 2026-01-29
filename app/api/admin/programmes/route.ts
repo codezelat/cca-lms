@@ -54,7 +54,6 @@ export async function GET(request: NextRequest) {
           description: true,
           thumbnail: true,
           status: true,
-          lecturerId: true,
           createdAt: true,
           updatedAt: true,
           lecturers: {
@@ -120,8 +119,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, thumbnail, lecturerId, lecturerIds, status } =
-      body;
+    const { title, description, thumbnail, lecturerIds, status } = body;
 
     // Validate required fields
     if (!title) {
@@ -153,7 +151,6 @@ export async function POST(request: NextRequest) {
           title,
           description: description || null,
           thumbnail: thumbnail || null,
-          lecturerId: lecturerId || null, // Backward compatibility
           status: status || "DRAFT",
         },
       });
