@@ -213,6 +213,13 @@ export async function PUT(
       });
     });
 
+    if (!programme) {
+      return NextResponse.json(
+        { error: "Programme not found after update" },
+        { status: 404 },
+      );
+    }
+
     // Audit log with before/after
     await auditActions.programmeUpdated(
       session.user.id,
