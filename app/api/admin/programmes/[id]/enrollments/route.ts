@@ -92,60 +92,114 @@ export async function POST(
       );
     }
 
-    // Get existing enrollments to avoid duplicates
-    const existingEnrollments = await prisma.courseEnrollment.findMany({
-      where: {
-        courseId,
-        userId: { in: userIds },
-      },
-      select: { userId: true },
+    // Get users to determine their roles
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, role: true, name: true, email: true },
     });
 
-    const existingUserIds = new Set(existingEnrollments.map((e) => e.userId));
-    const newUserIds = userIds.filter((id) => !existingUserIds.has(id));
+    const lecturerIds = users.filter((u) => u.role === "LECTURER").map((u) => u.id);
+    const studentIds = users.filter((u) => u.role === "STUDENT").map((u) => u.id);
 
-    // Create new enrollments
-    const enrollments = await prisma.$transaction(
-      newUserIds.map((userId) =>
-        prisma.courseEnrollment.create({
-          data: {
-            userId,
+    let lecturerAssignments = 0;
+    let studentEnrollments = 0;
+    let skipped = 0;
+
+    // Handle lecturers - create CourseLecturer entries
+    if (lecturerIds.length > 0) {
+      // Check existing lecturer assignments
+      const existingLecturers = await prisma.courseLecturer.findMany({
+        where: {
+          courseId,
+          lecturerId: { in: lecturerIds },
+        },
+        select: { lecturerId: true },
+      });
+
+      const existingLecturerIds = new Set(existingLecturers.map((e) => e.lecturerId));
+      const newLecturerIds = lecturerIds.filter((id) => !existingLecturerIds.has(id));
+
+      // Create new lecturer assignments
+      if (newLecturerIds.length > 0) {
+        await prisma.courseLecturer.createMany({
+          data: newLecturerIds.map((lecturerId) => ({
             courseId,
-            status: "ACTIVE",
-          },
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                role: true,
-                status: true,
-              },
-            },
-          },
-        }),
-      ),
-    );
+            lecturerId,
+            assignedBy: session.user.id,
+          })),
+        });
+        lecturerAssignments = newLecturerIds.length;
+      }
+      skipped += existingLecturerIds.size;
+    }
 
-    // Audit log for each enrollment
-    await Promise.all(
-      enrollments.map((enrollment) =>
-        auditActions.programmeEnrollmentCreated(
-          session.user.id,
-          enrollment.id,
-          course.title,
-        ),
-      ),
-    );
+    // Handle students - create CourseEnrollment entries
+    if (studentIds.length > 0) {
+      // Get existing enrollments to avoid duplicates
+      const existingEnrollments = await prisma.courseEnrollment.findMany({
+        where: {
+          courseId,
+          userId: { in: studentIds },
+        },
+        select: { userId: true },
+      });
+
+      const existingUserIds = new Set(existingEnrollments.map((e) => e.userId));
+      const newUserIds = studentIds.filter((id) => !existingUserIds.has(id));
+
+      // Create new enrollments
+      if (newUserIds.length > 0) {
+        const enrollments = await prisma.$transaction(
+          newUserIds.map((userId) =>
+            prisma.courseEnrollment.create({
+              data: {
+                userId,
+                courseId,
+                status: "ACTIVE",
+              },
+            }),
+          ),
+        );
+
+        // Audit log for each enrollment
+        await Promise.all(
+          enrollments.map((enrollment) =>
+            auditActions.programmeEnrollmentCreated(
+              session.user.id,
+              enrollment.id,
+              course.title,
+            ),
+          ),
+        );
+        studentEnrollments = newUserIds.length;
+      }
+      skipped += existingUserIds.size;
+    }
+
+    const totalAdded = lecturerAssignments + studentEnrollments;
+    let message = "";
+    
+    if (totalAdded > 0) {
+      const parts = [];
+      if (lecturerAssignments > 0) {
+        parts.push(`${lecturerAssignments} lecturer(s) assigned`);
+      }
+      if (studentEnrollments > 0) {
+        parts.push(`${studentEnrollments} student(s) enrolled`);
+      }
+      message = `Successfully ${parts.join(" and ")}`;
+      if (skipped > 0) {
+        message += ` (${skipped} already added)`;
+      }
+    } else {
+      message = "All selected users were already added";
+    }
 
     return NextResponse.json({
-      enrollments,
-      skipped: existingUserIds.size,
-      message:
-        newUserIds.length > 0
-          ? `Successfully enrolled ${newUserIds.length} user(s)${existingUserIds.size > 0 ? ` (${existingUserIds.size} already enrolled)` : ""}`
-          : "All selected users were already enrolled",
+      lecturerAssignments,
+      studentEnrollments,
+      skipped,
+      message,
     });
   } catch (error) {
     console.error("Error creating enrollments:", error);
