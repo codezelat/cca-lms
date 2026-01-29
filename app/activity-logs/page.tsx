@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Pagination } from "@/components/ui/pagination";
 import {
   Select,
   SelectContent,
@@ -506,53 +507,14 @@ export default function ActivityLogsPage() {
         {pagination && pagination.totalPages > 1 && (
           <Card className="mt-6">
             <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <Button
-                  variant="outline"
-                  onClick={() => setPage(page - 1)}
-                  disabled={!pagination.hasPrev}
-                  className="gap-2"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm text-terminal-text-muted">
-                    Page {pagination.page} of {pagination.totalPages}
-                  </span>
-                </div>
-
-                <Button
-                  variant="outline"
-                  onClick={() => setPage(page + 1)}
-                  disabled={!pagination.hasNext}
-                  className="gap-2"
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* Page Jump */}
-              <div className="mt-4 flex items-center justify-center gap-2">
-                <span className="font-mono text-sm text-terminal-text-muted">
-                  Go to page:
-                </span>
-                <Input
-                  type="number"
-                  min="1"
-                  max={pagination.totalPages}
-                  value={page}
-                  onChange={(e) => {
-                    const newPage = parseInt(e.target.value);
-                    if (newPage >= 1 && newPage <= pagination.totalPages) {
-                      setPage(newPage);
-                    }
-                  }}
-                  className="w-20 text-center"
-                />
-              </div>
+              <Pagination
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                totalCount={pagination.totalCount}
+                pageSize={pagination.limit}
+                onPageChange={setPage}
+                showPageJump={pagination.totalPages > 10}
+              />
             </CardContent>
           </Card>
         )}

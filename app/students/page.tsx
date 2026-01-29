@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
 
 interface Student {
   id: string;
@@ -280,34 +281,15 @@ export default function StudentsPage() {
 
             {/* Pagination */}
             {pagination && pagination.totalPages > 1 && (
-              <div className="flex items-center justify-between mt-8 pt-6 border-t border-terminal-green/20">
-                <div className="text-sm font-mono text-terminal-text-muted">
-                  Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
-                  {Math.min(
-                    pagination.page * pagination.limit,
-                    pagination.totalCount,
-                  )}{" "}
-                  of {pagination.totalCount} students
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(pagination.page - 1)}
-                    disabled={!pagination.hasPrev}
-                    className="px-3 py-1 text-sm font-mono border border-terminal-green/50 rounded hover:bg-terminal-green/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </button>
-                  <span className="px-3 py-1 text-sm font-mono text-terminal-green">
-                    Page {pagination.page} of {pagination.totalPages}
-                  </span>
-                  <button
-                    onClick={() => setCurrentPage(pagination.page + 1)}
-                    disabled={!pagination.hasNext}
-                    className="px-3 py-1 text-sm font-mono border border-terminal-green/50 rounded hover:bg-terminal-green/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
-                </div>
+              <div className="mt-8 pt-6 border-t border-terminal-green/20">
+                <Pagination
+                  currentPage={pagination.page}
+                  totalPages={pagination.totalPages}
+                  totalCount={pagination.totalCount}
+                  pageSize={pagination.limit}
+                  onPageChange={setCurrentPage}
+                  showPageJump={pagination.totalPages > 10}
+                />
               </div>
             )}
           </CardContent>

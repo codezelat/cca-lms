@@ -51,6 +51,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Pagination } from "@/components/ui/pagination";
 
 interface User {
   id: string;
@@ -98,6 +99,8 @@ export default function UsersClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pageSize] = useState(10);
 
   // Create
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -173,6 +176,8 @@ export default function UsersClient() {
       const data = await response.json();
       setUsers(data.users);
       setTotalPages(data.pagination.totalPages);
+      setTotalCount(data.pagination.total);
+      setPage(data.pagination.page);
     } catch (error) {
       console.error("Error fetching users:", error);
     } finally {
@@ -734,26 +739,15 @@ export default function UsersClient() {
               )}
 
               {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page === 1}
-                    onClick={() => setPage(page - 1)}
-                  >
-                    Previous
-                  </Button>
-                  <span className="font-mono text-sm text-terminal-text-muted">
-                    Page {page} of {totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page === totalPages}
-                    onClick={() => setPage(page + 1)}
-                  >
-                    Next
-                  </Button>
+                <div className="mt-6">
+                  <Pagination
+                    currentPage={page}
+                    totalPages={totalPages}
+                    totalCount={totalCount}
+                    pageSize={pageSize}
+                    onPageChange={setPage}
+                    showPageJump={totalPages > 10}
+                  />
                 </div>
               )}
             </CardContent>
