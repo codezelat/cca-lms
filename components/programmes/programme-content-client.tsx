@@ -20,6 +20,7 @@ import {
   Upload,
   HelpCircle,
   Eye,
+  FileCheck,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,7 @@ import {
 import { toast } from "sonner";
 import { QuizBuilder } from "@/components/quizzes/quiz-builder";
 import { ResourceManager } from "@/components/resources/resource-manager";
+import { AssignmentList } from "@/components/assignments/assignment-list";
 
 interface Module {
   id: string;
@@ -131,6 +133,7 @@ export default function ProgrammeContentClient({
   const [showResourceDialog, setShowResourceDialog] = useState(false);
   const [showResourceManager, setShowResourceManager] = useState(false);
   const [showQuizBuilder, setShowQuizBuilder] = useState(false);
+  const [showAssignmentManager, setShowAssignmentManager] = useState(false);
   const [selectedLessonId, setSelectedLessonId] = useState<string>("");
 
   useEffect(() => {
@@ -347,6 +350,11 @@ export default function ProgrammeContentClient({
   const openQuizBuilder = (lessonId: string) => {
     setSelectedLessonId(lessonId);
     setShowQuizBuilder(true);
+  };
+
+  const openAssignmentManager = (lessonId: string) => {
+    setSelectedLessonId(lessonId);
+    setShowAssignmentManager(true);
   };
 
   const getLessonIcon = (type: string) => {
@@ -619,6 +627,14 @@ export default function ProgrammeContentClient({
                                         Manage Quiz
                                       </DropdownMenuItem>
                                     )}
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        openAssignmentManager(lesson.id)
+                                      }
+                                    >
+                                      <FileCheck className="h-4 w-4 mr-2" />
+                                      Manage Assignments
+                                    </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
                                       onClick={() => handleDeleteLesson(lesson)}
@@ -988,6 +1004,29 @@ export default function ProgrammeContentClient({
           )}
           <div className="flex justify-end pt-4">
             <Button onClick={() => setShowResourceManager(false)}>Done</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assignment Manager Dialog */}
+      <Dialog
+        open={showAssignmentManager}
+        onOpenChange={setShowAssignmentManager}
+      >
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Lesson Assignments</DialogTitle>
+            <DialogDescription>
+              Create and manage assignments for this lesson
+            </DialogDescription>
+          </DialogHeader>
+          {selectedLessonId && (
+            <AssignmentList lessonId={selectedLessonId} role="ADMIN" />
+          )}
+          <div className="flex justify-end pt-4">
+            <Button onClick={() => setShowAssignmentManager(false)}>
+              Done
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

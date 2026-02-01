@@ -321,6 +321,22 @@ exports.Prisma.LessonProgressScalarFieldEnum = {
   lastAccessedAt: 'lastAccessedAt'
 };
 
+exports.Prisma.AssignmentScalarFieldEnum = {
+  id: 'id',
+  lessonId: 'lessonId',
+  title: 'title',
+  description: 'description',
+  instructions: 'instructions',
+  dueDate: 'dueDate',
+  maxPoints: 'maxPoints',
+  allowedFileTypes: 'allowedFileTypes',
+  maxFileSize: 'maxFileSize',
+  maxFiles: 'maxFiles',
+  allowLateSubmission: 'allowLateSubmission',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SubmissionScalarFieldEnum = {
   id: 'id',
   lessonId: 'lessonId',
@@ -339,6 +355,32 @@ exports.Prisma.SubmissionAttachmentScalarFieldEnum = {
   id: 'id',
   submissionId: 'submissionId',
   fileKey: 'fileKey',
+  fileName: 'fileName',
+  fileSize: 'fileSize',
+  mimeType: 'mimeType',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.AssignmentSubmissionScalarFieldEnum = {
+  id: 'id',
+  assignmentId: 'assignmentId',
+  userId: 'userId',
+  content: 'content',
+  status: 'status',
+  grade: 'grade',
+  maxGrade: 'maxGrade',
+  feedback: 'feedback',
+  submittedAt: 'submittedAt',
+  gradedAt: 'gradedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.AssignmentSubmissionAttachmentScalarFieldEnum = {
+  id: 'id',
+  submissionId: 'submissionId',
+  fileKey: 'fileKey',
+  fileId: 'fileId',
   fileName: 'fileName',
   fileSize: 'fileSize',
   mimeType: 'mimeType',
@@ -509,6 +551,11 @@ exports.AuditAction = exports.$Enums.AuditAction = {
   SUBMISSION_CREATED: 'SUBMISSION_CREATED',
   SUBMISSION_UPDATED: 'SUBMISSION_UPDATED',
   SUBMISSION_GRADED: 'SUBMISSION_GRADED',
+  ASSIGNMENT_CREATED: 'ASSIGNMENT_CREATED',
+  ASSIGNMENT_UPDATED: 'ASSIGNMENT_UPDATED',
+  ASSIGNMENT_DELETED: 'ASSIGNMENT_DELETED',
+  ASSIGNMENT_SUBMITTED: 'ASSIGNMENT_SUBMITTED',
+  ASSIGNMENT_GRADED: 'ASSIGNMENT_GRADED',
   FILE_UPLOADED: 'FILE_UPLOADED',
   FILE_DOWNLOADED: 'FILE_DOWNLOADED',
   FILE_DELETED: 'FILE_DELETED',
@@ -536,8 +583,11 @@ exports.Prisma.ModelName = {
   QuizResponse: 'QuizResponse',
   CourseEnrollment: 'CourseEnrollment',
   LessonProgress: 'LessonProgress',
+  Assignment: 'Assignment',
   Submission: 'Submission',
   SubmissionAttachment: 'SubmissionAttachment',
+  AssignmentSubmission: 'AssignmentSubmission',
+  AssignmentSubmissionAttachment: 'AssignmentSubmissionAttachment',
   UploadedFile: 'UploadedFile',
   Notification: 'Notification',
   AuditLog: 'AuditLog'
