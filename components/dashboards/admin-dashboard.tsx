@@ -21,6 +21,7 @@ import {
   XCircle,
   Database,
   Zap,
+  RefreshCw,
 } from "lucide-react";
 import {
   Card,
@@ -86,8 +87,8 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
       setUptime((prev) => prev + 1);
     }, 1000);
 
-    // Refresh stats every 30 seconds
-    const statsInterval = setInterval(fetchDashboardData, 30000);
+    // Refresh stats every 15 minutes (900 seconds)
+    const statsInterval = setInterval(fetchDashboardData, 900000);
 
     return () => {
       clearInterval(uptimeInterval);
@@ -267,6 +268,18 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
             <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
               $ admin-dashboard
             </h1>
+            <Button
+              onClick={fetchDashboardData}
+              variant="outline"
+              size="sm"
+              disabled={isLoading}
+              className="ml-auto"
+            >
+              <RefreshCw
+                className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </Button>
           </div>
           <p className="font-mono text-sm text-terminal-text-muted">
             Welcome back, {user.name || user.email}
