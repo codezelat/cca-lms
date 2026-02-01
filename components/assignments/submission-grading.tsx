@@ -288,7 +288,7 @@ export function SubmissionGrading({
           </Button>
         </div>
 
-        {hasGrade && (
+        {hasGrade && submission.gradedAt && (
           <div className="mt-6 p-4 bg-terminal-accent/10 border border-terminal-accent rounded-md">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-terminal-text-muted">
@@ -299,8 +299,7 @@ export function SubmissionGrading({
               </span>
             </div>
             <p className="text-sm text-terminal-text-muted">
-              Graded on {new Date(submission.gradedAt).toLocaleString()} by{" "}
-              {submission.gradedBy.firstName} {submission.gradedBy.lastName}
+              Graded on {new Date(submission.gradedAt).toLocaleString()}
             </p>
           </div>
         )}

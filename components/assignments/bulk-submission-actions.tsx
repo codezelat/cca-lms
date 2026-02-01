@@ -63,7 +63,7 @@ export function BulkSubmissionActions({
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
 
-  // Export submissions to XLSX
+  // Export submissions to XLSX with full details and file links
   const exportToExcel = useCallback(async () => {
     if (!submissions.length) {
       toast.error("No submissions to export");
@@ -73,70 +73,254 @@ export function BulkSubmissionActions({
     setIsExporting(true);
     try {
       const dueDateObj = new Date(dueDate);
-
-      // Prepare data for Excel
-      const excelData = submissions.map((sub, index) => {
-        const submittedDate = new Date(sub.submittedAt);
-        const isLate = submittedDate > dueDateObj;
-        const fileNames =
-          sub.attachments?.map((a) => a.fileName).join(", ") || "No files";
-
-        return {
-          "#": index + 1,
-          "Student Name": sub.user?.name || "Unknown",
-          Email: sub.user?.email || "N/A",
-          "Submitted At": submittedDate.toLocaleString(),
-          Status: isLate ? "Late" : "On Time",
-          Grade:
-            sub.grade !== null ? `${sub.grade}/${maxPoints}` : "Not Graded",
-          "Grade (Points)": sub.grade ?? "",
-          "Files Count": sub.attachments?.length || 0,
-          "File Names": fileNames,
-        };
-      });
+      const baseUrl = window.location.origin;
 
       // Create workbook
       const wb = XLSX.utils.book_new();
 
-      // Summary sheet
+      // ============================================
+      // SHEET 1: All Submissions with Full Details
+      // ============================================
+      const submissionsData: (string | number | null)[][] = [
+        [
+          "#",
+          "Student Name",
+          "Email",
+          "Student ID",
+          "Submission ID",
+          "Submitted At",
+          "Status",
+          "Grade",
+          "Max Points",
+          "Percentage",
+          "Files Count",
+          "File 1 Name",
+          "File 1 Size (KB)",
+          "File 1 Download Link",
+          "File 2 Name",
+          "File 2 Size (KB)",
+          "File 2 Download Link",
+          "File 3 Name",
+          "File 3 Size (KB)",
+          "File 3 Download Link",
+        ],
+      ];
+
+      submissions.forEach((sub, index) => {
+        const submittedDate = new Date(sub.submittedAt);
+        const isLate = submittedDate > dueDateObj;
+        const percentage =
+          sub.grade !== null ? ((sub.grade / maxPoints) * 100).toFixed(1) : "";
+
+        const row: (string | number | null)[] = [
+          index + 1,
+          sub.user?.name || "Unknown",
+          sub.user?.email || "N/A",
+          sub.user?.id || "",
+          sub.id,
+          submittedDate.toISOString(),
+          isLate ? "Late" : "On Time",
+          sub.grade,
+          maxPoints,
+          percentage ? `${percentage}%` : "Not Graded",
+          sub.attachments?.length || 0,
+        ];
+
+        // Add up to 3 file columns (can extend if needed)
+        for (let i = 0; i < 3; i++) {
+          const attachment = sub.attachments?.[i];
+          if (attachment) {
+            row.push(attachment.fileName);
+            row.push(
+              attachment.fileSize
+                ? Math.round(attachment.fileSize / 1024)
+                : null,
+            );
+            // Download link through our authenticated proxy
+            row.push(`${baseUrl}/api/download/${attachment.fileKey}`);
+          } else {
+            row.push("", null, "");
+          }
+        }
+
+        submissionsData.push(row);
+      });
+
+      const submissionsWs = XLSX.utils.aoa_to_sheet(submissionsData);
+
+      // Set column widths
+      submissionsWs["!cols"] = [
+        { wch: 5 }, // #
+        { wch: 25 }, // Student Name
+        { wch: 30 }, // Email
+        { wch: 28 }, // Student ID
+        { wch: 28 }, // Submission ID
+        { wch: 22 }, // Submitted At
+        { wch: 10 }, // Status
+        { wch: 8 }, // Grade
+        { wch: 10 }, // Max Points
+        { wch: 12 }, // Percentage
+        { wch: 12 }, // Files Count
+        { wch: 30 }, // File 1 Name
+        { wch: 12 }, // File 1 Size
+        { wch: 60 }, // File 1 Link
+        { wch: 30 }, // File 2 Name
+        { wch: 12 }, // File 2 Size
+        { wch: 60 }, // File 2 Link
+        { wch: 30 }, // File 3 Name
+        { wch: 12 }, // File 3 Size
+        { wch: 60 }, // File 3 Link
+      ];
+
+      // Add hyperlinks to download columns
+      submissions.forEach((sub, index) => {
+        const rowNum = index + 2; // +2 for header row and 1-based index
+        sub.attachments?.slice(0, 3).forEach((attachment, fileIndex) => {
+          const colIndex = 13 + fileIndex * 3; // File link columns: N, Q, T (13, 16, 19)
+          const cellRef = XLSX.utils.encode_cell({
+            r: rowNum - 1,
+            c: colIndex,
+          });
+          if (submissionsWs[cellRef]) {
+            submissionsWs[cellRef].l = {
+              Target: `${baseUrl}/api/download/${attachment.fileKey}`,
+              Tooltip: `Download ${attachment.fileName}`,
+            };
+          }
+        });
+      });
+
+      XLSX.utils.book_append_sheet(wb, submissionsWs, "Submissions");
+
+      // ============================================
+      // SHEET 2: Files List (All files in one sheet)
+      // ============================================
+      const filesData: (string | number | null)[][] = [
+        [
+          "#",
+          "Student Name",
+          "Email",
+          "File Name",
+          "File Size (KB)",
+          "Submitted At",
+          "Download Link",
+        ],
+      ];
+
+      let fileIndex = 1;
+      submissions.forEach((sub) => {
+        sub.attachments?.forEach((attachment) => {
+          filesData.push([
+            fileIndex++,
+            sub.user?.name || "Unknown",
+            sub.user?.email || "N/A",
+            attachment.fileName,
+            attachment.fileSize ? Math.round(attachment.fileSize / 1024) : null,
+            new Date(sub.submittedAt).toISOString(),
+            `${baseUrl}/api/download/${attachment.fileKey}`,
+          ]);
+        });
+      });
+
+      const filesWs = XLSX.utils.aoa_to_sheet(filesData);
+      filesWs["!cols"] = [
+        { wch: 5 },
+        { wch: 25 },
+        { wch: 30 },
+        { wch: 40 },
+        { wch: 12 },
+        { wch: 22 },
+        { wch: 70 },
+      ];
+
+      // Add hyperlinks to file download column
+      for (let i = 1; i < filesData.length; i++) {
+        const cellRef = XLSX.utils.encode_cell({ r: i, c: 6 }); // Column G (index 6)
+        if (filesWs[cellRef] && filesData[i][6]) {
+          filesWs[cellRef].l = {
+            Target: filesData[i][6] as string,
+            Tooltip: `Download ${filesData[i][3]}`,
+          };
+        }
+      }
+
+      XLSX.utils.book_append_sheet(wb, filesWs, "All Files");
+
+      // ============================================
+      // SHEET 3: Summary Report (at the end)
+      // ============================================
+      const gradedSubmissions = submissions.filter((s) => s.grade !== null);
+      const grades = gradedSubmissions.map((s) => s.grade as number);
+      const avgGrade =
+        grades.length > 0
+          ? (grades.reduce((a, b) => a + b, 0) / grades.length).toFixed(2)
+          : "N/A";
+      const highestGrade = grades.length > 0 ? Math.max(...grades) : "N/A";
+      const lowestGrade = grades.length > 0 ? Math.min(...grades) : "N/A";
+
       const summaryData = [
-        ["Assignment Submissions Report"],
+        ["ASSIGNMENT SUBMISSIONS REPORT"],
         [""],
-        ["Assignment", assignmentTitle],
+        ["ASSIGNMENT DETAILS"],
+        ["Assignment Title", assignmentTitle],
+        ["Assignment ID", assignmentId],
         ["Due Date", new Date(dueDate).toLocaleString()],
-        ["Max Points", maxPoints],
+        ["Maximum Points", maxPoints],
         [""],
+        ["SUBMISSION STATISTICS"],
         ["Total Submissions", submissions.length],
-        ["Graded", submissions.filter((s) => s.grade !== null).length],
-        ["Pending", submissions.filter((s) => s.grade === null).length],
+        ["Graded Submissions", gradedSubmissions.length],
+        ["Pending Grading", submissions.length - gradedSubmissions.length],
         [
           "Late Submissions",
           submissions.filter((s) => new Date(s.submittedAt) > dueDateObj)
             .length,
         ],
+        [
+          "On-Time Submissions",
+          submissions.filter((s) => new Date(s.submittedAt) <= dueDateObj)
+            .length,
+        ],
         [""],
-        ["Report Generated", new Date().toLocaleString()],
+        ["GRADE STATISTICS"],
+        ["Average Grade", avgGrade],
+        ["Highest Grade", highestGrade],
+        ["Lowest Grade", lowestGrade],
+        [
+          "Pass Rate (≥50%)",
+          grades.length > 0
+            ? `${((grades.filter((g) => g >= maxPoints * 0.5).length / grades.length) * 100).toFixed(1)}%`
+            : "N/A",
+        ],
+        [""],
+        ["FILE STATISTICS"],
+        [
+          "Total Files Submitted",
+          submissions.reduce((acc, s) => acc + (s.attachments?.length || 0), 0),
+        ],
+        [
+          "Average Files per Submission",
+          (
+            submissions.reduce(
+              (acc, s) => acc + (s.attachments?.length || 0),
+              0,
+            ) / submissions.length
+          ).toFixed(1),
+        ],
+        [""],
+        ["REPORT INFORMATION"],
+        ["Generated At", new Date().toLocaleString()],
+        ["Generated By", "CCA LMS System"],
+        [
+          "Note",
+          "Download links require admin/lecturer authentication to access.",
+        ],
       ];
+
       const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
-      XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
+      summaryWs["!cols"] = [{ wch: 25 }, { wch: 50 }];
 
-      // Submissions sheet
-      const ws = XLSX.utils.json_to_sheet(excelData);
-
-      // Set column widths
-      ws["!cols"] = [
-        { wch: 5 }, // #
-        { wch: 25 }, // Student Name
-        { wch: 30 }, // Email
-        { wch: 22 }, // Submitted At
-        { wch: 10 }, // Status
-        { wch: 12 }, // Grade
-        { wch: 12 }, // Grade (Points)
-        { wch: 12 }, // Files Count
-        { wch: 50 }, // File Names
-      ];
-
-      XLSX.utils.book_append_sheet(wb, ws, "Submissions");
+      XLSX.utils.book_append_sheet(wb, summaryWs, "Summary Report");
 
       // Generate and download
       const fileName = `${assignmentTitle.replace(/[^a-z0-9]/gi, "_")}_submissions_${new Date().toISOString().split("T")[0]}.xlsx`;
