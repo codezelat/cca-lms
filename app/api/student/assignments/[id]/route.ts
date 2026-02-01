@@ -57,7 +57,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
     });
 
-    if (!enrollment) {
+    if (!enrollment || enrollment.status === "DROPPED") {
       return NextResponse.json(
         { error: "You are not enrolled in this course" },
         { status: 403 },

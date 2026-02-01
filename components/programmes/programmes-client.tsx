@@ -1129,7 +1129,7 @@ export default function ProgrammesClient() {
                   }
                 }}
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-45">
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue />
                 </SelectTrigger>
