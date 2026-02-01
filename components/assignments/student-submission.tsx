@@ -160,25 +160,11 @@ export function StudentSubmission({ assignmentId }: StudentSubmissionProps) {
   };
 
   const downloadFile = async (attachment: { id: string; fileKey: string }) => {
-    try {
-      const response = await fetch(
-        `/api/student/submissions/${submission.id}/download?fileKey=${encodeURIComponent(attachment.fileKey)}`,
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to download file");
-      }
-
-      window.open(data.url, "_blank");
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not download file";
-      toast.error("Download Failed", {
-        description: message,
-      });
-    }
+    // Open via our proxy endpoint to show our domain URL
+    window.open(
+      `/api/download/${encodeURIComponent(attachment.fileKey)}`,
+      "_blank",
+    );
   };
 
   if (isLoading) {

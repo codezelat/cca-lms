@@ -231,7 +231,6 @@ export function BulkSubmissionActions({
         // Download files in this batch
         for (const file of batchData.files) {
           if (controller.signal.aborted) break;
-          if (!file.url) continue;
 
           setDownloadProgress((prev) => ({
             ...prev!,
@@ -240,10 +239,11 @@ export function BulkSubmissionActions({
           }));
 
           try {
-            // Download file content
-            const fileResponse = await fetch(file.url, {
-              signal: controller.signal,
-            });
+            // Download file content via our proxy endpoint
+            const fileResponse = await fetch(
+              `/api/download/${encodeURIComponent(file.fileKey)}`,
+              { signal: controller.signal },
+            );
             if (!fileResponse.ok) {
               console.warn(`Failed to download: ${file.fileName}`);
               continue;
