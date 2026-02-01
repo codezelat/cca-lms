@@ -303,7 +303,7 @@ Comprehensive assignment management for file-based submissions:
 
 **Secure File Downloads:**
 
-- **Proxy Download Endpoint**: All downloads go through `/api/download/` 
+- **Proxy Download Endpoint**: All downloads go through `/api/download/`
 - **Branded URLs**: Users see your domain, not Backblaze/R2 URLs
 - **Permission Verification**: Every download checks authentication
 - **Streaming Response**: Memory-efficient, handles large files
