@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { AssignmentList } from "@/components/assignments/assignment-list";
 
 interface Resource {
   id: string;
@@ -425,6 +426,11 @@ export default function LessonPage({
             {lesson.resources.map((resource) => renderResource(resource))}
           </div>
         )}
+
+        {/* Assignments */}
+        <div className="mb-6">
+          <AssignmentList lessonId={lessonId} role="STUDENT" />
+        </div>
 
         {/* Mark Complete */}
         {!lesson.completed && (
