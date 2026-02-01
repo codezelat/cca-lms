@@ -11,12 +11,20 @@ function getResendClient() {
 }
 
 // Enhanced error handling with retry logic
-const sendEmailWithRetry = async (emailData: object, maxRetries = 3) => {
+const sendEmailWithRetry = async (
+  emailData: {
+    from: string;
+    to: string | string[];
+    subject: string;
+    html: string;
+  },
+  maxRetries = 3,
+) => {
   const resend = getResendClient();
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const result = await resend.emails.send(emailData as any);
+      const result = await resend.emails.send(emailData);
       return result;
     } catch (error) {
       console.error(`Email send attempt ${attempt} failed:`, error);
@@ -28,18 +36,10 @@ const sendEmailWithRetry = async (emailData: object, maxRetries = 3) => {
           entityType: "SYSTEM",
           metadata: {
             error: error instanceof Error ? error.message : "Unknown error",
-            recipientEmail:
-              typeof emailData === "object" &&
-              emailData !== null &&
-              "to" in emailData
-                ? (emailData as { to: string }).to
-                : "Unknown",
-            subject:
-              typeof emailData === "object" &&
-              emailData !== null &&
-              "subject" in emailData
-                ? (emailData as { subject: string }).subject
-                : "Unknown",
+            recipientEmail: Array.isArray(emailData.to)
+              ? emailData.to.join(", ")
+              : emailData.to,
+            subject: emailData.subject,
             attempts: maxRetries,
           },
         });
@@ -87,8 +87,6 @@ export async function sendAssignmentCreatedEmails(
   assignmentData: AssignmentEmailData,
   enrolledStudents: Array<{ name: string; email: string; id: string }>,
 ) {
-  const resend = getResendClient();
-
   const emailPromises = enrolledStudents.map(async (student) => {
     const dueText = assignmentData.dueDate.toLocaleDateString("en-US", {
       weekday: "long",
@@ -763,8 +761,8 @@ async function sendEmailSafely(
   userId?: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const resend = getResendClient();
-    await resend.emails.send(emailData);
+    // Use retry logic for better reliability
+    await sendEmailWithRetry(emailData);
 
     await logEmailSent(
       emailData.to,
