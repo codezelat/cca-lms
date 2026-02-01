@@ -154,7 +154,10 @@ export async function DELETE(
   try {
     const session = await auth();
 
-    if (!session?.user || session.user.role !== "ADMIN") {
+    if (
+      !session?.user ||
+      (session.user.role !== "ADMIN" && session.user.role !== "LECTURER")
+    ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -162,10 +165,35 @@ export async function DELETE(
 
     const lesson = await prisma.lesson.findUnique({
       where: { id },
+      include: {
+        module: {
+          include: {
+            course: {
+              select: {
+                lecturers: {
+                  select: {
+                    lecturerId: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!lesson) {
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
+    }
+
+    // Check ownership if lecturer
+    if (session.user.role === "LECTURER") {
+      const isAssigned = lesson.module.course.lecturers.some(
+        (l) => l.lecturerId === session.user.id,
+      );
+      if (!isAssigned) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
     }
 
     await prisma.lesson.delete({

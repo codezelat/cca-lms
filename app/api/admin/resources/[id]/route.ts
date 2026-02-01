@@ -201,11 +201,28 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
 
-    // Get resource with all versions
+    // Get resource with all versions and course assignment info
     const resource = await prisma.lessonResource.findUnique({
       where: { id },
       include: {
         versions: true,
+        lesson: {
+          include: {
+            module: {
+              include: {
+                course: {
+                  select: {
+                    lecturers: {
+                      select: {
+                        lecturerId: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -214,6 +231,16 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         { error: "Resource not found" },
         { status: 404 },
       );
+    }
+
+    // Check ownership if lecturer
+    if (session.user.role === "LECTURER") {
+      const isAssigned = resource.lesson.module.course.lecturers.some(
+        (l) => l.lecturerId === session.user.id,
+      );
+      if (!isAssigned) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
     }
 
     // Delete all files from R2
