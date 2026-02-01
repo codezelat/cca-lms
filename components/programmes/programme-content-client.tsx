@@ -923,27 +923,6 @@ export default function ProgrammeContentClient({
               </div>
             )}
 
-            {lessonForm.type === "READING" && (
-              <div className="space-y-2">
-                <Label htmlFor="lesson-videoUrl">
-                  Article/Resource URL (Optional)
-                </Label>
-                <Input
-                  id="lesson-videoUrl"
-                  value={lessonForm.videoUrl}
-                  onChange={(e) =>
-                    setLessonForm({ ...lessonForm, videoUrl: e.target.value })
-                  }
-                  placeholder="https://example.com/article or leave empty to upload files"
-                  disabled={isLessonSubmitting}
-                />
-                <p className="text-xs text-muted-foreground">
-                  💡 Add an article link here, or leave empty and use "Manage
-                  Documents" to upload PDFs/files
-                </p>
-              </div>
-            )}
-
             {lessonForm.type === "QUIZ" && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-900">
