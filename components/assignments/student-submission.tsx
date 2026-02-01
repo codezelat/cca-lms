@@ -30,6 +30,7 @@ export function StudentSubmission({ assignmentId }: StudentSubmissionProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [notes, setNotes] = useState("");
+  const [enrollmentError, setEnrollmentError] = useState(false);
 
   const fetchAssignmentAndSubmission = async () => {
     setIsLoading(true);
@@ -38,12 +39,16 @@ export function StudentSubmission({ assignmentId }: StudentSubmissionProps) {
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 403 && data.error?.includes("not enrolled")) {
+          setEnrollmentError(true);
+        }
         throw new Error(data.error || "Failed to fetch assignment");
       }
 
       setAssignment(data.assignment);
       setSubmission(data.submission);
       setNotes(data.submission?.notes || "");
+      setEnrollmentError(false);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to load assignment";
@@ -177,6 +182,20 @@ export function StudentSubmission({ assignmentId }: StudentSubmissionProps) {
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-terminal-accent" />
       </div>
+    );
+  }
+
+  if (enrollmentError) {
+    return (
+      <Card className="p-6">
+        <div className="text-center py-8">
+          <AlertCircle className="h-12 w-12 mx-auto mb-4 text-terminal-accent" />
+          <h3 className="text-lg font-semibold mb-2">Cannot Submit</h3>
+          <p className="text-terminal-text-muted">
+            You are not enrolled in this course
+          </p>
+        </div>
+      </Card>
     );
   }
 
@@ -374,9 +393,7 @@ export function StudentSubmission({ assignmentId }: StudentSubmissionProps) {
               <AlertCircle className="h-12 w-12 mx-auto mb-4 text-terminal-accent" />
               <h3 className="text-lg font-semibold mb-2">Cannot Submit</h3>
               <p className="text-terminal-text-muted">
-                {isOverdue && !assignment.allowLateSubmission
-                  ? "The deadline has passed and late submissions are not allowed"
-                  : "You are not enrolled in this course"}
+                The deadline has passed and late submissions are not allowed
               </p>
             </div>
           ) : (
