@@ -106,7 +106,7 @@ export function StudentSubmission({ assignmentId }: StudentSubmissionProps) {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    disabled: isSubmitting || !assignment?.canSubmit || !!submission,
+    disabled: isSubmitting || !serverCanSubmit || !!submission,
   });
 
   const removeFile = (index: number) => {
