@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendAssignmentCreatedEmails } from "@/lib/resend";
 import { createAuditLog } from "@/lib/audit";
 
 // POST /api/admin/assignments - Create new assignment
@@ -97,7 +98,22 @@ export async function POST(request: NextRequest) {
                 title: true,
                 course: {
                   select: {
+                    id: true,
                     title: true,
+                    enrollments: {
+                      where: {
+                        status: "ACTIVE",
+                      },
+                      include: {
+                        user: {
+                          select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                          },
+                        },
+                      },
+                    },
                   },
                 },
               },
@@ -111,6 +127,38 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Send email notifications to enrolled students (async, don't block response)
+    if (assignment.lesson.module.course.enrollments.length > 0) {
+      const enrolledStudents = assignment.lesson.module.course.enrollments.map(
+        (enrollment) => ({
+          name: enrollment.user.name || enrollment.user.email,
+          email: enrollment.user.email,
+          id: enrollment.user.id,
+        }),
+      );
+
+      // Send emails asynchronously
+      setImmediate(async () => {
+        try {
+          await sendAssignmentCreatedEmails(
+            {
+              studentName: "", // Not used for bulk emails
+              studentEmail: "", // Not used for bulk emails
+              assignmentTitle: assignment.title,
+              courseTitle: assignment.lesson.module.course.title,
+              dueDate: assignment.dueDate,
+              assignmentId: assignment.id,
+              courseId: assignment.lesson.module.course.id,
+              lessonId: assignment.lesson.id,
+            },
+            enrolledStudents,
+          );
+        } catch (error) {
+          console.error("Failed to send assignment creation emails:", error);
+        }
+      });
+    }
 
     await createAuditLog({
       userId: session.user.id,

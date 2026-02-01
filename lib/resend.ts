@@ -4,65 +4,456 @@ import { createAuditLog } from "./audit";
 function getResendClient() {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
+    console.error("⚠️ RESEND_API_KEY environment variable is missing");
     throw new Error("Missing RESEND_API_KEY environment variable.");
   }
   return new Resend(apiKey);
 }
+
+// Enhanced error handling with retry logic
+const sendEmailWithRetry = async (emailData: object, maxRetries = 3) => {
+  const resend = getResendClient();
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await resend.emails.send(emailData as any);
+      return result;
+    } catch (error) {
+      console.error(`Email send attempt ${attempt} failed:`, error);
+
+      if (attempt === maxRetries) {
+        // Log final failure
+        await createAuditLog({
+          action: "EMAIL_FAILED",
+          entityType: "SYSTEM",
+          metadata: {
+            error: error instanceof Error ? error.message : "Unknown error",
+            recipientEmail:
+              typeof emailData === "object" &&
+              emailData !== null &&
+              "to" in emailData
+                ? (emailData as { to: string }).to
+                : "Unknown",
+            subject:
+              typeof emailData === "object" &&
+              emailData !== null &&
+              "subject" in emailData
+                ? (emailData as { subject: string }).subject
+                : "Unknown",
+            attempts: maxRetries,
+          },
+        });
+        throw error;
+      }
+
+      // Wait before retry (exponential backoff)
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.pow(2, attempt) * 1000),
+      );
+    }
+  }
+};
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "noreply@codezela.com";
 const APP_NAME = "Codezela Career Accelerator - LMS";
 const APP_URL = process.env.APP_URL || "https://lms.cca.it.com"; // Default to production URL
 const SUPPORT_EMAIL = "ca@codezela.com";
 
+// Assignment Email Templates
+interface AssignmentEmailData {
+  studentName: string;
+  studentEmail: string;
+  assignmentTitle: string;
+  courseTitle: string;
+  dueDate: Date;
+  assignmentId: string;
+  courseId: string;
+  lessonId: string;
+}
+
+interface GradingEmailData {
+  studentName: string;
+  studentEmail: string;
+  assignmentTitle: string;
+  courseTitle: string;
+  grade: number;
+  maxPoints: number;
+  feedback?: string;
+  assignmentId: string;
+}
+
+// Send assignment created notification to enrolled students
+export async function sendAssignmentCreatedEmails(
+  assignmentData: AssignmentEmailData,
+  enrolledStudents: Array<{ name: string; email: string; id: string }>,
+) {
+  const resend = getResendClient();
+
+  const emailPromises = enrolledStudents.map(async (student) => {
+    const dueText = assignmentData.dueDate.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const dueDays = Math.ceil(
+      (assignmentData.dueDate.getTime() - new Date().getTime()) /
+        (1000 * 60 * 60 * 24),
+    );
+    const dueSoon = dueDays <= 1 ? "Due soon!" : `Due in ${dueDays} days`;
+
+    const html = `
+      ${getEmailStyles()}
+      <div class="container">
+        <div class="header">
+          <h1>📝 New Assignment Available</h1>
+        </div>
+        
+        <div class="content">
+          <p>Hello <strong>${student.name}</strong>,</p>
+          
+          <p>A new assignment has been posted in your course:</p>
+          
+          <div class="highlight-box">
+            <strong>📚 Course:</strong> ${assignmentData.courseTitle}<br>
+            <strong>📋 Assignment:</strong> ${assignmentData.assignmentTitle}<br>
+            <strong>⏰ Due:</strong> ${dueText}<br>
+            <strong>⚡ Status:</strong> <span class="urgent">${dueSoon}</span>
+          </div>
+          
+          <p>Click the button below to view the assignment details and submit your work:</p>
+          
+          <div class="cta-section">
+            <a href="${APP_URL}/learn/assignment/${assignmentData.assignmentId}" class="cta-button">
+              💻 View Assignment
+            </a>
+          </div>
+          
+          <p>You can also access it through your course page:</p>
+          <p><a href="${APP_URL}/learn/${assignmentData.courseId}/lesson/${assignmentData.lessonId}" class="link">
+            Go to Lesson →
+          </a></p>
+        </div>
+        
+        <div class="footer">
+          <p>Happy coding! 🚀</p>
+          <p>Best regards,<br>The ${APP_NAME} Team</p>
+          <p class="support-text">Need help? Contact us at <a href="mailto:${SUPPORT_EMAIL}" class="link">${SUPPORT_EMAIL}</a></p>
+        </div>
+      </div>
+    `;
+
+    try {
+      await sendEmailWithRetry({
+        from: FROM_EMAIL,
+        to: student.email,
+        subject: `📝 New Assignment: ${assignmentData.assignmentTitle} - ${dueSoon}`,
+        html,
+      });
+
+      await createAuditLog({
+        action: "EMAIL_SENT",
+        userId: student.id,
+        entityType: "ASSIGNMENT",
+        entityId: assignmentData.assignmentId,
+        metadata: {
+          type: "assignment_created",
+          recipientEmail: student.email,
+          assignmentTitle: assignmentData.assignmentTitle,
+          courseTitle: assignmentData.courseTitle,
+        },
+      });
+    } catch (error) {
+      console.error(
+        `Failed to send assignment notification to ${student.email}:`,
+        error,
+      );
+      // Don't throw - continue with other emails
+    }
+  });
+
+  await Promise.allSettled(emailPromises);
+}
+
+// Send assignment graded notification to student
+export async function sendAssignmentGradedEmail(gradingData: GradingEmailData) {
+  const percentage = Math.round(
+    (gradingData.grade / gradingData.maxPoints) * 100,
+  );
+  const gradeStatus =
+    percentage >= 90
+      ? "🌟 Excellent!"
+      : percentage >= 80
+        ? "✅ Great work!"
+        : percentage >= 70
+          ? "👍 Good job!"
+          : percentage >= 60
+            ? "📈 Keep improving!"
+            : "💪 Keep working hard!";
+
+  const html = `
+    ${getEmailStyles()}
+    <div class="container">
+      <div class="header">
+        <h1>📊 Assignment Graded</h1>
+      </div>
+      
+      <div class="content">
+        <p>Hello <strong>${gradingData.studentName}</strong>,</p>
+        
+        <p>Your assignment has been graded! Here are the results:</p>
+        
+        <div class="highlight-box">
+          <strong>📚 Course:</strong> ${gradingData.courseTitle}<br>
+          <strong>📋 Assignment:</strong> ${gradingData.assignmentTitle}<br>
+          <strong>🎯 Your Score:</strong> <span class="grade-score">${gradingData.grade}/${gradingData.maxPoints} (${percentage}%)</span><br>
+          <strong>🏆 Status:</strong> <span class="${percentage >= 70 ? "success" : "needs-improvement"}">${gradeStatus}</span>
+        </div>
+        
+        ${
+          gradingData.feedback
+            ? `
+        <div class="feedback-section">
+          <h3>💬 Instructor Feedback:</h3>
+          <div class="feedback-content">
+            ${gradingData.feedback.replace(/\n/g, "<br>")}
+          </div>
+        </div>
+        `
+            : ""
+        }
+        
+        <div class="cta-section">
+          <a href="${APP_URL}/learn/assignment/${gradingData.assignmentId}" class="cta-button">
+            📄 View Full Results
+          </a>
+        </div>
+      </div>
+      
+      <div class="footer">
+        <p>Keep up the excellent work! 🚀</p>
+        <p>Best regards,<br>The ${APP_NAME} Team</p>
+        <p class="support-text">Questions about your grade? Contact your instructor or reach out to <a href="mailto:${SUPPORT_EMAIL}" class="link">${SUPPORT_EMAIL}</a></p>
+      </div>
+    </div>
+  `;
+
+  try {
+    await sendEmailWithRetry({
+      from: FROM_EMAIL,
+      to: gradingData.studentEmail,
+      subject: `🎯 Assignment Graded: ${gradingData.assignmentTitle} - ${percentage}% (${gradeStatus})`,
+      html,
+    });
+
+    await createAuditLog({
+      action: "EMAIL_SENT",
+      entityType: "ASSIGNMENT",
+      entityId: gradingData.assignmentId,
+      metadata: {
+        type: "assignment_graded",
+        recipientEmail: gradingData.studentEmail,
+        assignmentTitle: gradingData.assignmentTitle,
+        courseTitle: gradingData.courseTitle,
+        grade: gradingData.grade,
+        maxPoints: gradingData.maxPoints,
+        percentage,
+      },
+    });
+  } catch (error) {
+    console.error(
+      `Failed to send grading notification to ${gradingData.studentEmail}:`,
+      error,
+    );
+    throw error;
+  }
+}
+
+// Send assignment due soon reminder to students
+export async function sendAssignmentDueSoonReminders(
+  assignmentData: AssignmentEmailData,
+  studentsWithoutSubmission: Array<{ name: string; email: string; id: string }>,
+) {
+  const emailPromises = studentsWithoutSubmission.map(async (student) => {
+    const dueText = assignmentData.dueDate.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const hoursUntilDue = Math.ceil(
+      (assignmentData.dueDate.getTime() - new Date().getTime()) /
+        (1000 * 60 * 60),
+    );
+    const urgencyText =
+      hoursUntilDue <= 6
+        ? "⚠️ Due very soon!"
+        : hoursUntilDue <= 24
+          ? "🔔 Due soon!"
+          : "⏰ Reminder";
+
+    const html = `
+      ${getEmailStyles()}
+      <div class="container">
+        <div class="header">
+          <h1>⏰ Assignment Due Soon</h1>
+        </div>
+        
+        <div class="content">
+          <p>Hello <strong>${student.name}</strong>,</p>
+          
+          <p>This is a friendly reminder that you have an assignment due soon:</p>
+          
+          <div class="highlight-box urgent-reminder">
+            <strong>📚 Course:</strong> ${assignmentData.courseTitle}<br>
+            <strong>📋 Assignment:</strong> ${assignmentData.assignmentTitle}<br>
+            <strong>⏰ Due:</strong> ${dueText}<br>
+            <strong>⚡ Status:</strong> <span class="urgent">${urgencyText}</span>
+          </div>
+          
+          <p><strong>Don't wait!</strong> Submit your assignment before the deadline to avoid any issues.</p>
+          
+          <div class="cta-section">
+            <a href="${APP_URL}/learn/assignment/${assignmentData.assignmentId}" class="cta-button urgent">
+              🚀 Submit Now
+            </a>
+          </div>
+        </div>
+        
+        <div class="footer">
+          <p>You've got this! 💪</p>
+          <p>Best regards,<br>The ${APP_NAME} Team</p>
+          <p class="support-text">Need help? Contact us at <a href="mailto:${SUPPORT_EMAIL}" class="link">${SUPPORT_EMAIL}</a></p>
+        </div>
+      </div>
+    `;
+
+    try {
+      await sendEmailWithRetry({
+        from: FROM_EMAIL,
+        to: student.email,
+        subject: `⏰ ${urgencyText}: ${assignmentData.assignmentTitle} - Submit Soon!`,
+        html,
+      });
+
+      await createAuditLog({
+        action: "EMAIL_SENT",
+        userId: student.id,
+        entityType: "ASSIGNMENT",
+        entityId: assignmentData.assignmentId,
+        metadata: {
+          type: "assignment_due_soon",
+          recipientEmail: student.email,
+          assignmentTitle: assignmentData.assignmentTitle,
+          courseTitle: assignmentData.courseTitle,
+          hoursUntilDue,
+        },
+      });
+    } catch (error) {
+      console.error(
+        `Failed to send due soon reminder to ${student.email}:`,
+        error,
+      );
+      // Don't throw - continue with other emails
+    }
+  });
+
+  await Promise.allSettled(emailPromises);
+}
+
 // Email-client compatible CSS styles (Gmail, Outlook, Apple Mail optimized)
 const getEmailStyles = () => `
   <style type="text/css">
+    /* Reset and base styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
     body { 
-      font-family: 'Courier New', Consolas, Monaco, monospace !important; 
+      font-family: 'Courier New', Consolas, Monaco, 'Lucida Console', monospace !important; 
       line-height: 1.6; 
-      color: #16a34a; 
-      background-color: #000000;
+      color: #00ff41 !important; /* Matrix green */
+      background-color: #000000 !important;
       margin: 0;
       padding: 0;
       width: 100% !important;
       -webkit-text-size-adjust: 100%;
       -ms-text-size-adjust: 100%;
+      background-image: 
+        radial-gradient(rgba(0, 255, 65, 0.02) 1px, transparent 1px);
+      background-size: 20px 20px;
     }
     table { 
       border-collapse: collapse; 
       mso-table-lspace: 0pt; 
       mso-table-rspace: 0pt; 
+      width: 100%;
     }
     .container { 
       width: 100%; 
       max-width: 600px; 
       margin: 0 auto; 
       background-color: #000000;
+      border: 1px solid #00ff41;
+      box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
     }
     .header {
-      background-color: #111111;
-      border: 1px solid #16a34a;
-      padding: 20px;
+      background: linear-gradient(135deg, #001100, #002200);
+      border: 2px solid #00ff41;
+      padding: 25px 20px;
       text-align: center;
+      position: relative;
+    }
+    .header::before {
+      content: '> ';
+      color: #00ff41;
+      font-weight: bold;
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 20px;
     }
     .header h1 {
-      color: #16a34a;
-      font-size: 24px;
-      margin: 0 0 10px 0;
+      color: #00ff41;
+      font-size: 28px;
+      margin: 0;
       font-weight: bold;
-      font-family: 'Courier New', Consolas, Monaco, monospace;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 0 10px #00ff41;
+      animation: terminal-glow 2s ease-in-out infinite alternate;
+    }
+    @keyframes terminal-glow {
+      from { text-shadow: 0 0 5px #00ff41; }
+      to { text-shadow: 0 0 15px #00ff41, 0 0 20px #00ff41; }
     }
     .header .subtitle {
-      color: #10b981;
+      color: #00cc33;
       font-size: 14px;
-      margin: 0;
+      margin: 8px 0 0 0;
+      opacity: 0.9;
     }
     .content {
       background-color: #111111;
-      border: 1px solid #16a34a;
-      padding: 20px;
-      margin-bottom: 20px;
-      border-radius: 4px;
+      border: 1px solid #00ff41;
+      padding: 25px;
+      margin: 0;
+      position: relative;
+    }
+    .content::before {
+      content: 'codezela@lms:~$ ';
+      color: #00ff41;
+      font-weight: bold;
+      display: block;
+      margin-bottom: 15px;
+      font-size: 14px;
     }
     .prompt {
       color: #16a34a;
@@ -166,11 +557,147 @@ const getEmailStyles = () => `
     }
     p {
       margin-bottom: 15px;
-      color: #16a34a;
+      color: #00ff41;
+      font-size: 15px;
+      line-height: 1.6;
     }
     strong {
-      color: #10b981;
+      color: #00cc33;
       font-weight: bold;
+      text-shadow: 0 0 3px #00cc33;
+    }
+    .highlight-box {
+      background: linear-gradient(135deg, #001100, #002200);
+      border: 2px solid #00ff41;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 25px 0;
+      font-family: 'Courier New', monospace;
+      position: relative;
+      box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+    }
+    .highlight-box::before {
+      content: '[INFO]';
+      color: #00ff41;
+      font-size: 12px;
+      font-weight: bold;
+      position: absolute;
+      top: -10px;
+      left: 15px;
+      background: #000000;
+      padding: 0 8px;
+    }
+    .urgent-reminder {
+      border-color: #ffaa00;
+      background: linear-gradient(135deg, #1a1100, #2a1800);
+      box-shadow: 0 0 15px rgba(255, 170, 0, 0.3);
+    }
+    .urgent-reminder::before {
+      content: '[URGENT]';
+      color: #ffaa00;
+    }
+    .feedback-section {
+      background: linear-gradient(135deg, #0d1a0d, #1a2a1a);
+      border: 2px solid #00cc33;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 25px 0;
+      position: relative;
+    }
+    .feedback-section::before {
+      content: '[FEEDBACK]';
+      color: #00cc33;
+      font-size: 12px;
+      font-weight: bold;
+      position: absolute;
+      top: -10px;
+      left: 15px;
+      background: #000000;
+      padding: 0 8px;
+    }
+    .feedback-content {
+      background-color: #0a0a0a;
+      border-left: 4px solid #00ff41;
+      padding: 15px;
+      margin-top: 10px;
+      font-family: 'Courier New', monospace;
+      white-space: pre-wrap;
+      color: #00cc33;
+    }
+    .grade-score {
+      color: #00ff41;
+      font-weight: bold;
+      font-size: 18px;
+      text-shadow: 0 0 8px #00ff41;
+    }
+    .success {
+      color: #00ff41;
+      font-weight: bold;
+      text-shadow: 0 0 5px #00ff41;
+    }
+    .needs-improvement {
+      color: #ffaa00;
+      font-weight: bold;
+      text-shadow: 0 0 5px #ffaa00;
+    }
+    .urgent {
+      color: #ff6600;
+      font-weight: bold;
+      text-shadow: 0 0 8px #ff6600;
+      animation: urgent-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes urgent-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .cta-section {
+      text-align: center;
+      margin: 30px 0;
+      padding: 20px 0;
+    }
+    .cta-button {
+      display: inline-block;
+      padding: 18px 35px;
+      background: linear-gradient(135deg, #00ff41, #00cc33);
+      color: #000000 !important;
+      text-decoration: none;
+      font-weight: bold;
+      font-family: 'Courier New', monospace;
+      border-radius: 8px;
+      border: 2px solid #00ff41;
+      font-size: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
+      transition: all 0.3s ease;
+    }
+    .cta-button:hover {
+      background: linear-gradient(135deg, #00cc33, #00ff41);
+      box-shadow: 0 0 30px rgba(0, 255, 65, 0.6);
+      transform: translateY(-2px);
+    }
+    .cta-button.urgent {
+      background: linear-gradient(135deg, #ff6600, #ffaa00);
+      border-color: #ff6600;
+      color: #000000 !important;
+      animation: urgent-glow 2s ease-in-out infinite;
+    }
+    @keyframes urgent-glow {
+      0%, 100% { 
+        box-shadow: 0 0 20px rgba(255, 102, 0, 0.4);
+        transform: scale(1);
+      }
+      50% { 
+        box-shadow: 0 0 30px rgba(255, 102, 0, 0.7);
+        transform: scale(1.02);
+      }
+    }
+    .support-text {
+      font-size: 12px;
+      color: #10b981;
+      opacity: 0.8;
+      margin-top: 20px;
+    }
     }
     @media (max-width: 600px) {
       .container { padding: 10px; }

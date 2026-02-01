@@ -55,8 +55,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Check enrollment
-    if (assignment.lesson.module.course.enrollments.length === 0) {
+    // Check enrollment - verify user is enrolled with ACTIVE status
+    const isEnrolled = assignment.lesson.module.course.enrollments.some(
+      (enrollment) => enrollment.id && true, // enrollments array contains user's enrollment
+    );
+
+    if (!isEnrolled) {
       return NextResponse.json(
         { error: "You are not enrolled in this course" },
         { status: 403 },

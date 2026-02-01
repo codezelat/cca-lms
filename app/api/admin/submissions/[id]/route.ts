@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createAuditLog } from "@/lib/audit";
+import { sendAssignmentGradedEmail } from "@/lib/resend";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -173,7 +174,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    const submission = await prisma.assignmentSubmission.update({
+    const updatedSubmission = await prisma.assignmentSubmission.update({
       where: { id },
       data: {
         ...(grade !== undefined && { grade }),
@@ -184,32 +185,68 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       include: {
         user: {
           select: {
+            id: true,
             name: true,
             email: true,
           },
         },
         assignment: {
-          select: {
-            title: true,
+          include: {
+            lesson: {
+              include: {
+                module: {
+                  include: {
+                    course: {
+                      select: {
+                        title: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
     });
 
+    // Send graded email notification (async, don't block response)
+    if (status === "GRADED" && grade !== undefined) {
+      setImmediate(async () => {
+        try {
+          await sendAssignmentGradedEmail({
+            studentName:
+              updatedSubmission.user.name || updatedSubmission.user.email,
+            studentEmail: updatedSubmission.user.email,
+            assignmentTitle: updatedSubmission.assignment.title,
+            courseTitle:
+              updatedSubmission.assignment.lesson.module.course.title,
+            grade,
+            maxPoints: updatedSubmission.assignment.maxPoints,
+            feedback: feedback || undefined,
+            assignmentId: updatedSubmission.assignment.id,
+          });
+        } catch (error) {
+          console.error("Failed to send grading notification email:", error);
+        }
+      });
+    }
+
     await createAuditLog({
       userId: session.user.id,
       action: "SUBMISSION_GRADED",
       entityType: "AssignmentSubmission",
-      entityId: submission.id,
+      entityId: updatedSubmission.id,
       metadata: {
         grade,
-        studentEmail: submission.user.email,
-        assignmentTitle: submission.assignment.title,
+        studentEmail: updatedSubmission.user.email,
+        assignmentTitle: updatedSubmission.assignment.title,
       },
     });
 
     return NextResponse.json({
-      submission,
+      success: true,
+      submission: updatedSubmission,
       message: "Submission graded successfully",
     });
   } catch (error) {
