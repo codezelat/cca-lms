@@ -56,10 +56,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check enrollment - verify user is enrolled with ACTIVE status
-    const isEnrolled = assignment.lesson.module.course.enrollments.some(
-      (enrollment) => enrollment.id && true, // enrollments array contains user's enrollment
-    );
+    // Check enrollment - verify user is enrolled
+    const isEnrolled = assignment.lesson.module.course.enrollments.length > 0;
 
     if (!isEnrolled) {
       return NextResponse.json(
