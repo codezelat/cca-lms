@@ -15,7 +15,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
 
-    // Check if student is enrolled in the course
+    // Get assignment details
     const assignment = await prisma.assignment.findUnique({
       where: { id },
       include: {
@@ -31,17 +31,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
                   select: {
                     id: true,
                     title: true,
-                    enrollments: {
-                      where: {
-                        userId: session.user.id,
-                        status: {
-                          in: ["ACTIVE", "COMPLETED"],
-                        },
-                      },
-                      select: {
-                        id: true,
-                      },
-                    },
                   },
                 },
               },
@@ -58,10 +47,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Check enrollment - verify user is enrolled
-    const isEnrolled = assignment.lesson.module.course.enrollments.length > 0;
+    // Check enrollment using the same pattern as working endpoints
+    const enrollment = await prisma.courseEnrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId: session.user.id,
+          courseId: assignment.lesson.module.course.id,
+        },
+      },
+    });
 
-    if (!isEnrolled) {
+    if (!enrollment) {
       return NextResponse.json(
         { error: "You are not enrolled in this course" },
         { status: 403 },
