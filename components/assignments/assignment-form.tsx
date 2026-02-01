@@ -149,11 +149,15 @@ export function AssignmentForm({
         ? `/api/admin/assignments/${existingAssignment.id}`
         : "/api/admin/assignments";
 
+      // Convert local datetime to UTC ISO string for consistent server handling
+      const dueDateUTC = new Date(form.dueDate).toISOString();
+
       const response = await fetch(url, {
         method: existingAssignment ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          dueDate: dueDateUTC,
           ...(existingAssignment ? {} : { lessonId }),
         }),
       });

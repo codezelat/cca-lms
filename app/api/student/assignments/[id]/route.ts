@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getServerTime } from "@/lib/utils";
+import { isDeadlinePassed } from "@/lib/utils";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -82,9 +82,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
     });
 
-    // Check if overdue using Sri Lankan server time
-    const now = getServerTime();
-    const isOverdue = assignment.dueDate < now;
+    // Check if overdue - compare dates in UTC
+    const isOverdue = isDeadlinePassed(assignment.dueDate);
     const canSubmit =
       !isOverdue || (isOverdue && assignment.allowLateSubmission);
 

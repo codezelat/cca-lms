@@ -4,17 +4,24 @@ import { twMerge } from "tailwind-merge";
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
 /**
- * Get current server time in Sri Lanka timezone (UTC+5:30)
- * Use this instead of new Date() for consistent server time across all users
- * Works correctly on Vercel serverless functions
+ * Get current time for DISPLAY in Sri Lanka timezone (UTC+5:30)
+ * Only use this for UI display, NOT for date comparisons!
  */
 export function getServerTime(): Date {
+  return new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Colombo" }),
+  );
+}
+
+/**
+ * Check if a deadline has passed (comparing in UTC)
+ * Dates are stored and compared in UTC
+ */
+export function isDeadlinePassed(deadline: Date): boolean {
   const now = new Date();
-  // Get Sri Lanka time offset: UTC+5:30 = 330 minutes
-  const SL_OFFSET_MINUTES = 330;
-  const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
-  return new Date(utcTime + SL_OFFSET_MINUTES * 60000);
+  return deadline.getTime() < now.getTime();
 }
 
 /**

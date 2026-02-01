@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { uploadToB2, deleteFromB2 } from "@/lib/b2";
 import { createAuditLog } from "@/lib/audit";
-import { getServerTime } from "@/lib/utils";
+import { isDeadlinePassed } from "@/lib/utils";
 
 // POST /api/student/submissions - Create or update submission
 export async function POST(request: NextRequest) {
@@ -70,9 +70,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check deadline using Sri Lankan server time
-    const now = getServerTime();
-    const isOverdue = assignment.dueDate < now;
+    // Check deadline - compare dates in UTC
+    const isOverdue = isDeadlinePassed(assignment.dueDate);
 
     if (isOverdue && !assignment.allowLateSubmission) {
       return NextResponse.json(
