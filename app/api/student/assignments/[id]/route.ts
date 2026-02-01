@@ -34,6 +34,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
                     enrollments: {
                       where: {
                         userId: session.user.id,
+                        status: {
+                          in: ["ACTIVE", "COMPLETED"],
+                        },
                       },
                       select: {
                         id: true,

@@ -38,6 +38,9 @@ export async function POST(request: NextRequest) {
                     enrollments: {
                       where: {
                         userId: session.user.id,
+                        status: {
+                          in: ["ACTIVE", "COMPLETED"],
+                        },
                       },
                     },
                   },
