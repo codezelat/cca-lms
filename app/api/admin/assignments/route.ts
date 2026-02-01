@@ -62,7 +62,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate due date is in the future
-    if (new Date(dueDate) < new Date()) {
+    const dueDateParsed = new Date(dueDate);
+    const now = new Date();
+
+    // DEBUG: Log what we're receiving
+    console.log(
+      "📝 ASSIGNMENT CREATE DEBUG:",
+      JSON.stringify({
+        received_dueDate: dueDate,
+        parsed_dueDate_iso: dueDateParsed.toISOString(),
+        parsed_dueDate_ts: dueDateParsed.getTime(),
+        now_iso: now.toISOString(),
+        now_ts: now.getTime(),
+        is_in_future: dueDateParsed > now,
+      }),
+    );
+
+    if (dueDateParsed < now) {
       return NextResponse.json(
         { error: "Due date must be in the future" },
         { status: 400 },
@@ -75,7 +91,7 @@ export async function POST(request: NextRequest) {
         title,
         description: description || null,
         instructions: instructions || null,
-        dueDate: new Date(dueDate),
+        dueDate: dueDateParsed,
         maxPoints: maxPoints || 100,
         allowedFileTypes: allowedFileTypes || [
           "pdf",

@@ -209,8 +209,9 @@ export function StudentSubmission({ assignmentId }: StudentSubmissionProps) {
   }
 
   const dueDate = new Date(assignment.dueDate);
-  const isOverdue = assignment.isOverdue; // Use server-calculated value instead of client calculation
-  const canSubmit = assignment.canSubmit && (!submission || !isOverdue);
+  const isOverdue = assignment.isOverdue; // Use server-calculated value
+  // Use server's canSubmit directly - it already accounts for late submission policy
+  const canSubmit = assignment.canSubmit;
   const canDownload = submission && !isOverdue;
 
   return (
