@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { AssignmentForm } from "./assignment-form";
 import { SubmissionGrading } from "./submission-grading";
 import { AssignmentAnalytics } from "./assignment-analytics";
+import { BulkSubmissionActions } from "./bulk-submission-actions";
 
 interface Assignment {
   id: string;
@@ -47,7 +48,12 @@ interface Submission {
   submittedAt: string;
   grade: number | null;
   user?: { id: string; name: string | null; email: string };
-  attachments?: { id: string; fileKey: string; fileName: string }[];
+  attachments?: {
+    id: string;
+    fileKey: string;
+    fileName: string;
+    fileSize?: number;
+  }[];
 }
 
 interface AssignmentWithSubmissions extends Assignment {
@@ -351,6 +357,19 @@ export function AssignmentList({ lessonId, role }: AssignmentListProps) {
             />
           ) : (
             <div className="space-y-4">
+              {/* Bulk Actions */}
+              {viewingSubmissions &&
+                viewingSubmissions.submissions &&
+                viewingSubmissions.submissions.length > 0 && (
+                  <BulkSubmissionActions
+                    assignmentId={viewingSubmissions.id}
+                    assignmentTitle={viewingSubmissions.title}
+                    dueDate={viewingSubmissions.dueDate}
+                    maxPoints={viewingSubmissions.maxPoints}
+                    submissions={viewingSubmissions.submissions}
+                  />
+                )}
+
               {!viewingSubmissions?.submissions?.length ? (
                 <div className="text-center py-8">
                   <AlertCircle className="h-12 w-12 mx-auto mb-4 text-terminal-text-muted" />
