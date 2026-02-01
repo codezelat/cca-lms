@@ -80,6 +80,13 @@ export default function ProgrammeDetailPage({
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
   const [enrolling, setEnrolling] = useState(false);
 
+  // Resolve params - must be at top level, before any conditionals
+  useEffect(() => {
+    params.then(({ id }) => {
+      setCourseId(id);
+    });
+  }, [params]);
+
   // Check if user is authenticated and is a student
   useEffect(() => {
     if (status === "loading") return;
@@ -95,35 +102,19 @@ export default function ProgrammeDetailPage({
     }
   }, [session, status, router]);
 
-  // Don't render anything while checking authentication
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen bg-terminal-dark flex items-center justify-center">
-        <div className="flex items-center gap-3 text-terminal-green">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span className="font-mono">Loading...</span>
-        </div>
-      </div>
-    );
-  }
-
-  // Don't render if not authenticated or not a student
-  if (!session?.user || session.user.role !== "STUDENT") {
-    return null;
-  }
-
+  // Fetch programme - must be at top level, before any conditionals
   useEffect(() => {
-    params.then(({ id }) => {
-      setCourseId(id);
-    });
-  }, [params]);
-
-  useEffect(() => {
-    if (courseId) {
-      fetchProgramme();
+    if (
+      !courseId ||
+      status === "loading" ||
+      !session?.user ||
+      session.user.role !== "STUDENT"
+    ) {
+      return;
     }
+    fetchProgramme();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [courseId]);
+  }, [courseId, status, session]);
 
   const fetchProgramme = async () => {
     if (!courseId) return;
@@ -146,6 +137,23 @@ export default function ProgrammeDetailPage({
       setIsLoading(false);
     }
   };
+
+  // Don't render anything while checking authentication
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-terminal-dark flex items-center justify-center">
+        <div className="flex items-center gap-3 text-terminal-green">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span className="font-mono">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated or not a student
+  if (!session?.user || session.user.role !== "STUDENT") {
+    return null;
+  }
 
   const handleEnroll = async () => {
     if (!courseId) return;

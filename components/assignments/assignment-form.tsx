@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { DateTimePicker } from "@/components/ui/datetime-picker";
 import { Loader2, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -60,7 +61,7 @@ export function AssignmentForm({
     title: "",
     description: "",
     instructions: "",
-    dueDate: "",
+    dueDate: null as Date | null,
     maxPoints: 100,
     allowedFileTypes: ["pdf", "docx", "txt", "zip"],
     maxFileSize: 5242880, // 5MB default
@@ -83,8 +84,8 @@ export function AssignmentForm({
         description: existingAssignment.description || "",
         instructions: existingAssignment.instructions || "",
         dueDate: existingAssignment.dueDate
-          ? new Date(existingAssignment.dueDate).toISOString().slice(0, 16)
-          : "",
+          ? new Date(existingAssignment.dueDate)
+          : null,
         maxPoints: existingAssignment.maxPoints || 100,
         allowedFileTypes,
         maxFileSize: existingAssignment.maxFileSize || 10485760,
@@ -149,8 +150,8 @@ export function AssignmentForm({
         ? `/api/admin/assignments/${existingAssignment.id}`
         : "/api/admin/assignments";
 
-      // Convert local datetime to UTC ISO string for consistent server handling
-      const dueDateUTC = new Date(form.dueDate).toISOString();
+      // Convert Date to UTC ISO string for consistent server handling
+      const dueDateUTC = form.dueDate!.toISOString();
 
       const response = await fetch(url, {
         method: existingAssignment ? "PUT" : "POST",
@@ -225,15 +226,14 @@ export function AssignmentForm({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <Label htmlFor="dueDate">Due Date & Time *</Label>
-          <Input
-            id="dueDate"
-            type="datetime-local"
-            value={form.dueDate}
-            onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
-            required
+        <div className="space-y-2">
+          <Label>Due Date & Time *</Label>
+          <DateTimePicker
+            value={form.dueDate ?? undefined}
+            onChange={(date) => setForm({ ...form, dueDate: date ?? null })}
+            placeholder="Select deadline..."
             disabled={isSubmitting}
+            minDate={new Date()}
           />
         </div>
 
