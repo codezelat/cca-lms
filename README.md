@@ -257,6 +257,58 @@ Optimized quiz-taking experience:
   - Correct answer reveal (if enabled)
   - Explanation display
 
+#### **Assignment System (File Submission)**
+
+Comprehensive assignment management for file-based submissions:
+
+**Assignment Creation (Admin/Lecturer):**
+
+- **Rich Instructions**: Full text editor for detailed requirements
+- **Due Date Management**: UTC-based deadline with timezone handling
+- **Late Submission Control**: Toggle to allow/deny late submissions
+- **File Restrictions**:
+  - Configurable allowed file types (PDF, DOCX, images, etc.)
+  - Maximum file size limit (configurable, default 10MB)
+  - Maximum number of files per submission
+- **Point System**: Set maximum points for grading
+
+**Student Submission:**
+
+- **Drag & Drop Upload**: Modern dropzone interface
+- **Multi-File Support**: Submit multiple files per assignment
+- **Submission Notes**: Optional text notes with submission
+- **Status Tracking**: Draft, Submitted, Graded states
+- **Download Own Files**: Access submitted files anytime
+- **Deadline Awareness**: Real-time countdown and status indicators
+
+**Grading Interface (Admin/Lecturer):**
+
+- **File Preview**: Download and view submitted files
+- **Grade Entry**: Numeric grade with max points validation
+- **Feedback Field**: Detailed text feedback for students
+- **Late Indicator**: Visual badge for late submissions
+- **Grade History**: Track when submissions were graded
+
+**Bulk Submission Actions:**
+
+- **Export to Excel**: Comprehensive XLSX report with 3 sheets:
+  - **Submissions Sheet**: Full details including student info, grades, file download links
+  - **All Files Sheet**: Every submitted file with download links
+  - **Summary Report**: Statistics (total, graded, pending, late, averages)
+- **Bulk Download ZIP**: Download all submission files as organized ZIP
+  - Batched downloads (5 files at a time) to prevent server overload
+  - Progress indicator with current file, batch progress, and completion status
+  - Cancel button for long downloads
+  - Files organized by student folders: `StudentName_email/filename.pdf`
+
+**Secure File Downloads:**
+
+- **Proxy Download Endpoint**: All downloads go through `/api/download/` 
+- **Branded URLs**: Users see your domain, not Backblaze/R2 URLs
+- **Permission Verification**: Every download checks authentication
+- **Streaming Response**: Memory-efficient, handles large files
+- **1-Hour Cache**: Optimized for repeated downloads
+
 ### 📁 Resource Library
 
 #### **Supported Resource Types**
@@ -419,7 +471,8 @@ Every action tracked with:
 | -------------------- | ----------------------------------------- |
 | **Vercel**           | Edge runtime hosting with instant deploys |
 | **Supabase**         | PostgreSQL database with RLS and backups  |
-| **Cloudflare R2**    | S3-compatible object storage for files    |
+| **Backblaze B2**     | S3-compatible object storage for files    |
+| **Cloudflare R2**    | Alternative object storage (supported)    |
 | **Resend**           | Transactional email delivery (optional)   |
 | **Google Analytics** | User behavior tracking and insights       |
 
@@ -435,6 +488,9 @@ Every action tracked with:
 | **react-dropzone** | 14.3.8  | File upload with drag-and-drop       |
 | **date-fns**       | 4.1.0   | Date manipulation and formatting     |
 | **tw-animate-css** | 1.4.0   | Tailwind animation utilities         |
+| **xlsx**           | Latest  | Excel spreadsheet generation         |
+| **jszip**          | Latest  | Client-side ZIP file creation        |
+| **file-saver**     | Latest  | Download generated files             |
 
 ### **Development Tools**
 
@@ -883,6 +939,10 @@ cca-lms/
 │   │   ├── admin/                         # Admin-only endpoints
 │   │   │   ├── analytics/                # System analytics
 │   │   │   ├── activity-logs/            # Audit log retrieval
+│   │   │   ├── assignments/              # Assignment CRUD
+│   │   │   │   ├── [id]/                # Single assignment
+│   │   │   │   │   ├── analytics/       # Submission analytics
+│   │   │   │   │   └── bulk-download/   # Bulk file download URLs
 │   │   │   ├── bulk-enroll/              # CSV bulk enrollment
 │   │   │   │   ├── template/            # Download CSV template
 │   │   │   │   ├── preview/             # Validate CSV preview
@@ -893,6 +953,7 @@ cca-lms/
 │   │   │   ├── programmes/               # Programme CRUD
 │   │   │   ├── quizzes/                  # Quiz CRUD
 │   │   │   ├── resources/                # Resource CRUD + reorder
+│   │   │   ├── submissions/[id]/         # Submission grading
 │   │   │   └── users/                    # User management CRUD
 │   │   ├── auth/                         # Authentication
 │   │   │   ├── [...nextauth]/           # NextAuth handlers
@@ -904,13 +965,17 @@ cca-lms/
 │   │   │   ├── programmes/              # Own programmes
 │   │   │   └── students/                # Enrolled students
 │   │   ├── student/                      # Student endpoints
+│   │   │   ├── assignments/[id]/        # Assignment details
 │   │   │   ├── dashboard/               # Student stats
 │   │   │   ├── lessons/[id]/progress/   # Mark complete
 │   │   │   ├── profile/                 # User profile
+│   │   │   ├── submissions/             # Submit assignment
+│   │   │   │   └── [id]/download/       # Download submission file
 │   │   │   └── programmes/              # Enrolled programmes
 │   │   │       ├── [id]/                # Programme details
 │   │   │       ├── [id]/enroll/         # Self-enroll (disabled)
 │   │   │       └── [id]/lessons/[id]/   # Lesson content
+│   │   ├── download/[...fileKey]/       # Secure file download proxy
 │   │   └── quizzes/                      # Quiz endpoints
 │   │       └── attempts/                # Quiz submissions
 │   ├── activity-logs/                    # Audit log viewer
@@ -922,6 +987,7 @@ cca-lms/
 │   ├── bulk-enroll/                      # Bulk enrollment UI
 │   ├── dashboard/                        # Main dashboard (role-aware)
 │   ├── learn/                            # Student learning interface
+│   │   ├── assignment/[id]/             # Assignment submission page
 │   │   └── [id]/                        # Programme view
 │   │       ├── lesson/[lessonId]/       # Lesson player
 │   │       └── page.tsx                 # Programme overview
@@ -938,6 +1004,13 @@ cca-lms/
 │   └── page.tsx                          # Landing page
 │
 ├── components/                           # React Components
+│   ├── assignments/                     # Assignment components
+│   │   ├── assignment-list.tsx         # Assignment manager for lessons
+│   │   ├── assignment-form.tsx         # Create/edit assignment form
+│   │   ├── assignment-analytics.tsx    # Submission statistics
+│   │   ├── student-submission.tsx      # Student file upload UI
+│   │   ├── submission-grading.tsx      # Admin/lecturer grading interface
+│   │   └── bulk-submission-actions.tsx # Excel export & ZIP download
 │   ├── bulk-enroll/                     # Bulk enrollment components
 │   │   └── bulk-enroll-client.tsx      # CSV upload UI (488 lines)
 │   ├── dashboards/                      # Role-specific dashboards
@@ -985,13 +1058,20 @@ cca-lms/
 │   ├── resend.ts                       # Email client
 │   ├── audit.ts                        # Audit logging
 │   │   └── createAuditLog()            # Log user actions
+│   ├── b2.ts                           # Backblaze B2 helpers
+│   │   ├── uploadToB2()                # Upload file to B2
+│   │   ├── getB2SignedUrl()            # Generate signed download URL
+│   │   └── deleteFromB2()              # Delete file from B2
 │   ├── utils.ts                        # Helper functions
 │   │   ├── cn()                        # Class name merger
-│   │   └── formatDate()                # Date formatting
+│   │   ├── formatDate()                # Date formatting
+│   │   ├── isDeadlinePassed()          # UTC deadline comparison
+│   │   └── getServerTime()             # Current server time
 │   └── validations.ts                  # Zod schemas
 │       ├── userSchema                  # User validation
 │       ├── programmeSchema             # Programme validation
 │       ├── quizSchema                  # Quiz validation
+│       ├── assignmentSchema            # Assignment validation
 │       └── ...                         # More schemas
 │
 ├── prisma/                              # Database
