@@ -59,10 +59,10 @@ export function SubmissionGrading({
     }
   };
 
-  const downloadFile = async (attachmentId: string) => {
+  const downloadFile = async (attachment: { id: string; fileKey: string }) => {
     try {
       const response = await fetch(
-        `/api/student/submissions/${submissionId}/download?attachmentId=${attachmentId}`,
+        `/api/student/submissions/${submissionId}/download?fileKey=${encodeURIComponent(attachment.fileKey)}`,
       );
 
       const data = await response.json();
@@ -227,17 +227,17 @@ export function SubmissionGrading({
                 <div className="flex items-center gap-3">
                   <FileText className="h-5 w-5 text-terminal-accent" />
                   <div>
-                    <p className="font-medium">{attachment.filename}</p>
+                    <p className="font-medium">{attachment.fileName}</p>
                     <p className="text-sm text-terminal-text-muted">
                       {(attachment.fileSize / 1024).toFixed(1)} KB •{" "}
-                      {new Date(attachment.uploadedAt).toLocaleString()}
+                      {new Date(attachment.createdAt).toLocaleString()}
                     </p>
                   </div>
                 </div>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => downloadFile(attachment.id)}
+                  onClick={() => downloadFile(attachment)}
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Download

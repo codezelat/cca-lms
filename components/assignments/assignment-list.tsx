@@ -46,9 +46,8 @@ interface Submission {
   id: string;
   submittedAt: string;
   grade: number | null;
-  student: { firstName: string; lastName: string };
-  attachments?: unknown[];
-  gradedBy?: { firstName: string; lastName: string };
+  user?: { id: string; name: string | null; email: string };
+  attachments?: { id: string; fileKey: string; fileName: string }[];
 }
 
 interface AssignmentWithSubmissions extends Assignment {
@@ -144,7 +143,10 @@ export function AssignmentList({ lessonId, role }: AssignmentListProps) {
         throw new Error(data.error || "Failed to fetch submissions");
       }
 
-      setViewingSubmissions(data);
+      setViewingSubmissions({
+        ...data.assignment,
+        submissions: data.assignment.assignmentSubmissions,
+      });
     } catch {
       toast.error("Load Failed", {
         description: "Could not load submissions",
@@ -349,7 +351,7 @@ export function AssignmentList({ lessonId, role }: AssignmentListProps) {
             />
           ) : (
             <div className="space-y-4">
-              {viewingSubmissions?.submissions?.length === 0 ? (
+              {!viewingSubmissions?.submissions?.length ? (
                 <div className="text-center py-8">
                   <AlertCircle className="h-12 w-12 mx-auto mb-4 text-terminal-text-muted" />
                   <p className="text-terminal-text-muted">
@@ -370,8 +372,7 @@ export function AssignmentList({ lessonId, role }: AssignmentListProps) {
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
                               <h4 className="font-semibold">
-                                {submission.student.firstName}{" "}
-                                {submission.student.lastName}
+                                {submission.user?.name || "Unknown Student"}
                               </h4>
                               {hasGrade && (
                                 <Badge variant="default">
@@ -387,12 +388,6 @@ export function AssignmentList({ lessonId, role }: AssignmentListProps) {
                               <p>
                                 Files: {submission.attachments?.length || 0}
                               </p>
-                              {hasGrade && (
-                                <p>
-                                  Graded by: {submission.gradedBy?.firstName}{" "}
-                                  {submission.gradedBy?.lastName}
-                                </p>
-                              )}
                             </div>
                           </div>
                           <Button
