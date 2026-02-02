@@ -212,9 +212,37 @@ export default function UsersClient() {
     // Skip Turnstile in development mode
     if (isDevelopment) return;
 
+    // small helper to attach a MutationObserver to diagnose DOM changes
+    let observer: MutationObserver | null = null;
+    const attachObserver = () => {
+      try {
+        if (createTurnstileRef.current) {
+          observer = new MutationObserver((mutations) => {
+            console.debug("Turnstile container mutated", mutations);
+          });
+          observer.observe(createTurnstileRef.current, {
+            childList: true,
+            subtree: true,
+          });
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+
     // Wait a bit for the dialog to render
     setTimeout(() => {
-      // If Turnstile is already loaded, render immediately
+      attachObserver();
+
+      // If we already have a successful token, don't re-render the widget.
+      // The visual widget can be transient in third-party contexts; we rely
+      // on the token and show an explicit indicator to the user instead of
+      // continuously re-rendering the widget.
+      if (createTurnstileToken) {
+        return;
+      }
+
+      // If Turnstile is already loaded, render safely
       if ((window as any).turnstile) {
         renderCreateTurnstile();
       } else {
@@ -234,11 +262,18 @@ export default function UsersClient() {
     }, 100);
 
     return () => {
+      if (observer) {
+        observer.disconnect();
+      }
       if (createTurnstileWidgetIdRef.current && (window as any).turnstile) {
-        (window as any).turnstile.remove(createTurnstileWidgetIdRef.current);
+        try {
+          (window as any).turnstile.remove(createTurnstileWidgetIdRef.current);
+        } catch (e) {
+          // ignore
+        }
       }
     };
-  }, [showCreateDialog]);
+  }, [showCreateDialog, createTurnstileToken]);
 
   // Function to reset create CAPTCHA widget
   const resetCreateCaptcha = () => {
@@ -1153,7 +1188,27 @@ export default function UsersClient() {
               {/* Turnstile CAPTCHA */}
               {!isDevelopment && (
                 <div className="space-y-2">
-                  <div ref={createTurnstileRef} />
+                  <div className="flex items-center gap-3">
+                    <div ref={createTurnstileRef} />
+                    {createTurnstileToken ? (
+                      <span className="text-sm font-medium text-terminal-green">
+                        Verified ✅
+                      </span>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          // Manual retry to re-render the widget
+                          createTurnstileRetriesRef.current = 0;
+                          renderCreateTurnstile();
+                        }}
+                      >
+                        Retry CAPTCHA
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )}
 
