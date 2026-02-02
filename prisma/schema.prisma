@@ -650,6 +650,12 @@ enum AuditAction {
   EMAIL_SENT
   EMAIL_FAILED
 
+  // Backup actions
+  BACKUP_CREATED
+  BACKUP_FAILED
+  BACKUP_CLEANUP
+  BACKUP_RESTORED
+
   // System actions
   SYSTEM_ERROR
   SYSTEM_WARNING
