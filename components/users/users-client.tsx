@@ -127,6 +127,10 @@ export default function UsersClient() {
   const createTurnstileRef = useRef<HTMLDivElement>(null);
   const createTurnstileWidgetIdRef = useRef<string | null>(null);
 
+  // Skip Turnstile in development mode (defaults to production if not set)
+  const isDevelopment =
+    (process.env.NODE_ENV || "production") === "development";
+
   // Turnstile callbacks for create form
   const handleCreateTurnstileSuccess = (token: string) => {
     setCreateTurnstileToken(token);
@@ -143,6 +147,9 @@ export default function UsersClient() {
   // Expose create callbacks to window for Turnstile
   useEffect(() => {
     if (!showCreateDialog) return;
+
+    // Skip Turnstile in development mode
+    if (isDevelopment) return;
 
     const initTurnstile = () => {
       if ((window as any).turnstile && createTurnstileRef.current) {
@@ -1095,14 +1102,18 @@ export default function UsersClient() {
               </div>
 
               {/* Turnstile CAPTCHA */}
-              <div className="space-y-2">
-                <div ref={createTurnstileRef} />
-              </div>
+              {!isDevelopment && (
+                <div className="space-y-2">
+                  <div ref={createTurnstileRef} />
+                </div>
+              )}
 
               <div className="flex gap-2 pt-2">
                 <Button
                   type="submit"
-                  disabled={isCreating || !createTurnstileToken}
+                  disabled={
+                    isCreating || (!isDevelopment && !createTurnstileToken)
+                  }
                   className="flex-1"
                 >
                   {isCreating ? (
