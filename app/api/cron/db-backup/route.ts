@@ -251,7 +251,7 @@ function verifyAuthorization(request: NextRequest): AuthResult {
   // SECURITY: In production, CRON_SECRET is REQUIRED
   // Vercel automatically sends: Authorization: Bearer <CRON_SECRET>
   // when CRON_SECRET env var is set in your Vercel project
-  
+
   if (!cronSecret) {
     // No CRON_SECRET configured - only allow in development
     if (process.env.NODE_ENV === "development") {
@@ -271,9 +271,9 @@ function verifyAuthorization(request: NextRequest): AuthResult {
     // Check if it's from Vercel Cron (for logging purposes only, not security)
     const userAgent = request.headers.get("user-agent") || "";
     const isVercelCron = userAgent.includes("vercel-cron");
-    return { 
-      authorized: true, 
-      triggeredBy: isVercelCron ? "vercel-cron" : "manual-api" 
+    return {
+      authorized: true,
+      triggeredBy: isVercelCron ? "vercel-cron" : "manual-api",
     };
   }
 

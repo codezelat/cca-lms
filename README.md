@@ -37,6 +37,7 @@ _Developed with ❤️ by [Codezela Technologies](https://codezela.com)_
 - [Project Structure](#-project-structure)
 - [API Reference](#-api-reference)
 - [Database Schema](#-database-schema)
+- [Backup & Recovery](#-backup--recovery)
 - [Deployment](#-deployment)
 - [Best Practices](#-best-practices)
 - [Contributing](#-contributing)
@@ -374,7 +375,16 @@ Comprehensive assignment management for file-based submissions:
 - **Prepared Statements**: Prisma prevents SQL injection
 - **Connection Pooling**: Optimized database connections
 - **Encrypted Connections**: SSL/TLS for all database traffic
-- **Automatic Backups**: Daily Supabase snapshots
+- **Automated Backups**: Daily full database backups to Cloudflare R2
+
+#### **Backup & Recovery**
+
+- **Daily Automated Backups**: Full database export via Vercel Cron at 2:00 AM UTC
+- **14-Day Retention**: Automatic cleanup of older backups
+- **Compressed Storage**: Gzipped JSON backups (~85% size reduction)
+- **Secure Storage**: Private R2 bucket, no public access
+- **Audit Logged**: All backup operations tracked (BACKUP_CREATED, BACKUP_FAILED, BACKUP_CLEANUP)
+- **Easy Restore**: CLI script for disaster recovery
 
 #### **File Security**
 
@@ -406,6 +416,7 @@ Every action tracked with:
 - RESOURCE_UPLOADED, RESOURCE_UPDATED, RESOURCE_DELETED
 - ENROLLMENT_CREATED, ENROLLMENT_DELETED
 - BULK_ENROLLMENT_STARTED, BULK_ENROLLMENT_COMPLETED
+- BACKUP_CREATED, BACKUP_FAILED, BACKUP_CLEANUP, BACKUP_RESTORED
 
 #### **SEO & Privacy**
 
@@ -820,6 +831,10 @@ CLOUDFLARE_R2_PUBLIC_URL="https://your-bucket.r2.cloudflarestorage.com"
 # Resend (Email - Optional)
 RESEND_API_KEY="re_your_api_key_here"
 RESEND_FROM_EMAIL="noreply@yourdomain.com"
+
+# Cron Jobs Security (Required for Vercel)
+# Generate with: openssl rand -base64 32
+CRON_SECRET="your-cron-secret-here"
 
 # Google Analytics (Optional)
 NEXT_PUBLIC_GA_ID="G-S1F397DHHS"
@@ -1250,6 +1265,76 @@ The system uses **15 Prisma models**:
 
 ---
 
+## 🗄 Backup & Recovery
+
+### **Automated Daily Backups**
+
+The LMS includes a production-ready backup system that automatically backs up your entire database to Cloudflare R2 storage.
+
+#### **Features**
+
+- ⏰ **Daily Schedule**: Runs at 2:00 AM UTC via Vercel Cron
+- 📦 **Full Database Export**: All 23 tables backed up
+- 🗜️ **Compression**: ~85% size reduction with gzip
+- 🔒 **Secure Storage**: Private R2 bucket, not publicly accessible
+- 🧹 **Auto-Cleanup**: Backups older than 14 days automatically deleted
+- 📝 **Audit Logged**: All operations tracked in AuditLog
+
+#### **Backup Location**
+
+```
+R2 Bucket: cca-lms-uploads
+└── backups/
+    └── 2026-02-02/
+        └── 2026-02-02_02-00-00_full.json.gz
+```
+
+#### **API Endpoints**
+
+| Endpoint              | Method | Description                            |
+| --------------------- | ------ | -------------------------------------- |
+| `/api/cron/db-backup` | POST   | Trigger backup (Vercel Cron or manual) |
+| `/api/cron/db-backup` | GET    | Check backup health status             |
+| `/api/admin/backups`  | GET    | List all available backups             |
+
+#### **Manual Backup Trigger**
+
+```bash
+curl -X POST https://your-app.vercel.app/api/cron/db-backup \
+  -H "Authorization: Bearer YOUR_CRON_SECRET"
+```
+
+#### **Check Backup Health**
+
+```bash
+curl https://your-app.vercel.app/api/cron/db-backup \
+  -H "Authorization: Bearer YOUR_CRON_SECRET"
+```
+
+#### **Restore from Backup**
+
+1. Download backup from R2 (using Cloudflare dashboard or CLI)
+2. Run the restore script:
+
+```bash
+# Dry run (preview only)
+npx tsx scripts/restore-backup.ts ./backup-2026-02-02.json.gz --dry-run
+
+# Actual restore
+npx tsx scripts/restore-backup.ts ./backup-2026-02-02.json.gz
+```
+
+⚠️ **Warning**: Restore will DELETE all existing data and replace with backup contents.
+
+#### **Security**
+
+- **CRON_SECRET Required**: All backup endpoints require `Authorization: Bearer <CRON_SECRET>`
+- **Vercel Auto-Auth**: Vercel Cron automatically includes the secret
+- **No Public Access**: R2 bucket is private
+- **Audit Trail**: All backup operations logged
+
+---
+
 ## 🚀 Deployment
 
 ### **Vercel Deployment (Recommended)**
@@ -1267,9 +1352,28 @@ git push -u origin main
    - Click "Import Project"
    - Select your GitHub repository
 
-3. **Set Environment Variables** in Vercel project settings
+3. **Set Environment Variables** in Vercel project settings:
+
+| Variable               | Description                                | Required |
+| ---------------------- | ------------------------------------------ | -------- |
+| `DATABASE_URL`         | Supabase PostgreSQL connection string      | ✅       |
+| `DIRECT_URL`           | Direct database URL (for migrations)       | ✅       |
+| `AUTH_SECRET`          | NextAuth.js secret key                     | ✅       |
+| `R2_ACCOUNT_ID`        | Cloudflare R2 account ID                   | ✅       |
+| `R2_ACCESS_KEY_ID`     | R2 access key                              | ✅       |
+| `R2_SECRET_ACCESS_KEY` | R2 secret key                              | ✅       |
+| `R2_BUCKET_NAME`       | R2 bucket name                             | ✅       |
+| `R2_PUBLIC_URL`        | R2 public URL for file access              | ✅       |
+| `CRON_SECRET`          | Secret for authenticating Vercel Cron jobs | ✅       |
+| `RESEND_API_KEY`       | Resend email API key                       | ✅       |
+| `ADMIN_API_SECRET`     | Admin API authentication secret            | Optional |
 
 4. **Deploy** - Vercel auto-deploys on push to main
+
+5. **Verify Cron Jobs:**
+   - Go to your Vercel project → Settings → Cron Jobs
+   - Confirm `db-backup` job is scheduled for `0 2 * * *` (2:00 AM UTC daily)
+   - Test manually: `curl -X POST https://your-domain.vercel.app/api/cron/db-backup -H "Authorization: Bearer YOUR_CRON_SECRET"`
 
 ---
 
