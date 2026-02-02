@@ -126,25 +126,79 @@ export default function UsersClient() {
   >(null);
   const createTurnstileRef = useRef<HTMLDivElement>(null);
   const createTurnstileWidgetIdRef = useRef<string | null>(null);
+  // Track retries to avoid infinite loops on transient errors
+  const createTurnstileRetriesRef = useRef(0);
 
   // Skip Turnstile in development mode (defaults to production if not set)
   const isDevelopment =
     (process.env.NODE_ENV || "production") === "development";
-  console.log(
-    "isDevelopment:",
-    isDevelopment,
-    "NODE_ENV:",
-    process.env.NODE_ENV,
-  );
+
+  // Helper to render/reset the Turnstile widget safely
+  const renderCreateTurnstile = () => {
+    try {
+      // Remove existing widget if present to ensure a clean render
+      if (createTurnstileWidgetIdRef.current && (window as any).turnstile) {
+        try {
+          (window as any).turnstile.remove(createTurnstileWidgetIdRef.current);
+        } catch (e) {
+          // ignore remove errors
+        }
+        createTurnstileWidgetIdRef.current = null;
+      }
+
+      if ((window as any).turnstile && createTurnstileRef.current) {
+        createTurnstileWidgetIdRef.current = (window as any).turnstile.render(
+          createTurnstileRef.current,
+          {
+            sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+            callback: handleCreateTurnstileSuccess,
+            "error-callback": handleCreateTurnstileError,
+            "expired-callback": handleCreateTurnstileExpired,
+            theme: "dark",
+          },
+        );
+        // reset retry counter on success
+        createTurnstileRetriesRef.current = 0;
+      }
+    } catch (err) {
+      // swallow and let error-callback handle retries
+      console.warn("Error rendering Turnstile:", err);
+    }
+  };
 
   // Turnstile callbacks for create form
   const handleCreateTurnstileSuccess = (token: string) => {
-    console.log("Turnstile success, token received");
     setCreateTurnstileToken(token);
   };
 
   const handleCreateTurnstileError = () => {
     setCreateTurnstileToken(null);
+
+    // Try to recover from transient Turnstile errors by resetting and
+    // re-rendering the widget up to 3 times. If it still fails, inform the user.
+    const retries = createTurnstileRetriesRef.current || 0;
+    if (retries < 3) {
+      createTurnstileRetriesRef.current = retries + 1;
+      // attempt reset if possible
+      if (createTurnstileWidgetIdRef.current && (window as any).turnstile) {
+        try {
+          (window as any).turnstile.reset(createTurnstileWidgetIdRef.current);
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      // small delay before attempting to render again
+      setTimeout(() => {
+        renderCreateTurnstile();
+      }, 500);
+    } else {
+      // persistent failure - show helpful message and allow manual retry
+      createTurnstileRetriesRef.current = 0;
+      toast.error(
+        "CAPTCHA failed to load, please try again or contact support.",
+      );
+    }
   };
 
   const handleCreateTurnstileExpired = () => {
@@ -158,45 +212,23 @@ export default function UsersClient() {
     // Skip Turnstile in development mode
     if (isDevelopment) return;
 
-    console.log("Initializing Turnstile for create dialog");
-
     // Wait a bit for the dialog to render
     setTimeout(() => {
-      const initTurnstile = () => {
-        if ((window as any).turnstile && createTurnstileRef.current) {
-          console.log("Turnstile loaded, rendering widget");
-          createTurnstileWidgetIdRef.current = (window as any).turnstile.render(
-            createTurnstileRef.current,
-            {
-              sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
-              callback: handleCreateTurnstileSuccess,
-              "error-callback": handleCreateTurnstileError,
-              "expired-callback": handleCreateTurnstileExpired,
-              theme: "dark",
-            },
-          );
-        } else {
-          console.log("Turnstile not ready or ref null");
-        }
-      };
-
-      // Check if Turnstile is already loaded
+      // If Turnstile is already loaded, render immediately
       if ((window as any).turnstile) {
-        initTurnstile();
+        renderCreateTurnstile();
       } else {
-        console.log("Turnstile not loaded yet, waiting...");
         // Wait for Turnstile to load
         const checkTurnstile = setInterval(() => {
           if ((window as any).turnstile) {
             clearInterval(checkTurnstile);
-            initTurnstile();
+            renderCreateTurnstile();
           }
         }, 100);
 
         // Timeout after 10 seconds
         setTimeout(() => {
           clearInterval(checkTurnstile);
-          console.log("Turnstile load timeout");
         }, 10000);
       }
     }, 100);
