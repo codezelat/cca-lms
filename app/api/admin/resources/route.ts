@@ -163,6 +163,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GET: Get resources for a lesson
+// ADMIN: full access, LECTURER: their courses, STUDENT: enrolled courses (with visibility filter)
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
@@ -176,6 +177,57 @@ export async function GET(request: NextRequest) {
 
     if (!lessonId) {
       return NextResponse.json({ error: "Missing lessonId" }, { status: 400 });
+    }
+
+    // Get the lesson with course info for authorization
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: {
+        module: {
+          select: {
+            course: {
+              select: {
+                id: true,
+                lecturers: {
+                  select: { lecturerId: true },
+                },
+                enrollments: {
+                  where: {
+                    userId: session.user.id,
+                    status: "ACTIVE",
+                  },
+                  select: { userId: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!lesson) {
+      return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
+    }
+
+    // Authorization check
+    if (session.user.role === "LECTURER") {
+      const isAssigned = lesson.module.course.lecturers.some(
+        (l) => l.lecturerId === session.user.id,
+      );
+      if (!isAssigned) {
+        return NextResponse.json(
+          { error: "Not authorized for this course" },
+          { status: 403 },
+        );
+      }
+    } else if (session.user.role === "STUDENT") {
+      const isEnrolled = lesson.module.course.enrollments.length > 0;
+      if (!isEnrolled) {
+        return NextResponse.json(
+          { error: "You must be enrolled in this course" },
+          { status: 403 },
+        );
+      }
     }
 
     const resources = await prisma.lessonResource.findMany({

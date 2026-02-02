@@ -32,29 +32,35 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             return null; // Return null instead of throwing to avoid Configuration error
           }
 
-          // Verify Turnstile token
-          if (!credentials.turnstileToken) {
-            throw new Error("CAPTCHA verification required");
-          }
+          // Skip Turnstile verification in development mode
+          const isDevelopment =
+            (process.env.NODE_ENV || "production") === "development";
 
-          const turnstileResponse = await fetch(
-            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
+          if (!isDevelopment) {
+            // Verify Turnstile token in production
+            if (!credentials.turnstileToken) {
+              throw new Error("CAPTCHA verification required");
+            }
+
+            const turnstileResponse = await fetch(
+              "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: new URLSearchParams({
+                  secret: process.env.TURNSTILE_SECRET_KEY!,
+                  response: credentials.turnstileToken as string,
+                }),
               },
-              body: new URLSearchParams({
-                secret: process.env.TURNSTILE_SECRET_KEY!,
-                response: credentials.turnstileToken as string,
-              }),
-            },
-          );
+            );
 
-          const turnstileResult = await turnstileResponse.json();
+            const turnstileResult = await turnstileResponse.json();
 
-          if (!turnstileResult.success) {
-            throw new Error("CAPTCHA verification failed");
+            if (!turnstileResult.success) {
+              throw new Error("CAPTCHA verification failed");
+            }
           }
 
           const user = await prisma.user.findUnique({

@@ -14,11 +14,12 @@ import { createAuditLog } from "@/lib/audit";
 type RouteParams = { params: Promise<{ id: string }> };
 
 // GET: Get single resource with versions
+// Only ADMIN and LECTURER can access this endpoint (with ownership check for lecturers)
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await auth();
 
-    if (!session?.user) {
+    if (!session?.user || !["ADMIN", "LECTURER"].includes(session.user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -31,6 +32,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           select: {
             id: true,
             title: true,
+            module: {
+              select: {
+                course: {
+                  select: {
+                    lecturers: {
+                      select: {
+                        lecturerId: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
         versions: {
@@ -44,6 +58,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         { error: "Resource not found" },
         { status: 404 },
       );
+    }
+
+    // Check ownership if lecturer
+    if (session.user.role === "LECTURER") {
+      const isAssigned = resource.lesson.module.course.lecturers.some(
+        (l) => l.lecturerId === session.user.id,
+      );
+      if (!isAssigned) {
+        return NextResponse.json(
+          { error: "Not authorized for this course" },
+          { status: 403 },
+        );
+      }
     }
 
     // Generate signed URL if downloadable

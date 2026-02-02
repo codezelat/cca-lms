@@ -6,6 +6,7 @@ import { createAuditLog } from "@/lib/audit";
 type RouteParams = { params: Promise<{ id: string }> };
 
 // GET: Get single quiz with questions
+// ADMIN: full access, LECTURER: must own course, STUDENT: must be enrolled
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await auth();
@@ -23,6 +24,29 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           select: {
             id: true,
             title: true,
+            module: {
+              select: {
+                course: {
+                  select: {
+                    id: true,
+                    lecturers: {
+                      select: {
+                        lecturerId: true,
+                      },
+                    },
+                    enrollments: {
+                      where: {
+                        userId: session.user.id,
+                        status: "ACTIVE",
+                      },
+                      select: {
+                        userId: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
         questions: {
@@ -46,7 +70,29 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
     }
 
-    return NextResponse.json(quiz);
+    // Authorization check based on role
+    if (session.user.role === "LECTURER") {
+      const isAssigned = quiz.lesson.module.course.lecturers.some(
+        (l) => l.lecturerId === session.user.id,
+      );
+      if (!isAssigned) {
+        return NextResponse.json(
+          { error: "Not authorized for this course" },
+          { status: 403 },
+        );
+      }
+    } else if (session.user.role === "STUDENT") {
+      const isEnrolled = quiz.lesson.module.course.enrollments.length > 0;
+      if (!isEnrolled) {
+        return NextResponse.json(
+          { error: "You must be enrolled in this course to access this quiz" },
+          { status: 403 },
+        );
+      }
+    }
+    // ADMIN has full access - no additional check needed
+
+    return NextResponse.json({ quiz });
   } catch (error) {
     console.error("Error fetching quiz:", error);
     return NextResponse.json(
@@ -146,7 +192,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       },
     });
 
-    return NextResponse.json(quiz);
+    return NextResponse.json({ quiz });
   } catch (error) {
     console.error("Error updating quiz:", error);
     return NextResponse.json(

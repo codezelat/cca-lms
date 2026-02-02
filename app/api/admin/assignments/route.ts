@@ -189,6 +189,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GET /api/admin/assignments - List assignments
+// ADMIN: all, LECTURER: their courses, STUDENT: enrolled courses only
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
@@ -227,6 +228,24 @@ export async function GET(request: NextRequest) {
             lecturers: {
               some: {
                 lecturerId: session.user.id,
+              },
+            },
+          },
+        },
+      };
+    }
+
+    // Students can only see assignments for courses they're enrolled in
+    if (session.user.role === "STUDENT") {
+      whereClause.lesson = {
+        ...whereClause.lesson,
+        module: {
+          ...whereClause.lesson?.module,
+          course: {
+            enrollments: {
+              some: {
+                userId: session.user.id,
+                status: "ACTIVE",
               },
             },
           },

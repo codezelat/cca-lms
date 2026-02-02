@@ -32,6 +32,10 @@ export default function FirstLoginPage() {
   const turnstileRef = useRef<HTMLDivElement>(null);
   const turnstileWidgetIdRef = useRef<string | null>(null);
 
+  // Skip Turnstile in development mode (defaults to production if not set)
+  const isDevelopment =
+    (process.env.NODE_ENV || "production") === "development";
+
   // Turnstile callbacks
   const handleTurnstileSuccess = (token: string) => {
     setTurnstileToken(token);
@@ -45,8 +49,11 @@ export default function FirstLoginPage() {
     setTurnstileToken(null);
   };
 
-  // Expose callbacks to window for Turnstile
+  // Expose callbacks to window for Turnstile (skip in development)
   useEffect(() => {
+    // Skip Turnstile in development mode
+    if (isDevelopment) return;
+
     const initTurnstile = () => {
       if ((window as any).turnstile && turnstileRef.current) {
         turnstileWidgetIdRef.current = (window as any).turnstile.render(
@@ -126,7 +133,7 @@ export default function FirstLoginPage() {
         body: JSON.stringify({
           currentPassword,
           newPassword,
-          turnstileToken,
+          turnstileToken: isDevelopment ? "dev-bypass" : turnstileToken,
         }),
       });
 
@@ -268,16 +275,22 @@ export default function FirstLoginPage() {
                 ))}
               </div>
 
-              {/* Turnstile CAPTCHA */}
-              <div className="space-y-2">
-                <div ref={turnstileRef} />
-              </div>
+              {/* Turnstile CAPTCHA - hidden in development */}
+              {!isDevelopment && (
+                <div className="space-y-2">
+                  <div ref={turnstileRef} />
+                </div>
+              )}
 
               {/* Submit */}
               <Button
                 type="submit"
                 className="w-full gap-2"
-                disabled={!allRequirementsMet || isLoading || !turnstileToken}
+                disabled={
+                  !allRequirementsMet ||
+                  isLoading ||
+                  (!isDevelopment && !turnstileToken)
+                }
               >
                 {isLoading ? (
                   <>

@@ -7,11 +7,12 @@ import { deleteFromB2 } from "@/lib/b2";
 type RouteParams = { params: Promise<{ id: string }> };
 
 // GET /api/admin/assignments/[id] - Get single assignment
+// Only ADMIN and LECTURER can access this endpoint
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await auth();
 
-    if (!session?.user) {
+    if (!session?.user || !["ADMIN", "LECTURER"].includes(session.user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
