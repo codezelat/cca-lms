@@ -190,7 +190,9 @@ export default function AnalyticsPage() {
   ) => {
     const result = [];
     const endDate = new Date();
-    const startDate = new Date(endDate.getTime() - (days - 1) * 24 * 60 * 60 * 1000);
+    const startDate = new Date(
+      endDate.getTime() - (days - 1) * 24 * 60 * 60 * 1000,
+    );
 
     // Create a map of existing data
     const dataMap = new Map();
@@ -201,7 +203,9 @@ export default function AnalyticsPage() {
 
     // Fill all dates
     for (let i = 0; i < days; i++) {
-      const currentDate = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
+      const currentDate = new Date(
+        startDate.getTime() + i * 24 * 60 * 60 * 1000,
+      );
       const dateKey = format(currentDate, "yyyy-MM-dd");
       result.push({
         date: currentDate,
@@ -714,32 +718,36 @@ export default function AnalyticsPage() {
                   </div>
                 ) : (
                   <div className="h-48 flex items-end justify-between gap-1 p-4 rounded-lg border border-terminal-green/20 bg-terminal-darker/50">
-                    {fillMissingDates(analytics.trends.dailyEnrollments, 30).map((day, index) => {
-                        const maxCount = Math.max(
-                          ...fillMissingDates(analytics.trends.dailyEnrollments, 30).map(
-                            (d) => d.count,
-                          ),
-                        );
-                        const height =
-                          maxCount > 0 ? (day.count / maxCount) * 100 : 0;
-                        return (
+                    {fillMissingDates(
+                      analytics.trends.dailyEnrollments,
+                      30,
+                    ).map((day, index) => {
+                      const maxCount = Math.max(
+                        ...fillMissingDates(
+                          analytics.trends.dailyEnrollments,
+                          30,
+                        ).map((d) => d.count),
+                      );
+                      const height =
+                        maxCount > 0 ? (day.count / maxCount) * 100 : 0;
+                      return (
+                        <div
+                          key={index}
+                          className="flex-1 flex flex-col items-center gap-1 group relative"
+                        >
                           <div
-                            key={index}
-                            className="flex-1 flex flex-col items-center gap-1 group relative"
+                            className="w-full bg-terminal-green rounded-t-md hover:bg-terminal-green-light transition-all cursor-pointer min-h-0.5"
+                            style={{ height: `${Math.max(height, 2)}%` }}
                           >
-                            <div
-                              className="w-full bg-terminal-green rounded-t-md hover:bg-terminal-green-light transition-all cursor-pointer min-h-0.5"
-                              style={{ height: `${Math.max(height, 2)}%` }}
-                            >
-                              <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap">
-                                <Badge variant="success" className="text-xs">
-                                  {day.count}
-                                </Badge>
-                              </div>
+                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap">
+                              <Badge variant="success" className="text-xs">
+                                {day.count}
+                              </Badge>
                             </div>
                           </div>
-                        );
-                      })}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
@@ -761,9 +769,13 @@ export default function AnalyticsPage() {
                   </div>
                 ) : (
                   <div className="h-48 flex items-end justify-between gap-1 p-4 rounded-lg border border-terminal-green/20 bg-terminal-darker/50">
-                    {fillMissingDates(analytics.trends.dailyLogins, 30).map((day, index) => {
+                    {fillMissingDates(analytics.trends.dailyLogins, 30).map(
+                      (day, index) => {
                         const maxCount = Math.max(
-                          ...fillMissingDates(analytics.trends.dailyLogins, 30).map((d) => d.count),
+                          ...fillMissingDates(
+                            analytics.trends.dailyLogins,
+                            30,
+                          ).map((d) => d.count),
                         );
                         const height =
                           maxCount > 0 ? (day.count / maxCount) * 100 : 0;
@@ -784,7 +796,8 @@ export default function AnalyticsPage() {
                             </div>
                           </div>
                         );
-                      })}
+                      },
+                    )}
                   </div>
                 )}
               </CardContent>

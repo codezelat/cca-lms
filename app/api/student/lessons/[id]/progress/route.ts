@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { auditActions } from "@/lib/audit";
 
 export async function POST(
   request: NextRequest,
@@ -78,6 +79,26 @@ export async function POST(
         watchedSeconds: watchedSeconds || 0,
       },
     });
+
+    // Log audit events
+    if (completed && !progress.completed) {
+      // Lesson was just completed
+      await auditActions.lessonCompleted(
+        session.user.id,
+        lessonId,
+        lesson.title,
+        courseId,
+      );
+    } else if (watchedSeconds !== undefined) {
+      // Progress was updated
+      await auditActions.lessonProgressUpdated(
+        session.user.id,
+        lessonId,
+        lesson.title,
+        courseId,
+        watchedSeconds,
+      );
+    }
 
     // Recalculate course progress
     const allLessonIds = lesson.module.course.modules.flatMap((m) =>

@@ -249,6 +249,36 @@ export const auditActions = {
       metadata: { title },
     }),
 
+  // Lesson actions
+  lessonCompleted: (
+    userId: string,
+    lessonId: string,
+    lessonTitle: string,
+    courseId: string,
+  ) =>
+    createAuditLog({
+      userId,
+      action: "LESSON_COMPLETED",
+      entityType: "Lesson",
+      entityId: lessonId,
+      metadata: { lessonTitle, courseId },
+    }),
+
+  lessonProgressUpdated: (
+    userId: string,
+    lessonId: string,
+    lessonTitle: string,
+    courseId: string,
+    watchedSeconds?: number,
+  ) =>
+    createAuditLog({
+      userId,
+      action: "LESSON_PROGRESS_UPDATED",
+      entityType: "Lesson",
+      entityId: lessonId,
+      metadata: { lessonTitle, courseId, watchedSeconds },
+    }),
+
   // Programme actions (alias for course)
   programmeCreated: (userId: string, programmeId: string) =>
     createAuditLog({
