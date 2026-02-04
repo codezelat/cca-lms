@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { auditActions } from "@/lib/audit";
 
 export const runtime = "nodejs";
 
@@ -247,6 +248,16 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Get current user data for audit logging
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { name: true, email: true },
+    });
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     // Update user
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
@@ -262,6 +273,16 @@ export async function PUT(request: NextRequest) {
         image: true,
       },
     });
+
+    // Audit log the profile update
+    const before = { name: currentUser.name, email: currentUser.email };
+    const after = { name: updatedUser.name, email: updatedUser.email };
+    await auditActions.userUpdated(
+      session.user.id,
+      session.user.id,
+      before,
+      after,
+    );
 
     return NextResponse.json({ success: true, user: updatedUser });
   } catch (error) {
@@ -329,6 +350,14 @@ export async function POST(request: NextRequest) {
       where: { id: session.user.id },
       data: { password: hashedPassword },
     });
+
+    // Audit log the password change
+    await auditActions.userUpdated(
+      session.user.id,
+      session.user.id,
+      { passwordChanged: true },
+      { passwordChanged: true },
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

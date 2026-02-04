@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { auditActions } from "@/lib/audit";
 
 export async function POST(
   request: NextRequest,
@@ -63,6 +64,13 @@ export async function POST(
         progress: 0,
       },
     });
+
+    // Audit log the enrollment
+    await auditActions.enrollmentCreated(
+      session.user.id,
+      enrollment.id,
+      courseId,
+    );
 
     return NextResponse.json({ success: true, enrollment });
   } catch (error) {
