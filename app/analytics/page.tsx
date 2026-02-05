@@ -203,10 +203,10 @@ export default function AnalyticsPage() {
       let valueColor = "text-chart-1";
       if (dataKey === "enrollments") {
         labelText = "enrollments";
-        valueColor = "text-[hsl(var(--chart-1))]";
+        valueColor = "text-chart-1";
       } else if (dataKey === "logins") {
         labelText = "active users";
-        valueColor = "text-[hsl(var(--chart-3))]";
+        valueColor = "text-chart-3";
       } else {
         labelText = dataKey;
       }
@@ -216,7 +216,18 @@ export default function AnalyticsPage() {
             {format(new Date(label), "MMM dd, yyyy")}
           </p>
           <p className="font-mono text-base font-semibold flex items-baseline gap-2">
-            <span className={valueColor}>{value}</span>
+            <span
+              style={{
+                color:
+                  dataKey === "enrollments"
+                    ? "var(--chart-1)"
+                    : dataKey === "logins"
+                      ? "var(--chart-3)"
+                      : undefined,
+              }}
+            >
+              {new Intl.NumberFormat().format(value)}
+            </span>
             <span className="text-xs text-muted-foreground font-normal">
               {labelText}
             </span>
@@ -781,12 +792,12 @@ export default function AnalyticsPage() {
                       >
                         <CartesianGrid
                           strokeDasharray="3 3"
-                          stroke="hsl(var(--border))"
+                          stroke="var(--border)"
                           vertical={false}
                         />
                         <XAxis
                           dataKey="date"
-                          stroke="hsl(var(--muted-foreground))"
+                          stroke="var(--muted-foreground)"
                           fontSize={12}
                           fontFamily="monospace"
                           tickFormatter={(value) =>
@@ -795,7 +806,7 @@ export default function AnalyticsPage() {
                           interval="preserveStartEnd"
                         />
                         <YAxis
-                          stroke="hsl(var(--muted-foreground))"
+                          stroke="var(--muted-foreground)"
                           fontSize={12}
                           fontFamily="monospace"
                         />
@@ -810,12 +821,12 @@ export default function AnalyticsPage() {
                           >
                             <stop
                               offset="0%"
-                              stopColor="hsl(var(--chart-1))"
+                              stopColor="var(--chart-1)"
                               stopOpacity="0.95"
                             />
                             <stop
                               offset="100%"
-                              stopColor="hsl(var(--chart-1))"
+                              stopColor="var(--chart-1)"
                               stopOpacity="0.7"
                             />
                           </linearGradient>
@@ -827,9 +838,10 @@ export default function AnalyticsPage() {
                           barSize={22}
                           minPointSize={2}
                           style={{
-                            filter:
-                              "drop-shadow(0 2px 8px hsl(var(--chart-1) / 0.10))",
+                            filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.12))",
                           }}
+                          isAnimationActive={true}
+                          animationDuration={500}
                         >
                           {fillMissingDates(
                             analytics.trends.dailyEnrollments,
@@ -840,8 +852,9 @@ export default function AnalyticsPage() {
                               fill={
                                 entry.count > 0
                                   ? "url(#barEnrollGradient)"
-                                  : "hsl(var(--chart-1) / 0.18)"
+                                  : "var(--chart-1)"
                               }
+                              opacity={entry.count > 0 ? 1 : 0.18}
                             />
                           ))}
                         </Bar>
@@ -888,12 +901,12 @@ export default function AnalyticsPage() {
                       >
                         <CartesianGrid
                           strokeDasharray="3 3"
-                          stroke="hsl(var(--border))"
+                          stroke="var(--border)"
                           vertical={false}
                         />
                         <XAxis
                           dataKey="date"
-                          stroke="hsl(var(--muted-foreground))"
+                          stroke="var(--muted-foreground)"
                           fontSize={12}
                           fontFamily="monospace"
                           tickFormatter={(value) =>
@@ -902,7 +915,7 @@ export default function AnalyticsPage() {
                           interval="preserveStartEnd"
                         />
                         <YAxis
-                          stroke="hsl(var(--muted-foreground))"
+                          stroke="var(--muted-foreground)"
                           fontSize={12}
                           fontFamily="monospace"
                         />
@@ -917,12 +930,12 @@ export default function AnalyticsPage() {
                           >
                             <stop
                               offset="0%"
-                              stopColor="hsl(var(--chart-3))"
+                              stopColor="var(--chart-3)"
                               stopOpacity="0.95"
                             />
                             <stop
                               offset="100%"
-                              stopColor="hsl(var(--chart-3))"
+                              stopColor="var(--chart-3)"
                               stopOpacity="0.7"
                             />
                           </linearGradient>
@@ -934,9 +947,10 @@ export default function AnalyticsPage() {
                           barSize={22}
                           minPointSize={2}
                           style={{
-                            filter:
-                              "drop-shadow(0 2px 8px hsl(var(--chart-3) / 0.10))",
+                            filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.12))",
                           }}
+                          isAnimationActive={true}
+                          animationDuration={500}
                         >
                           {fillMissingDates(
                             analytics.trends.dailyLogins,
@@ -947,8 +961,9 @@ export default function AnalyticsPage() {
                               fill={
                                 entry.count > 0
                                   ? "url(#barLoginGradient)"
-                                  : "hsl(var(--chart-3) / 0.18)"
+                                  : "var(--chart-3)"
                               }
+                              opacity={entry.count > 0 ? 1 : 0.18}
                             />
                           ))}
                         </Bar>
