@@ -74,6 +74,9 @@ interface SummaryData {
   inactiveOver30Days: number;
 }
 
+const SEGMENTS = ["all", "enrolled", "active7", "inactive30"] as const;
+type StudentAuditSegment = (typeof SEGMENTS)[number];
+
 const statusVariant = (status: string) => {
   switch (status) {
     case "ACTIVE":
@@ -133,6 +136,12 @@ export default function StudentAuditPage() {
   const [accountStatus, setAccountStatus] = useState(
     searchParams.get("accountStatus") || "all",
   );
+  const [segment, setSegment] = useState<StudentAuditSegment>(() => {
+    const value = searchParams.get("segment") || "all";
+    return SEGMENTS.includes(value as StudentAuditSegment)
+      ? (value as StudentAuditSegment)
+      : "all";
+  });
   const [page, setPage] = useState(
     parseInt(searchParams.get("page") || "1"),
   );
@@ -142,9 +151,10 @@ export default function StudentAuditPage() {
       search ||
       programmeId !== "all" ||
       enrollmentStatus !== "all" ||
-      accountStatus !== "all"
+      accountStatus !== "all" ||
+      segment !== "all"
     );
-  }, [search, programmeId, enrollmentStatus, accountStatus]);
+  }, [search, programmeId, enrollmentStatus, accountStatus, segment]);
 
   useEffect(() => {
     fetchProgrammes();
@@ -153,7 +163,7 @@ export default function StudentAuditPage() {
   useEffect(() => {
     fetchStudents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search, programmeId, enrollmentStatus, accountStatus]);
+  }, [page, search, programmeId, enrollmentStatus, accountStatus, segment]);
 
   const fetchProgrammes = async () => {
     try {
@@ -173,13 +183,14 @@ export default function StudentAuditPage() {
 
       const params = new URLSearchParams();
       params.set("page", page.toString());
-      params.set("limit", "20");
+      params.set("limit", "10");
       if (search) params.set("search", search);
       if (programmeId !== "all") params.set("programmeId", programmeId);
       if (enrollmentStatus !== "all")
         params.set("enrollmentStatus", enrollmentStatus);
       if (accountStatus !== "all")
         params.set("accountStatus", accountStatus);
+      if (segment !== "all") params.set("segment", segment);
 
       const response = await fetch(`/api/admin/student-audit?${params}`);
       if (!response.ok) {
@@ -205,8 +216,21 @@ export default function StudentAuditPage() {
     setProgrammeId("all");
     setEnrollmentStatus("all");
     setAccountStatus("all");
+    setSegment("all");
     setPage(1);
   };
+
+  const toggleSegment = (next: StudentAuditSegment) => {
+    setSegment((current) => (current === next ? "all" : next));
+    setPage(1);
+  };
+
+  const getSummaryCardClass = (target: StudentAuditSegment) =>
+    `cursor-pointer transition-all ${
+      segment === target
+        ? "ring-2 ring-terminal-green/60 border-terminal-green/60 bg-terminal-green/5"
+        : "hover:border-terminal-green/40 hover:bg-terminal-green/5"
+    }`;
 
   return (
     <div className="min-h-screen bg-terminal-dark">
@@ -248,7 +272,18 @@ export default function StudentAuditPage() {
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card
+              role="button"
+              tabIndex={0}
+              className={getSummaryCardClass("active7")}
+              onClick={() => toggleSegment("active7")}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  toggleSegment("active7");
+                }
+              }}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <Shield className="h-6 w-6 text-blue-400" />
@@ -259,9 +294,25 @@ export default function StudentAuditPage() {
                 <p className="font-mono text-sm text-terminal-text-muted mt-2">
                   Active (7 days)
                 </p>
+                {segment === "active7" && (
+                  <p className="font-mono text-xs text-terminal-green mt-2">
+                    Filter enabled
+                  </p>
+                )}
               </CardContent>
             </Card>
-            <Card>
+            <Card
+              role="button"
+              tabIndex={0}
+              className={getSummaryCardClass("enrolled")}
+              onClick={() => toggleSegment("enrolled")}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  toggleSegment("enrolled");
+                }
+              }}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <Activity className="h-6 w-6 text-yellow-400" />
@@ -272,9 +323,25 @@ export default function StudentAuditPage() {
                 <p className="font-mono text-sm text-terminal-text-muted mt-2">
                   Enrolled Students
                 </p>
+                {segment === "enrolled" && (
+                  <p className="font-mono text-xs text-terminal-green mt-2">
+                    Filter enabled
+                  </p>
+                )}
               </CardContent>
             </Card>
-            <Card>
+            <Card
+              role="button"
+              tabIndex={0}
+              className={getSummaryCardClass("inactive30")}
+              onClick={() => toggleSegment("inactive30")}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  toggleSegment("inactive30");
+                }
+              }}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <Users className="h-6 w-6 text-red-400" />
@@ -285,6 +352,11 @@ export default function StudentAuditPage() {
                 <p className="font-mono text-sm text-terminal-text-muted mt-2">
                   Inactive 30+ Days
                 </p>
+                {segment === "inactive30" && (
+                  <p className="font-mono text-xs text-terminal-green mt-2">
+                    Filter enabled
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>

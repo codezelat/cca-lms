@@ -1,6 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/generated/prisma";
+
+const getErrorMessage = (error: unknown) => {
+  if (error instanceof Error) return error.message;
+  return String(error);
+};
+
+const isAuditActionAvailable = async (action: string) => {
+  try {
+    const rows = await prisma.$queryRaw<Array<{ enumlabel: string }>>(Prisma.sql`
+      SELECT e.enumlabel
+      FROM pg_type t
+      JOIN pg_enum e ON t.oid = e.enumtypid
+      WHERE LOWER(t.typname) = LOWER('AuditAction')
+    `);
+    return rows.some((row) => row.enumlabel === action);
+  } catch (error) {
+    console.error("Failed to read AuditAction enum labels:", error);
+    return false;
+  }
+};
 
 export async function GET(
   request: NextRequest,
@@ -8,6 +29,7 @@ export async function GET(
 ) {
   try {
     const session = await auth();
+    const fallbackWarnings: string[] = [];
 
     if (!session?.user || session.user.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -31,18 +53,21 @@ export async function GET(
       return NextResponse.json({ error: "Student not found" }, { status: 404 });
     }
 
+    const lessonCompletedSupported =
+      await isAuditActionAvailable("LESSON_COMPLETED");
+
     const [
-      enrollments,
-      loginAgg,
-      lastAudit,
-      lessonCompletionCount,
-      lessonCompletions,
-      recentActivity,
-      assignmentSubmissionCount,
-      legacySubmissionCount,
-      assignmentSubmissions,
-      legacySubmissions,
-    ] = await Promise.all([
+      enrollmentsResult,
+      loginAggResult,
+      lastAuditResult,
+      lessonCompletionCountResult,
+      lessonCompletionsResult,
+      recentActivityResult,
+      assignmentSubmissionCountResult,
+      legacySubmissionCountResult,
+      assignmentSubmissionsResult,
+      legacySubmissionsResult,
+    ] = await Promise.allSettled([
       prisma.courseEnrollment.findMany({
         where: { userId: id },
         include: {
@@ -66,14 +91,18 @@ export async function GET(
         where: { userId: id },
         orderBy: { createdAt: "desc" },
       }),
-      prisma.auditLog.count({
-        where: { userId: id, action: "LESSON_COMPLETED" },
-      }),
-      prisma.auditLog.findMany({
-        where: { userId: id, action: "LESSON_COMPLETED" },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      }),
+      lessonCompletedSupported
+        ? prisma.auditLog.count({
+            where: { userId: id, action: "LESSON_COMPLETED" },
+          })
+        : Promise.resolve(0),
+      lessonCompletedSupported
+        ? prisma.auditLog.findMany({
+            where: { userId: id, action: "LESSON_COMPLETED" },
+            orderBy: { createdAt: "desc" },
+            take: 10,
+          })
+        : Promise.resolve([]),
       prisma.auditLog.findMany({
         where: { userId: id },
         orderBy: { createdAt: "desc" },
@@ -135,6 +164,108 @@ export async function GET(
       }),
     ]);
 
+    const enrollments =
+      enrollmentsResult.status === "fulfilled" ? enrollmentsResult.value : [];
+    if (enrollmentsResult.status === "rejected") {
+      fallbackWarnings.push(
+        `enrollments-query: ${getErrorMessage(enrollmentsResult.reason)}`,
+      );
+    }
+
+    const loginAgg =
+      loginAggResult.status === "fulfilled"
+        ? loginAggResult.value
+        : { _count: { _all: 0 }, _min: { createdAt: null }, _max: { createdAt: null } };
+    if (loginAggResult.status === "rejected") {
+      fallbackWarnings.push(
+        `login-aggregate: ${getErrorMessage(loginAggResult.reason)}`,
+      );
+    }
+
+    const lastAudit =
+      lastAuditResult.status === "fulfilled" ? lastAuditResult.value : null;
+    if (lastAuditResult.status === "rejected") {
+      fallbackWarnings.push(
+        `latest-audit-query: ${getErrorMessage(lastAuditResult.reason)}`,
+      );
+    }
+
+    const lessonCompletionCount =
+      lessonCompletionCountResult.status === "fulfilled"
+        ? lessonCompletionCountResult.value
+        : 0;
+    if (lessonCompletionCountResult.status === "rejected") {
+      fallbackWarnings.push(
+        `lesson-completion-count: ${getErrorMessage(
+          lessonCompletionCountResult.reason,
+        )}`,
+      );
+    }
+
+    const lessonCompletions =
+      lessonCompletionsResult.status === "fulfilled"
+        ? lessonCompletionsResult.value
+        : [];
+    if (lessonCompletionsResult.status === "rejected") {
+      fallbackWarnings.push(
+        `lesson-completions: ${getErrorMessage(lessonCompletionsResult.reason)}`,
+      );
+    }
+
+    const recentActivity =
+      recentActivityResult.status === "fulfilled" ? recentActivityResult.value : [];
+    if (recentActivityResult.status === "rejected") {
+      fallbackWarnings.push(
+        `recent-activity: ${getErrorMessage(recentActivityResult.reason)}`,
+      );
+    }
+
+    const assignmentSubmissions =
+      assignmentSubmissionsResult.status === "fulfilled"
+        ? assignmentSubmissionsResult.value
+        : [];
+    if (assignmentSubmissionsResult.status === "rejected") {
+      fallbackWarnings.push(
+        `assignment-submissions: ${getErrorMessage(
+          assignmentSubmissionsResult.reason,
+        )}`,
+      );
+    }
+
+    const legacySubmissions =
+      legacySubmissionsResult.status === "fulfilled"
+        ? legacySubmissionsResult.value
+        : [];
+    if (legacySubmissionsResult.status === "rejected") {
+      fallbackWarnings.push(
+        `legacy-submissions: ${getErrorMessage(legacySubmissionsResult.reason)}`,
+      );
+    }
+
+    const assignmentSubmissionCount =
+      assignmentSubmissionCountResult.status === "fulfilled"
+        ? assignmentSubmissionCountResult.value
+        : assignmentSubmissions.length;
+    if (assignmentSubmissionCountResult.status === "rejected") {
+      fallbackWarnings.push(
+        `assignment-submission-count: ${getErrorMessage(
+          assignmentSubmissionCountResult.reason,
+        )}`,
+      );
+    }
+
+    const legacySubmissionCount =
+      legacySubmissionCountResult.status === "fulfilled"
+        ? legacySubmissionCountResult.value
+        : legacySubmissions.length;
+    if (legacySubmissionCountResult.status === "rejected") {
+      fallbackWarnings.push(
+        `legacy-submission-count: ${getErrorMessage(
+          legacySubmissionCountResult.reason,
+        )}`,
+      );
+    }
+
     const enrolledProgrammes = enrollments.length;
     const activeProgrammes = enrollments.filter(
       (enrollment) => enrollment.status === "ACTIVE",
@@ -169,11 +300,17 @@ export async function GET(
 
     const courseMap = new Map<string, string>();
     if (lessonCompletionCourseIds.length > 0) {
-      const courses = await prisma.course.findMany({
-        where: { id: { in: lessonCompletionCourseIds } },
-        select: { id: true, title: true },
-      });
-      courses.forEach((course) => courseMap.set(course.id, course.title));
+      try {
+        const courses = await prisma.course.findMany({
+          where: { id: { in: lessonCompletionCourseIds } },
+          select: { id: true, title: true },
+        });
+        courses.forEach((course) => courseMap.set(course.id, course.title));
+      } catch (courseLookupError) {
+        fallbackWarnings.push(
+          `completion-course-lookup: ${getErrorMessage(courseLookupError)}`,
+        );
+      }
     }
 
     const mappedCompletions = lessonCompletions.map((completion) => {
@@ -217,6 +354,14 @@ export async function GET(
         new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
       )
       .slice(0, 10);
+
+    if (fallbackWarnings.length > 0) {
+      console.warn("Student audit detail used fallback queries", {
+        studentId: id,
+        count: fallbackWarnings.length,
+        reasons: fallbackWarnings.slice(0, 4),
+      });
+    }
 
     return NextResponse.json({
       student: {
@@ -274,8 +419,12 @@ export async function GET(
     });
   } catch (error) {
     console.error("Error fetching student audit detail:", error);
+    const details =
+      process.env.NODE_ENV === "development" && error instanceof Error
+        ? error.message
+        : undefined;
     return NextResponse.json(
-      { error: "Failed to fetch student audit detail" },
+      { error: "Failed to fetch student audit detail", details },
       { status: 500 },
     );
   }
