@@ -7,6 +7,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import StudentVisitTracker from "@/components/audit/student-visit-tracker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -85,6 +86,7 @@ export default function RootLayout({
         <AuthProvider>
           <ThemeProvider>
             <ConfirmProvider>
+              <StudentVisitTracker />
               <Navbar />
               <main className="flex-1">{children}</main>
               <Footer />

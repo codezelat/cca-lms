@@ -16,7 +16,6 @@ import {
   FileText,
   Settings,
   Shield,
-  BarChart3,
   CheckCircle2,
   XCircle,
   Database,
@@ -69,7 +68,7 @@ interface RecentActivity {
     email: string;
     role: string;
   } | null;
-  metadata: any;
+  metadata: Record<string, unknown> | null;
 }
 
 export default function AdminDashboard({ user }: AdminDashboardProps) {
@@ -273,6 +272,12 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
       icon: UserPlus,
       href: "/users?tab=lecturer&action=add",
       description: "Register new lecturer",
+    },
+    {
+      label: "Audit Students",
+      icon: Database,
+      href: "/audit-students",
+      description: "Student activity and progress audit",
     },
     {
       label: "Audit Logs",
