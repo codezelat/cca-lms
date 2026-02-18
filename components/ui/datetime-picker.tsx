@@ -75,30 +75,23 @@ export function DateTimePicker({
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) {
       setSelectedDate(undefined);
+      onChange(undefined);
       return;
     }
-
-    // Preserve time when selecting a new date
+    // Preserve current time when selecting a new date
     const newDate = setMinutes(setHours(date, currentHour), currentMinute);
     setSelectedDate(newDate);
+    // Don't call onChange yet — user still needs to confirm or pick time
   };
 
-  const handleTimeChange = (type: "hour" | "minute", value: string) => {
-    if (!selectedDate) {
-      // If no date selected, use tomorrow
-      const tomorrow = addDays(new Date(), 1);
-      const newDate =
-        type === "hour"
-          ? setMinutes(setHours(tomorrow, parseInt(value)), currentMinute)
-          : setMinutes(setHours(tomorrow, currentHour), parseInt(value));
-      setSelectedDate(newDate);
-    } else {
-      const newDate =
-        type === "hour"
-          ? setHours(selectedDate, parseInt(value))
-          : setMinutes(selectedDate, parseInt(value));
-      setSelectedDate(newDate);
-    }
+  const handleTimeChange = (type: "hour" | "minute", val: string) => {
+    const base =
+      selectedDate ?? setMinutes(setHours(addDays(new Date(), 1), 23), 59);
+    const newDate =
+      type === "hour"
+        ? setMinutes(setHours(base, parseInt(val)), base.getMinutes())
+        : setMinutes(setHours(base, base.getHours()), parseInt(val));
+    setSelectedDate(newDate);
   };
 
   const handleConfirm = () => {
@@ -131,7 +124,7 @@ export function DateTimePicker({
             className,
           )}
         >
-          <CalendarIcon className="mr-2 h-4 w-4 text-terminal-green" />
+          <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-terminal-green" />
           {value ? (
             format(value, "PPP 'at' h:mm a")
           ) : (
@@ -139,10 +132,19 @@ export function DateTimePicker({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <div className="flex flex-col sm:flex-row">
-          {/* Quick Presets */}
-          <div className="border-b sm:border-b-0 sm:border-r border-terminal-green/20 p-3 space-y-1">
+
+      {/* Fixed width so the calendar never squishes inside a dialog */}
+      <PopoverContent
+        className="w-auto p-0"
+        align="start"
+        side="bottom"
+        sideOffset={4}
+        // Prevent the popover from being clipped by dialog overflow
+        style={{ zIndex: 9999 }}
+      >
+        <div className="flex flex-col sm:flex-row min-w-[280px]">
+          {/* Quick Presets — left column */}
+          <div className="border-b sm:border-b-0 sm:border-r border-terminal-green/20 p-3 space-y-1 sm:w-[140px] shrink-0">
             <div className="text-xs font-semibold text-terminal-green mb-2 flex items-center gap-1">
               <Clock className="h-3 w-3" />
               Quick Set
@@ -170,14 +172,14 @@ export function DateTimePicker({
             </div>
           </div>
 
-          {/* Calendar + Time */}
-          <div className="flex flex-col">
+          {/* Calendar + Time — right column */}
+          <div className="flex flex-col min-w-0">
             <Calendar
               mode="single"
               selected={selectedDate}
               onSelect={handleDateSelect}
               disabled={(date) => (minDate ? date < minDate : false)}
-              initialFocus
+              // Don't use initialFocus — it causes scroll-jump inside dialogs
             />
 
             {/* Time Picker */}
@@ -188,6 +190,7 @@ export function DateTimePicker({
                   <span className="text-sm font-medium">Time</span>
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* Hour select — position="popper" prevents clipping inside dialogs */}
                   <Select
                     value={currentHour.toString()}
                     onValueChange={(v) => handleTimeChange("hour", v)}
@@ -195,7 +198,11 @@ export function DateTimePicker({
                     <SelectTrigger className="w-[70px] h-8 font-mono">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="max-h-[200px]">
+                    <SelectContent
+                      position="popper"
+                      className="max-h-[200px] overflow-y-auto"
+                      style={{ zIndex: 10000 }}
+                    >
                       {hours.map((hour) => (
                         <SelectItem
                           key={hour}
@@ -207,7 +214,10 @@ export function DateTimePicker({
                       ))}
                     </SelectContent>
                   </Select>
+
                   <span className="text-terminal-green font-bold">:</span>
+
+                  {/* Minute select */}
                   <Select
                     value={currentMinute.toString()}
                     onValueChange={(v) => handleTimeChange("minute", v)}
@@ -215,7 +225,7 @@ export function DateTimePicker({
                     <SelectTrigger className="w-[70px] h-8 font-mono">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" style={{ zIndex: 10000 }}>
                       {minutes.map((minute) => (
                         <SelectItem
                           key={minute}
@@ -249,7 +259,11 @@ export function DateTimePicker({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  // Reset internal state to last confirmed value on cancel
+                  setSelectedDate(value);
+                  setIsOpen(false);
+                }}
               >
                 Cancel
               </Button>

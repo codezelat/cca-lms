@@ -396,17 +396,18 @@ export default function ProgrammeDetailPage({
                               <span className="text-xs font-mono text-terminal-text-muted">
                                 Lesson {lessonIndex + 1}
                               </span>
-                              {lesson.duration && (
-                                <>
-                                  <span className="text-terminal-text-muted">
-                                    •
-                                  </span>
-                                  <div className="flex items-center gap-1 text-xs font-mono text-terminal-text-muted">
-                                    <Clock className="h-3 w-3" />
-                                    {lesson.duration} min
-                                  </div>
-                                </>
-                              )}
+                              {lesson.duration != null &&
+                                lesson.duration > 0 && (
+                                  <>
+                                    <span className="text-terminal-text-muted">
+                                      •
+                                    </span>
+                                    <div className="flex items-center gap-1 text-xs font-mono text-terminal-text-muted">
+                                      <Clock className="h-3 w-3" />
+                                      {lesson.duration} min
+                                    </div>
+                                  </>
+                                )}
                             </div>
                             <p className="font-mono text-sm text-terminal-text">
                               {lesson.title}
