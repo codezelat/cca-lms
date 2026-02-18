@@ -60,8 +60,8 @@ export default function MyProgrammesPage() {
   return (
     <div className="min-h-screen bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow mb-2">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="font-mono text-2xl sm:text-3xl font-bold text-terminal-green terminal-glow mb-2">
             $ my-programmes
           </h1>
           <p className="font-mono text-sm text-terminal-text-muted">
@@ -138,7 +138,7 @@ export default function MyProgrammesPage() {
                       </div>
                     )}
 
-                    <div className="flex items-center gap-4 text-xs font-mono text-terminal-text-muted">
+                    <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-terminal-text-muted">
                       <div className="flex items-center gap-1">
                         <BookOpen className="h-3 w-3" />
                         {programme.stats.moduleCount} modules

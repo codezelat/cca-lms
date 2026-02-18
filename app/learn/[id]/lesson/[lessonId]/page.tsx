@@ -152,7 +152,9 @@ const renderResource = (resource: Resource): React.ReactElement => {
             <CardContent className="p-0">
               <div className="aspect-video bg-terminal-darker rounded-b-lg overflow-hidden">
                 <div
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(resource.embedCode) }}
+                  dangerouslySetInnerHTML={{
+                    __html: sanitizeHtml(resource.embedCode),
+                  }}
                   className="w-full h-full"
                 />
               </div>
@@ -191,9 +193,9 @@ const renderResource = (resource: Resource): React.ReactElement => {
           onClick={() => window.open(resource.url, "_blank")}
         >
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <ExternalLink className="h-5 w-5 text-terminal-green" />
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <ExternalLink className="h-5 w-5 text-terminal-green shrink-0 mt-0.5" />
                 <div>
                   <h3 className="font-mono font-semibold text-terminal-text">
                     {resource.title}
@@ -205,7 +207,10 @@ const renderResource = (resource: Resource): React.ReactElement => {
                   )}
                 </div>
               </div>
-              <Badge variant="outline" className="font-mono text-xs shrink-0">
+              <Badge
+                variant="outline"
+                className="font-mono text-xs shrink-0 self-start sm:self-auto"
+              >
                 External Link
               </Badge>
             </div>
@@ -221,10 +226,10 @@ const renderResource = (resource: Resource): React.ReactElement => {
           className="border-terminal-green/20 hover:border-terminal-green/40 transition-colors"
         >
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-terminal-green" />
-                <div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <FileText className="h-5 w-5 text-terminal-green shrink-0 mt-0.5" />
+                <div className="min-w-0">
                   <h3 className="font-mono font-semibold text-terminal-text">
                     {resource.title}
                   </h3>
@@ -234,13 +239,13 @@ const renderResource = (resource: Resource): React.ReactElement => {
                     </p>
                   )}
                   {resource.fileName && (
-                    <p className="text-xs font-mono text-terminal-text-muted mt-1">
+                    <p className="text-xs font-mono text-terminal-text-muted mt-1 break-all">
                       {resource.fileName}
                     </p>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
                 {resource.mimeType && (
                   <Badge variant="outline" className="font-mono text-xs">
                     {resource.mimeType.split("/")[1]?.toUpperCase() || "FILE"}
@@ -359,9 +364,9 @@ export default function LessonPage({
 
   return (
     <div className="min-h-screen bg-terminal-dark">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Breadcrumb */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <Button
             variant="ghost"
             onClick={() => {
@@ -369,21 +374,27 @@ export default function LessonPage({
                 router.push(`/learn/${courseId}`);
               }
             }}
-            className="gap-2 mb-4"
+            className="gap-2 mb-3 -ml-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to {lesson.navigation.courseTitle}
+            <span className="line-clamp-1">
+              Back to {lesson.navigation.courseTitle}
+            </span>
           </Button>
 
-          <div className="flex items-center gap-2 text-sm font-mono text-terminal-text-muted mb-2">
-            <span>{lesson.navigation.courseTitle}</span>
+          <div className="flex flex-wrap items-center gap-1 text-xs sm:text-sm font-mono text-terminal-text-muted mb-2">
+            <span className="line-clamp-1 max-w-[120px] sm:max-w-none">
+              {lesson.navigation.courseTitle}
+            </span>
             <span>→</span>
-            <span>{lesson.navigation.moduleTitle}</span>
+            <span className="line-clamp-1">
+              {lesson.navigation.moduleTitle}
+            </span>
           </div>
 
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-3">
             <div>
-              <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow mb-2">
+              <h1 className="font-mono text-xl sm:text-3xl font-bold text-terminal-green terminal-glow mb-2">
                 {lesson.title}
               </h1>
               {lesson.description && (
@@ -439,7 +450,7 @@ export default function LessonPage({
         {!lesson.completed && (
           <Card className="mb-6 border-terminal-green/50">
             <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                   <h3 className="font-mono font-semibold text-terminal-text mb-1">
                     Complete this lesson
@@ -451,7 +462,7 @@ export default function LessonPage({
                 <Button
                   onClick={markComplete}
                   disabled={isCompleting}
-                  className="gap-2"
+                  className="gap-2 w-full sm:w-auto"
                 >
                   {isCompleting ? (
                     <>
@@ -473,7 +484,7 @@ export default function LessonPage({
         {/* Navigation */}
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
               {lesson.navigation.previous ? (
                 <Button
                   variant="outline"
@@ -484,13 +495,15 @@ export default function LessonPage({
                       );
                     }
                   }}
-                  className="gap-2"
+                  className="gap-2 w-full sm:w-auto justify-start"
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous: {lesson.navigation.previous.title}
+                  <ChevronLeft className="h-4 w-4 shrink-0" />
+                  <span className="line-clamp-1">
+                    Previous: {lesson.navigation.previous.title}
+                  </span>
                 </Button>
               ) : (
-                <div />
+                <div className="hidden sm:block" />
               )}
 
               {lesson.navigation.next ? (
@@ -502,10 +515,12 @@ export default function LessonPage({
                       );
                     }
                   }}
-                  className="gap-2"
+                  className="gap-2 w-full sm:w-auto justify-end"
                 >
-                  Next: {lesson.navigation.next.title}
-                  <ChevronRight className="h-4 w-4" />
+                  <span className="line-clamp-1">
+                    Next: {lesson.navigation.next.title}
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0" />
                 </Button>
               ) : (
                 <Button
@@ -515,6 +530,7 @@ export default function LessonPage({
                       router.push(`/learn/${courseId}`);
                     }
                   }}
+                  className="w-full sm:w-auto"
                 >
                   Back to Programme
                 </Button>

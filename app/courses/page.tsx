@@ -91,11 +91,11 @@ export default function CoursesPage() {
     <div className="min-h-screen bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <BookOpen className="h-6 w-6 text-terminal-green" />
-              <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
+              <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-terminal-green" />
+              <h1 className="font-mono text-xl sm:text-3xl font-bold text-terminal-green terminal-glow">
                 $ courses --list
               </h1>
             </div>
@@ -103,14 +103,14 @@ export default function CoursesPage() {
               Manage and monitor all learning programmes
             </p>
           </div>
-          <Button className="gap-2">
+          <Button className="gap-2 w-full sm:w-auto">
             <Plus className="h-4 w-4" />
             Create Course
           </Button>
         </div>
 
         {/* Search and Filter Bar */}
-        <div className="flex gap-4 mb-8">
+        <div className="flex gap-3 mb-6 sm:mb-8">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-terminal-text-muted" />
             <Input
@@ -121,9 +121,9 @@ export default function CoursesPage() {
               className="pl-10"
             />
           </div>
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2 shrink-0">
             <Filter className="h-4 w-4" />
-            Filter
+            <span className="hidden sm:inline">Filter</span>
           </Button>
         </div>
 

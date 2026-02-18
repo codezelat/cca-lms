@@ -201,10 +201,10 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <div className="flex items-center gap-2 mb-2">
-            <SettingsIcon className="h-6 w-6 text-terminal-green" />
-            <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
+            <SettingsIcon className="h-5 w-5 sm:h-6 sm:w-6 text-terminal-green" />
+            <h1 className="font-mono text-xl sm:text-3xl font-bold text-terminal-green terminal-glow">
               $ settings --config
             </h1>
           </div>
@@ -325,7 +325,7 @@ export default function SettingsPage() {
                       onClick={() =>
                         setShowCurrentPassword(!showCurrentPassword)
                       }
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-terminal-text-muted hover:text-terminal-text"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-terminal-text-muted hover:text-terminal-text p-1.5 touch-manipulation"
                     >
                       {showCurrentPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -351,7 +351,7 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-terminal-text-muted hover:text-terminal-text"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-terminal-text-muted hover:text-terminal-text p-1.5 touch-manipulation"
                     >
                       {showNewPassword ? (
                         <EyeOff className="h-4 w-4" />

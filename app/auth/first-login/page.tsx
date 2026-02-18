@@ -157,11 +157,11 @@ export default function FirstLoginPage() {
     <div className="min-h-screen bg-terminal-dark flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <Terminal className="h-12 w-12 text-terminal-green" />
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="flex items-center justify-center mb-3 sm:mb-4">
+            <Terminal className="h-10 w-10 sm:h-12 sm:w-12 text-terminal-green" />
           </div>
-          <h1 className="font-mono text-2xl font-bold text-terminal-green terminal-glow mb-2">
+          <h1 className="font-mono text-xl sm:text-2xl font-bold text-terminal-green terminal-glow mb-2">
             $ first-login --required
           </h1>
           <p className="font-mono text-sm text-terminal-text-muted">
@@ -221,7 +221,7 @@ export default function FirstLoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-terminal-text-muted hover:text-terminal-green transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-terminal-text-muted hover:text-terminal-green transition-colors p-1.5 touch-manipulation"
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />

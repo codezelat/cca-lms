@@ -28,7 +28,7 @@ export function Footer() {
             <h3 className="font-mono text-sm font-semibold text-terminal-green mb-3">
               Connect
             </h3>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <a
                 href="https://github.com/codezelat/"
                 target="_blank"
@@ -78,9 +78,9 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-8 border-t border-terminal-green/20">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="flex flex-col sm:flex-row items-center gap-4">
+        <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-terminal-green/20">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4">
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
               <p className="text-sm font-mono text-terminal-text-muted">
                 © {currentYear} Codezela Career Accelerator. All rights
                 reserved.

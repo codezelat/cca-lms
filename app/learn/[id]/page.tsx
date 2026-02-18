@@ -228,12 +228,12 @@ export default function ProgrammeDetailPage({
 
   return (
     <div className="min-h-screen bg-terminal-dark">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="mb-6 sm:mb-8">
+          <div className="flex items-start justify-between gap-3 mb-3 sm:mb-4">
             <div>
-              <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow mb-2">
+              <h1 className="font-mono text-xl sm:text-3xl font-bold text-terminal-green terminal-glow mb-2">
                 {programme.title}
               </h1>
               <p className="font-mono text-sm text-terminal-text-muted">
@@ -249,7 +249,7 @@ export default function ProgrammeDetailPage({
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-6 text-sm font-mono text-terminal-text-muted">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm font-mono text-terminal-text-muted">
             <div className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
               {programme.modules.length} modules
@@ -294,9 +294,9 @@ export default function ProgrammeDetailPage({
 
         {/* Enroll Button */}
         {!isEnrolled && (
-          <Card className="mb-8 border-terminal-green/50">
+          <Card className="mb-6 sm:mb-8 border-terminal-green/50">
             <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                   <h3 className="font-mono font-semibold text-terminal-text mb-1">
                     Start Learning
@@ -308,7 +308,7 @@ export default function ProgrammeDetailPage({
                 <Button
                   onClick={handleEnroll}
                   disabled={enrolling}
-                  className="gap-2"
+                  className="gap-2 w-full sm:w-auto"
                 >
                   {enrolling ? (
                     <>
@@ -379,46 +379,48 @@ export default function ProgrammeDetailPage({
                       {module.lessons.map((lesson, lessonIndex) => (
                         <div
                           key={lesson.id}
-                          className="flex items-center gap-3 p-3 rounded-lg border border-terminal-green/10 bg-terminal-darker/30 hover:bg-terminal-green/5 transition-colors"
+                          className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg border border-terminal-green/10 bg-terminal-darker/30 hover:bg-terminal-green/5 transition-colors"
                         >
-                          <div className="shrink-0">
-                            {lesson.completed ? (
-                              <CheckCircle2 className="h-5 w-5 text-terminal-green" />
-                            ) : isEnrolled ? (
-                              <div className="h-5 w-5 rounded-full border-2 border-terminal-green/30" />
-                            ) : (
-                              <Lock className="h-5 w-5 text-terminal-text-muted" />
-                            )}
-                          </div>
-
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs font-mono text-terminal-text-muted">
-                                Lesson {lessonIndex + 1}
-                              </span>
-                              {lesson.duration != null &&
-                                lesson.duration > 0 && (
-                                  <>
-                                    <span className="text-terminal-text-muted">
-                                      •
-                                    </span>
-                                    <div className="flex items-center gap-1 text-xs font-mono text-terminal-text-muted">
-                                      <Clock className="h-3 w-3" />
-                                      {lesson.duration} min
-                                    </div>
-                                  </>
-                                )}
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="shrink-0">
+                              {lesson.completed ? (
+                                <CheckCircle2 className="h-5 w-5 text-terminal-green" />
+                              ) : isEnrolled ? (
+                                <div className="h-5 w-5 rounded-full border-2 border-terminal-green/30" />
+                              ) : (
+                                <Lock className="h-5 w-5 text-terminal-text-muted" />
+                              )}
                             </div>
-                            <p className="font-mono text-sm text-terminal-text">
-                              {lesson.title}
-                            </p>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2 mb-1">
+                                <span className="text-xs font-mono text-terminal-text-muted">
+                                  Lesson {lessonIndex + 1}
+                                </span>
+                                {lesson.duration != null &&
+                                  lesson.duration > 0 && (
+                                    <>
+                                      <span className="text-terminal-text-muted">
+                                        •
+                                      </span>
+                                      <div className="flex items-center gap-1 text-xs font-mono text-terminal-text-muted">
+                                        <Clock className="h-3 w-3" />
+                                        {lesson.duration} min
+                                      </div>
+                                    </>
+                                  )}
+                              </div>
+                              <p className="font-mono text-sm text-terminal-text line-clamp-2">
+                                {lesson.title}
+                              </p>
+                            </div>
                           </div>
 
                           {isEnrolled && (
                             <Button
                               size="sm"
                               onClick={() => startLesson(lesson.id)}
-                              className="gap-2"
+                              className="gap-2 w-full sm:w-auto"
                             >
                               <Play className="h-3 w-3" />
                               {lesson.completed ? "Review" : "Start"}

@@ -245,39 +245,42 @@ export function AssignmentList({ lessonId, role }: AssignmentListProps) {
 
             return (
               <Card key={assignment.id} className="p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h4 className="text-lg font-semibold">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <h4 className="text-lg font-semibold truncate pr-2">
                         {assignment.title}
                       </h4>
-                      <Badge variant={isOverdue ? "danger" : "default"}>
+                      <Badge
+                        variant={isOverdue ? "danger" : "default"}
+                        className="shrink-0"
+                      >
                         {isOverdue ? "Overdue" : "Active"}
                       </Badge>
                       {hasSubmission && (
-                        <Badge variant="outline">
+                        <Badge variant="outline" className="shrink-0">
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Submitted
                         </Badge>
                       )}
                     </div>
                     {assignment.description && (
-                      <p className="text-sm text-terminal-text-muted mb-3">
+                      <p className="text-sm text-terminal-text-muted mb-3 line-clamp-2">
                         {assignment.description}
                       </p>
                     )}
-                    <div className="flex flex-wrap gap-4 text-sm text-terminal-text-muted">
+                    <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-terminal-text-muted">
                       <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
+                        <Clock className="h-4 w-4 shrink-0" />
                         <span>Due {dueDate.toLocaleString()}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
+                        <FileText className="h-4 w-4 shrink-0" />
                         <span>{assignment.maxPoints} points</span>
                       </div>
                       {isInstructor && (
                         <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4" />
+                          <Users className="h-4 w-4 shrink-0" />
                           <span>
                             {assignment._count?.assignmentSubmissions || 0}{" "}
                             submissions
@@ -287,41 +290,49 @@ export function AssignmentList({ lessonId, role }: AssignmentListProps) {
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-row sm:flex-col gap-2 shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
                     {isInstructor ? (
                       <>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => viewSubmissions(assignment)}
+                          className="flex-1 sm:flex-none justify-center"
                         >
                           <Users className="h-4 w-4 mr-2" />
-                          Submissions
+                          <span className="sm:inline">Submissions</span>
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setViewingAnalytics(assignment.id)}
-                        >
-                          <BarChart3 className="h-4 w-4 mr-2" />
-                          Analytics
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setEditingAssignment(assignment)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        {role === "ADMIN" && (
+                        <div className="flex gap-2 w-full sm:w-auto">
                           <Button
                             size="sm"
-                            variant="danger"
-                            onClick={() => handleDelete(assignment.id)}
+                            variant="outline"
+                            onClick={() => setViewingAnalytics(assignment.id)}
+                            className="flex-1 sm:flex-none justify-center"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <BarChart3 className="h-4 w-4 mr-2" />
+                            <span className="sr-only sm:not-sr-only">
+                              Analytics
+                            </span>
                           </Button>
-                        )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setEditingAssignment(assignment)}
+                            className="flex-1 sm:flex-none justify-center"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          {role === "ADMIN" && (
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              onClick={() => handleDelete(assignment.id)}
+                              className="flex-1 sm:flex-none justify-center"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </>
                     ) : (
                       <Button
@@ -329,6 +340,7 @@ export function AssignmentList({ lessonId, role }: AssignmentListProps) {
                         onClick={() => {
                           window.location.href = `/learn/assignment/${assignment.id}`;
                         }}
+                        className="w-full sm:w-auto"
                       >
                         {hasSubmission ? "View Submission" : "Submit Work"}
                       </Button>

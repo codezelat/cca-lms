@@ -91,11 +91,11 @@ export default function ResourcesPage() {
     <div className="min-h-screen bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <FileText className="h-6 w-6 text-terminal-green" />
-              <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
+              <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-terminal-green" />
+              <h1 className="font-mono text-xl sm:text-3xl font-bold text-terminal-green terminal-glow">
                 $ resources --list
               </h1>
             </div>
@@ -103,14 +103,14 @@ export default function ResourcesPage() {
               Course materials and learning resources
             </p>
           </div>
-          <Button className="gap-2">
+          <Button className="gap-2 w-full sm:w-auto">
             <Upload className="h-4 w-4" />
             Upload Resource
           </Button>
         </div>
 
         {/* Search and Filter Bar */}
-        <div className="flex gap-4 mb-8">
+        <div className="flex gap-3 mb-6 sm:mb-8">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-terminal-text-muted" />
             <Input
@@ -121,14 +121,14 @@ export default function ResourcesPage() {
               className="pl-10"
             />
           </div>
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2 shrink-0">
             <Filter className="h-4 w-4" />
-            Filter
+            <span className="hidden sm:inline">Filter</span>
           </Button>
         </div>
 
         {/* Storage Stats */}
-        <div className="grid gap-6 md:grid-cols-3 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium font-mono text-terminal-text-muted">
@@ -199,32 +199,34 @@ export default function ResourcesPage() {
                 return (
                   <div
                     key={resource.id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-terminal-green/20 bg-terminal-darker/50 hover:bg-terminal-green/5 hover:border-terminal-green/40 transition-all group"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border border-terminal-green/20 bg-terminal-darker/50 hover:bg-terminal-green/5 hover:border-terminal-green/40 transition-all group gap-3"
                   >
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="h-12 w-12 rounded-lg border border-terminal-green bg-terminal-green/10 flex items-center justify-center">
-                        <FileIcon className="h-6 w-6 text-terminal-green" />
+                    <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                      <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg border border-terminal-green bg-terminal-green/10 flex items-center justify-center shrink-0">
+                        <FileIcon className="h-5 w-5 sm:h-6 sm:w-6 text-terminal-green" />
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-mono font-semibold text-terminal-text mb-1">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-mono font-semibold text-terminal-text mb-1 truncate">
                           {resource.name}
                         </h3>
-                        <div className="flex items-center gap-4 text-xs font-mono text-terminal-text-muted">
+                        <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-terminal-text-muted">
                           <span>{resource.size}</span>
                           <span>•</span>
                           <span>By {resource.uploadedBy}</span>
-                          <span>•</span>
-                          <span>{resource.uploadDate}</span>
+                          <span className="hidden sm:inline">•</span>
+                          <span className="hidden sm:inline">
+                            {resource.uploadDate}
+                          </span>
                           <span>•</span>
                           <span className="flex items-center gap-1">
                             <Download className="h-3 w-3" />
-                            {resource.downloads} downloads
+                            {resource.downloads}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 self-end sm:self-auto">
                       <Badge
                         variant={
                           resource.type === "pdf"

@@ -164,16 +164,16 @@ export default function LoginPage() {
     <div className="min-h-screen bg-terminal-dark flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo/Branding */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="flex items-center justify-center mb-3 sm:mb-4">
             <div className="relative">
-              <Terminal className="h-16 w-16 text-terminal-green" />
+              <Terminal className="h-12 w-12 sm:h-16 sm:w-16 text-terminal-green" />
               <div className="absolute inset-0 animate-ping opacity-20">
-                <Terminal className="h-16 w-16 text-terminal-green" />
+                <Terminal className="h-12 w-12 sm:h-16 sm:w-16 text-terminal-green" />
               </div>
             </div>
           </div>
-          <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow mb-2">
+          <h1 className="font-mono text-2xl sm:text-3xl font-bold text-terminal-green terminal-glow mb-2">
             $ cca-lms --login
           </h1>
           <p className="font-mono text-sm text-terminal-text-muted">
@@ -236,7 +236,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-terminal-text-muted hover:text-terminal-green transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-terminal-text-muted hover:text-terminal-green transition-colors p-1.5 touch-manipulation"
                     disabled={isLoading}
                   >
                     {showPassword ? (

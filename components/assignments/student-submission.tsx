@@ -308,12 +308,14 @@ export function StudentSubmission({ assignmentId }: StudentSubmissionProps) {
               {submission.attachments?.map((attachment: any) => (
                 <div
                   key={attachment.id}
-                  className="flex items-center justify-between p-3 bg-terminal-darker border border-terminal-border rounded-md"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-terminal-darker border border-terminal-border rounded-md gap-3"
                 >
                   <div className="flex items-center gap-3">
-                    <FileText className="h-5 w-5 text-terminal-accent" />
-                    <div>
-                      <p className="font-medium">{attachment.fileName}</p>
+                    <FileText className="h-5 w-5 text-terminal-accent shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">
+                        {attachment.fileName}
+                      </p>
                       <p className="text-sm text-terminal-text-muted">
                         {(attachment.fileSize / 1024).toFixed(1)} KB
                       </p>
@@ -324,11 +326,16 @@ export function StudentSubmission({ assignmentId }: StudentSubmissionProps) {
                       size="sm"
                       variant="outline"
                       onClick={() => downloadFile(attachment)}
+                      className="w-full sm:w-auto"
                     >
-                      <Download className="h-4 w-4" />
+                      <Download className="h-4 w-4 mr-2 sm:mr-0" />
+                      <span className="sm:hidden">Download</span>
                     </Button>
                   ) : (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge
+                      variant="outline"
+                      className="text-xs self-start sm:self-center"
+                    >
                       Download locked
                     </Badge>
                   )}
@@ -399,7 +406,7 @@ export function StudentSubmission({ assignmentId }: StudentSubmissionProps) {
 
               <div
                 {...getRootProps()}
-                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                className={`border-2 border-dashed rounded-lg p-4 sm:p-8 text-center cursor-pointer transition-colors ${
                   isDragActive
                     ? "border-terminal-accent bg-terminal-accent/10"
                     : "border-terminal-border hover:border-terminal-accent/50"
@@ -427,12 +434,12 @@ export function StudentSubmission({ assignmentId }: StudentSubmissionProps) {
                   {files.map((file, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between p-3 bg-terminal-darker border border-terminal-border rounded-md"
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-terminal-darker border border-terminal-border rounded-md gap-2"
                     >
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-terminal-accent" />
-                        <div>
-                          <p className="font-medium">{file.name}</p>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <FileText className="h-5 w-5 text-terminal-accent shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{file.name}</p>
                           <p className="text-sm text-terminal-text-muted">
                             {(file.size / 1024).toFixed(1)} KB
                           </p>
@@ -443,6 +450,7 @@ export function StudentSubmission({ assignmentId }: StudentSubmissionProps) {
                         variant="ghost"
                         onClick={() => removeFile(index)}
                         disabled={isSubmitting}
+                        className="self-end sm:self-auto"
                       >
                         <X className="h-4 w-4" />
                       </Button>

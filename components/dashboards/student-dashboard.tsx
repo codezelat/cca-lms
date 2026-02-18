@@ -153,10 +153,10 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
   return (
     <div className="min-h-screen bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <div className="flex items-center gap-2 mb-2">
-            <Terminal className="h-6 w-6 text-terminal-green" />
-            <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
+            <Terminal className="h-5 w-5 sm:h-6 sm:w-6 text-terminal-green" />
+            <h1 className="font-mono text-xl sm:text-3xl font-bold text-terminal-green terminal-glow">
               $ student-dashboard
             </h1>
           </div>
@@ -166,7 +166,7 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid gap-6 md:grid-cols-4 mb-8">
+        <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-4 mb-6 sm:mb-8">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -269,8 +269,8 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
                       key={programme.id}
                       className="p-4 rounded-lg border border-terminal-green/20 bg-terminal-darker/50 hover:bg-terminal-green/5 transition-all"
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-mono font-semibold text-terminal-text">
+                      <div className="flex items-start justify-between mb-3 gap-2">
+                        <h3 className="font-mono font-semibold text-terminal-text leading-tight">
                           {programme.title}
                         </h3>
                         <Badge
@@ -300,7 +300,7 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
                           )}
                         </div>
                         {programme.nextLesson && (
-                          <p className="text-sm font-mono text-terminal-text-muted">
+                          <p className="text-sm font-mono text-terminal-text-muted line-clamp-1">
                             Next: {programme.nextLesson.title}
                           </p>
                         )}
@@ -381,10 +381,10 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
                 data.upcomingAssignments?.map((assignment) => (
                   <div
                     key={assignment.id}
-                    className="flex items-start justify-between p-3 rounded-md border border-terminal-green/10 bg-terminal-darker/30"
+                    className="flex flex-col sm:flex-row sm:items-start sm:justify-between p-3 rounded-md border border-terminal-green/10 bg-terminal-darker/30 gap-3"
                   >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
                         <h4 className="text-sm font-mono font-semibold text-terminal-text">
                           {assignment.title}
                         </h4>
@@ -404,10 +404,10 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
                               : `${assignment.daysUntilDue} days left`}
                         </Badge>
                       </div>
-                      <p className="text-xs font-mono text-terminal-text-muted mb-1">
+                      <p className="text-xs font-mono text-terminal-text-muted mb-1 line-clamp-1">
                         {assignment.courseTitle} → {assignment.lessonTitle}
                       </p>
-                      <div className="flex items-center gap-4 text-xs font-mono text-terminal-text-muted">
+                      <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-terminal-text-muted">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
                           {new Date(assignment.dueDate).toLocaleDateString()}
@@ -422,7 +422,7 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
                       href={`/learn/assignment/${assignment.id}`}
                       className="shrink-0"
                     >
-                      <Button size="sm" className="gap-1">
+                      <Button size="sm" className="gap-1 w-full sm:w-auto">
                         <FileText className="h-3 w-3" />
                         Submit
                       </Button>
