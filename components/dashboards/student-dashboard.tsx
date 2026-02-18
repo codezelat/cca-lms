@@ -156,7 +156,7 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
         <div className="mb-6 sm:mb-8">
           <div className="flex items-center gap-2 mb-2">
             <Terminal className="h-5 w-5 sm:h-6 sm:w-6 text-terminal-green" />
-            <h1 className="font-mono text-xl sm:text-3xl font-bold text-terminal-green terminal-glow">
+            <h1 className="font-mono text-xl sm:text-3xl font-bold text-terminal-green terminal-glow break-words">
               $ student-dashboard
             </h1>
           </div>
@@ -167,8 +167,8 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
 
         {/* Stats Overview */}
         <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-4 mb-6 sm:mb-8">
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="overflow-hidden">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-mono text-terminal-text-muted mb-1">
@@ -183,8 +183,8 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="overflow-hidden">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-mono text-terminal-text-muted mb-1">
@@ -199,8 +199,8 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="overflow-hidden">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-mono text-terminal-text-muted mb-1">
@@ -215,8 +215,8 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="overflow-hidden">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-mono text-terminal-text-muted mb-1">
@@ -235,8 +235,8 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Enrolled Programmes */}
           <div className="space-y-6">
-            <Card>
-              <CardHeader>
+            <Card className="overflow-hidden">
+              <CardHeader className="p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
                     <CardTitle className="flex items-center gap-2">
@@ -256,7 +256,7 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
                   </Link>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
                 {data.programmes.length === 0 ? (
                   <div className="text-center py-12">
                     <BookOpen className="h-12 w-12 text-terminal-text-muted mx-auto mb-4" />
@@ -326,15 +326,15 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
           </div>
 
           {/* Recent Activity */}
-          <Card>
-            <CardHeader>
+          <Card className="overflow-hidden">
+            <CardHeader className="p-4 sm:p-6">
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5" />
                 Recent Activity
               </CardTitle>
               <CardDescription>Your learning history</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-3">
               {data.recentActivity.length === 0 ? (
                 <div className="text-center py-12 text-terminal-text-muted font-mono text-sm">
                   No recent activity yet
@@ -366,8 +366,8 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
           </Card>
 
           {/* Upcoming Assignments */}
-          <Card>
-            <CardHeader>
+          <Card className="overflow-hidden">
+            <CardHeader className="p-4 sm:p-6">
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
                 Upcoming Assignments
@@ -376,7 +376,7 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
                 Assignments due soon - stay on track!
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-3">
               {data.upcomingAssignments?.length === 0 ? (
                 <div className="text-center py-12 text-terminal-text-muted font-mono text-sm">
                   <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
