@@ -20,38 +20,53 @@ function Calendar({
       showOutsideDays={showOutsideDays}
       className={cn("p-3 font-mono", className)}
       classNames={{
-        months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+        // v9 API — root & layout
+        root: "rdp",
+        months: "flex flex-col sm:flex-row gap-4",
         month: "space-y-4",
-        caption: "flex justify-center pt-1 relative items-center",
+        month_caption: "flex justify-center pt-1 relative items-center",
         caption_label: "text-sm font-medium text-terminal-green",
-        nav: "space-x-1 flex items-center",
-        nav_button: cn(
+        // v9 navigation
+        nav: "absolute inset-x-0 top-0 flex items-center justify-between px-1 pt-1",
+        button_previous: cn(
           buttonVariants({ variant: "outline" }),
           "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
         ),
-        nav_button_previous: "absolute left-1",
-        nav_button_next: "absolute right-1",
-        table: "w-full border-collapse space-y-1",
-        head_row: "flex",
-        head_cell:
-          "text-terminal-text-muted rounded-md w-9 font-normal text-[0.8rem]",
-        row: "flex w-full mt-2",
-        cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-terminal-green/50 [&:has([aria-selected])]:bg-terminal-green first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-        day: cn(
+        button_next: cn(
+          buttonVariants({ variant: "outline" }),
+          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+        ),
+        // v9 grid
+        month_grid: "w-full border-collapse space-y-1",
+        weekdays: "flex",
+        weekday:
+          "text-terminal-text-muted rounded-md w-9 font-normal text-[0.8rem] text-center",
+        weeks: "",
+        week: "flex w-full mt-2",
+        day: "h-9 w-9 text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
+        day_button: cn(
           buttonVariants({ variant: "ghost" }),
           "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
         ),
-        day_range_end: "day-range-end",
-        day_selected:
-          "bg-terminal-green text-terminal-dark hover:bg-terminal-green hover:text-terminal-dark focus:bg-terminal-green focus:text-terminal-dark",
-        day_today: "bg-terminal-green/20 text-terminal-green",
-        day_outside:
-          "day-outside text-terminal-text-muted opacity-50 aria-selected:bg-terminal-green/50 aria-selected:text-terminal-text-muted aria-selected:opacity-30",
-        day_disabled: "text-terminal-text-muted opacity-50",
-        day_range_middle:
+        // v9 selection & flags
+        selected:
+          "bg-terminal-green text-terminal-dark rounded-md hover:bg-terminal-green hover:text-terminal-dark focus:bg-terminal-green focus:text-terminal-dark",
+        today: "bg-terminal-green/20 text-terminal-green rounded-md",
+        outside:
+          "text-terminal-text-muted opacity-50 aria-selected:bg-terminal-green/50 aria-selected:text-terminal-text-muted aria-selected:opacity-30",
+        disabled: "text-terminal-text-muted opacity-50",
+        range_middle:
           "aria-selected:bg-terminal-green/50 aria-selected:text-terminal-text",
-        day_hidden: "invisible",
+        hidden: "invisible",
         ...classNames,
+      }}
+      components={{
+        Chevron: ({ orientation }) =>
+          orientation === "left" ? (
+            <ChevronLeft className="h-4 w-4" />
+          ) : (
+            <ChevronRight className="h-4 w-4" />
+          ),
       }}
       {...props}
     />
