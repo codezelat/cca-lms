@@ -46,11 +46,10 @@ function Calendar({
         day: "h-9 w-9 text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
         day_button: cn(
           buttonVariants({ variant: "ghost" }),
-          "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
+          "h-9 w-9 p-0 font-normal aria-selected:opacity-100 aria-selected:bg-terminal-green aria-selected:text-terminal-dark hover:aria-selected:bg-terminal-green hover:aria-selected:text-terminal-dark",
         ),
         // v9 selection & flags
-        selected:
-          "bg-terminal-green text-terminal-dark rounded-md hover:bg-terminal-green hover:text-terminal-dark focus:bg-terminal-green focus:text-terminal-dark",
+        selected: "rounded-md",
         today: "bg-terminal-green/20 text-terminal-green rounded-md",
         outside:
           "text-terminal-text-muted opacity-50 aria-selected:bg-terminal-green/50 aria-selected:text-terminal-text-muted aria-selected:opacity-30",

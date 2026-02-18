@@ -1,12 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { CalendarIcon, Clock } from "lucide-react";
+import { CalendarIcon, Clock, Zap, X } from "lucide-react";
 import { format, setHours, setMinutes, addDays, addWeeks } from "date-fns";
 
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
@@ -24,7 +25,7 @@ interface DateTimePickerProps {
 
 const quickPresets = [
   {
-    label: "Tomorrow 11:59 PM",
+    label: "Tomorrow",
     getValue: () => setMinutes(setHours(addDays(new Date(), 1), 23), 59),
   },
   {
@@ -41,11 +42,9 @@ const quickPresets = [
   },
 ];
 
-// ── Clock face component ──────────────────────────────────────────────────────
+// ── Time picker: HH · MM · AM/PM with keyboard navigation ────────────────────
 
-type ClockMode = "hours" | "minutes";
-
-function ClockFace({
+function TimePicker({
   hour24,
   minute,
   onHourChange,
@@ -56,236 +55,117 @@ function ClockFace({
   onHourChange: (h: number) => void;
   onMinuteChange: (m: number) => void;
 }) {
-  const [mode, setMode] = React.useState<ClockMode>("hours");
-  const clockRef = React.useRef<HTMLDivElement>(null);
-
   const isAM = hour24 < 12;
   const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
 
-  const toggleAmPm = () => {
-    onHourChange(isAM ? hour24 + 12 : hour24 - 12);
+  const hourRef = React.useRef<HTMLInputElement>(null);
+  const minuteRef = React.useRef<HTMLInputElement>(null);
+  const periodRef = React.useRef<HTMLButtonElement>(null);
+
+  const toH24 = (h12: number, am: boolean) =>
+    am ? (h12 === 12 ? 0 : h12) : h12 === 12 ? 12 : h12 + 12;
+
+  const handleHourChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, "").slice(-2);
+    if (!raw) return;
+    const num = parseInt(raw);
+    if (num > 12) return;
+    onHourChange(toH24(num, isAM));
+    if (raw.length === 2 || num > 1) minuteRef.current?.focus();
   };
 
-  // Angle helpers
-  const hourAngle = ((hour12 / 12) * 360 - 90) * (Math.PI / 180);
-  const minuteAngle = ((minute / 60) * 360 - 90) * (Math.PI / 180);
-
-  const RADIUS = 80; // clock face radius px
-  const CENTER = 96; // svg center (192/2)
-
-  // Hour numbers on the face (1–12)
-  const hourNumbers = Array.from({ length: 12 }, (_, i) => i + 1);
-  // Minute marks (every 5 min)
-  const minuteNumbers = Array.from({ length: 12 }, (_, i) => i * 5);
-
-  const getPos = (angle: number, r: number) => ({
-    x: CENTER + r * Math.cos(angle),
-    y: CENTER + r * Math.sin(angle),
-  });
-
-  const handleClockClick = (e: React.MouseEvent<SVGElement>) => {
-    const rect = clockRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = e.clientX - rect.left - CENTER;
-    const y = e.clientY - rect.top - CENTER;
-    const angle = Math.atan2(y, x); // -π to π
-    const deg = ((angle * 180) / Math.PI + 90 + 360) % 360; // 0 = top
-
-    if (mode === "hours") {
-      const h12 = Math.round(deg / 30) % 12 || 12;
-      const h24 = isAM ? (h12 === 12 ? 0 : h12) : h12 === 12 ? 12 : h12 + 12;
-      onHourChange(h24);
-      // Auto-switch to minutes after picking hour
-      setTimeout(() => setMode("minutes"), 150);
-    } else {
-      const m = Math.round(deg / 6) % 60;
-      onMinuteChange(m);
+  const handleHourKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      onHourChange(toH24((hour12 % 12) + 1, isAM));
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      onHourChange(toH24(hour12 === 1 ? 12 : hour12 - 1, isAM));
+    } else if (e.key === ":" || e.key === "ArrowRight") {
+      minuteRef.current?.focus();
     }
   };
 
-  // Hand endpoint
-  const handEnd =
-    mode === "hours"
-      ? getPos(hourAngle, RADIUS * 0.6)
-      : getPos(minuteAngle, RADIUS * 0.75);
+  const handleMinuteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, "").slice(-2);
+    if (!raw) return;
+    const num = parseInt(raw);
+    if (num > 59) return;
+    onMinuteChange(num);
+    if (raw.length === 2) periodRef.current?.focus();
+  };
+
+  const handleMinuteKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      onMinuteChange(minute === 59 ? 0 : minute + 1);
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      onMinuteChange(minute === 0 ? 59 : minute - 1);
+    } else if (e.key === "ArrowRight") {
+      periodRef.current?.focus();
+    }
+  };
+
+  const togglePeriod = () => onHourChange(isAM ? hour24 + 12 : hour24 - 12);
+
+  const handlePeriodKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === "a" || e.key === "A") {
+      if (!isAM) togglePeriod();
+    }
+    if (e.key === "p" || e.key === "P") {
+      if (isAM) togglePeriod();
+    }
+    if (e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      togglePeriod();
+    }
+  };
+
+  const inputCls =
+    "w-9 h-9 text-center border-0 bg-transparent p-0 font-mono text-base font-semibold focus:ring-0 focus:shadow-none focus:border-0 text-terminal-text";
 
   return (
-    <div className="flex flex-col items-center gap-3 p-3">
-      {/* Digital display + mode toggle */}
-      <div className="flex items-center gap-1 font-mono text-2xl font-bold select-none">
-        <button
-          onClick={() => setMode("hours")}
-          className={cn(
-            "px-2 py-1 rounded-md transition-colors",
-            mode === "hours"
-              ? "text-terminal-green bg-terminal-green/15"
-              : "text-terminal-text-muted hover:text-terminal-text",
-          )}
-        >
-          {String(hour12).padStart(2, "0")}
-        </button>
-        <span className="text-terminal-text-muted">:</span>
-        <button
-          onClick={() => setMode("minutes")}
-          className={cn(
-            "px-2 py-1 rounded-md transition-colors",
-            mode === "minutes"
-              ? "text-terminal-green bg-terminal-green/15"
-              : "text-terminal-text-muted hover:text-terminal-text",
-          )}
-        >
-          {String(minute).padStart(2, "0")}
-        </button>
-        {/* AM / PM toggle */}
-        <div className="flex flex-col ml-2 gap-1">
-          {(["AM", "PM"] as const).map((period) => (
-            <button
-              key={period}
-              onClick={() => {
-                const wantAM = period === "AM";
-                if (wantAM !== isAM) toggleAmPm();
-              }}
-              className={cn(
-                "text-xs font-mono px-1.5 py-0.5 rounded transition-colors",
-                (period === "AM") === isAM
-                  ? "bg-terminal-green text-terminal-dark font-semibold"
-                  : "text-terminal-text-muted hover:text-terminal-text border border-terminal-border",
-              )}
-            >
-              {period}
-            </button>
-          ))}
-        </div>
-      </div>
+    <div className="flex items-center gap-0.5 rounded-lg border border-terminal-green/30 bg-terminal-darker px-3 py-2 w-fit shadow-sm">
+      <Clock className="h-3.5 w-3.5 text-terminal-green/70 shrink-0 mr-2" />
 
-      {/* Clock face SVG */}
-      <div ref={clockRef} className="relative">
-        <svg
-          width={192}
-          height={192}
-          className="cursor-pointer"
-          onClick={handleClockClick}
-        >
-          {/* Outer circle */}
-          <circle
-            cx={CENTER}
-            cy={CENTER}
-            r={RADIUS}
-            style={{
-              fill: "var(--terminal-darker)",
-              stroke: "var(--terminal-border)",
-            }}
-            strokeWidth={1.5}
-          />
+      <Input
+        ref={hourRef}
+        className={inputCls}
+        value={String(hour12).padStart(2, "0")}
+        onChange={handleHourChange}
+        onKeyDown={handleHourKeyDown}
+        onFocus={(e) => e.target.select()}
+        maxLength={2}
+        inputMode="numeric"
+        aria-label="Hours"
+      />
 
-          {/* Tick marks */}
-          {Array.from({ length: 60 }, (_, i) => {
-            const a = ((i / 60) * 360 - 90) * (Math.PI / 180);
-            const isMajor = i % 5 === 0;
-            const inner = getPos(a, RADIUS * (isMajor ? 0.82 : 0.88));
-            const outer = getPos(a, RADIUS * 0.94);
-            return (
-              <line
-                key={i}
-                x1={inner.x}
-                y1={inner.y}
-                x2={outer.x}
-                y2={outer.y}
-                style={{
-                  stroke: isMajor
-                    ? "color-mix(in srgb, var(--terminal-green) 40%, transparent)"
-                    : "var(--terminal-border)",
-                }}
-                strokeWidth={isMajor ? 1.5 : 0.75}
-              />
-            );
-          })}
+      <span className="text-terminal-green font-bold text-lg leading-none select-none px-0.5">
+        :
+      </span>
 
-          {/* Hour / minute numbers */}
-          {mode === "hours"
-            ? hourNumbers.map((h) => {
-                const a = ((h / 12) * 360 - 90) * (Math.PI / 180);
-                const pos = getPos(a, RADIUS * 0.7);
-                const h24 = isAM ? (h === 12 ? 0 : h) : h === 12 ? 12 : h + 12;
-                const isSelected = h24 === hour24;
-                return (
-                  <text
-                    key={h}
-                    x={pos.x}
-                    y={pos.y}
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    fontSize={isSelected ? 13 : 11}
-                    fontWeight={isSelected ? "700" : "400"}
-                    fontFamily="monospace"
-                    style={{
-                      fill: isSelected
-                        ? "var(--terminal-green)"
-                        : "var(--terminal-text-muted)",
-                    }}
-                  >
-                    {h}
-                  </text>
-                );
-              })
-            : minuteNumbers.map((m) => {
-                const a = ((m / 60) * 360 - 90) * (Math.PI / 180);
-                const pos = getPos(a, RADIUS * 0.7);
-                const isSelected = m === minute;
-                return (
-                  <text
-                    key={m}
-                    x={pos.x}
-                    y={pos.y}
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    fontSize={isSelected ? 12 : 10}
-                    fontWeight={isSelected ? "700" : "400"}
-                    fontFamily="monospace"
-                    style={{
-                      fill: isSelected
-                        ? "var(--terminal-green)"
-                        : "var(--terminal-text-muted)",
-                    }}
-                  >
-                    {String(m).padStart(2, "0")}
-                  </text>
-                );
-              })}
+      <Input
+        ref={minuteRef}
+        className={inputCls}
+        value={String(minute).padStart(2, "0")}
+        onChange={handleMinuteChange}
+        onKeyDown={handleMinuteKeyDown}
+        onFocus={(e) => e.target.select()}
+        maxLength={2}
+        inputMode="numeric"
+        aria-label="Minutes"
+      />
 
-          {/* Hand */}
-          <line
-            x1={CENTER}
-            y1={CENTER}
-            x2={handEnd.x}
-            y2={handEnd.y}
-            style={{ stroke: "var(--terminal-green)" }}
-            strokeWidth={2}
-            strokeLinecap="round"
-          />
-
-          {/* Center dot */}
-          <circle
-            cx={CENTER}
-            cy={CENTER}
-            r={4}
-            style={{ fill: "var(--terminal-green)" }}
-          />
-
-          {/* Hand tip dot */}
-          <circle
-            cx={handEnd.x}
-            cy={handEnd.y}
-            r={6}
-            style={{ fill: "var(--terminal-green)" }}
-          />
-        </svg>
-
-        {/* Mode hint */}
-        <p className="text-center text-[10px] font-mono text-terminal-text-muted mt-1">
-          {mode === "hours" ? "Click to set hour" : "Click to set minute"}
-        </p>
-      </div>
+      <button
+        ref={periodRef}
+        onClick={togglePeriod}
+        onKeyDown={handlePeriodKeyDown}
+        className="ml-2 text-[11px] font-mono font-bold px-2 py-1 rounded-md transition-all select-none bg-terminal-green/15 text-terminal-green hover:bg-terminal-green hover:text-terminal-dark border border-terminal-green/20"
+        aria-label="Toggle AM/PM"
+      >
+        {isAM ? "AM" : "PM"}
+      </button>
     </div>
   );
 }
@@ -357,14 +237,16 @@ export function DateTimePicker({
           variant="outline"
           disabled={disabled}
           className={cn(
-            "w-full justify-start text-left font-mono",
+            "w-full justify-start text-left font-mono h-10",
             !value && "text-terminal-text-muted",
             className,
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-terminal-green" />
           {value ? (
-            format(value, "PPP 'at' h:mm a")
+            <span className="text-terminal-text">
+              {format(value, "PPP 'at' h:mm a")}
+            </span>
           ) : (
             <span>{placeholder}</span>
           )}
@@ -372,42 +254,53 @@ export function DateTimePicker({
       </PopoverTrigger>
 
       <PopoverContent
-        className="w-auto p-0"
+        className="w-auto p-0 overflow-hidden"
         align="start"
         side="bottom"
-        sideOffset={4}
+        sideOffset={6}
       >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-terminal-green/15 bg-terminal-green/5">
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="h-3.5 w-3.5 text-terminal-green" />
+            <span className="text-xs font-semibold font-mono text-terminal-green tracking-wide uppercase">
+              Due Date & Time
+            </span>
+          </div>
+          {selectedDate && (
+            <button
+              onClick={handleClear}
+              className="text-terminal-text-muted hover:text-destructive transition-colors"
+              aria-label="Clear"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
         <div className="flex flex-col sm:flex-row">
           {/* ── Left: Quick Presets ── */}
-          <div className="border-b sm:border-b-0 sm:border-r border-terminal-green/20 p-3 space-y-1 sm:w-37 shrink-0">
-            <div className="text-xs font-semibold text-terminal-green mb-2 flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              Quick Set
+          <div className="border-b sm:border-b-0 sm:border-r border-terminal-green/15 p-3 space-y-0.5 sm:w-36 shrink-0">
+            <div className="flex items-center gap-1.5 mb-2.5 px-1">
+              <Zap className="h-3 w-3 text-terminal-green/70" />
+              <span className="text-[10px] font-semibold font-mono text-terminal-text-muted uppercase tracking-widest">
+                Quick
+              </span>
             </div>
             {quickPresets.map((preset) => (
               <Button
                 key={preset.label}
                 variant="ghost"
                 size="sm"
-                className="w-full justify-start font-mono text-xs hover:bg-terminal-green/10 hover:text-terminal-green"
+                className="w-full justify-start font-mono text-xs h-8 hover:bg-terminal-green/10 hover:text-terminal-green px-2"
                 onClick={() => handlePreset(preset.getValue)}
               >
                 {preset.label}
               </Button>
             ))}
-            <div className="border-t border-terminal-green/20 pt-2 mt-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start font-mono text-xs text-terminal-text-muted hover:text-destructive"
-                onClick={handleClear}
-              >
-                Clear
-              </Button>
-            </div>
           </div>
 
-          {/* ── Right: Calendar + Clock ── */}
+          {/* ── Right: Calendar + Time ── */}
           <div className="flex flex-col">
             <Calendar
               mode="single"
@@ -416,46 +309,62 @@ export function DateTimePicker({
               disabled={(date) => (minDate ? date < minDate : false)}
             />
 
-            {/* Clock face */}
-            <div className="border-t border-terminal-green/20">
-              <ClockFace
-                hour24={currentHour}
-                minute={currentMinute}
-                onHourChange={handleHourChange}
-                onMinuteChange={handleMinuteChange}
-              />
+            {/* Time + preview section */}
+            <div className="border-t border-terminal-green/15 px-3 pt-3 pb-3 space-y-3">
+              {/* Time label + picker on same row */}
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[10px] font-mono font-semibold text-terminal-text-muted uppercase tracking-widest shrink-0">
+                  Time
+                </span>
+                <TimePicker
+                  hour24={currentHour}
+                  minute={currentMinute}
+                  onHourChange={handleHourChange}
+                  onMinuteChange={handleMinuteChange}
+                />
+              </div>
+
+              {/* Selected preview */}
+              {selectedDate && (
+                <div className="flex items-center gap-2 px-2.5 py-2 rounded-md bg-terminal-green/8 border border-terminal-green/20">
+                  <div className="h-1.5 w-1.5 rounded-full bg-terminal-green shrink-0" />
+                  <p className="text-xs font-mono text-terminal-green font-medium">
+                    {format(selectedDate, "EEE, MMM d yyyy")}
+                    <span className="text-terminal-green/60 mx-1">·</span>
+                    {format(selectedDate, "h:mm a")}
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* Selected preview */}
-            {selectedDate && (
-              <div className="mx-3 mb-3 p-2 bg-terminal-green/10 rounded-md border border-terminal-green/20">
-                <p className="text-xs text-terminal-text-muted">Selected:</p>
-                <p className="text-sm font-mono text-terminal-green">
-                  {format(selectedDate, "EEE, MMM d, yyyy · h:mm a")}
-                </p>
-              </div>
-            )}
-
             {/* Actions */}
-            <div className="border-t border-terminal-green/20 p-3 flex justify-end gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSelectedDate(value);
-                  setIsOpen(false);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleConfirm}
-                disabled={!selectedDate}
-                className="bg-terminal-green text-terminal-dark hover:bg-terminal-green/90"
-              >
-                Confirm
-              </Button>
+            <div className="border-t border-terminal-green/15 px-3 py-2.5 flex items-center justify-between gap-2">
+              <p className="text-[10px] font-mono text-terminal-text-muted">
+                {selectedDate
+                  ? "↑↓ arrows to adjust time"
+                  : "Pick a date first"}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={() => {
+                    setSelectedDate(value);
+                    setIsOpen(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-8 text-xs bg-terminal-green text-terminal-dark hover:bg-terminal-green/90 font-semibold"
+                  onClick={handleConfirm}
+                  disabled={!selectedDate}
+                >
+                  Confirm
+                </Button>
+              </div>
             </div>
           </div>
         </div>
