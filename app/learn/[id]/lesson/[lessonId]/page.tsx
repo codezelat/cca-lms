@@ -229,12 +229,12 @@ const renderResource = (resource: Resource): React.ReactElement => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex items-start gap-3">
                 <FileText className="h-5 w-5 text-terminal-green shrink-0 mt-0.5" />
-                <div className="min-w-0">
-                  <h3 className="font-mono font-semibold text-terminal-text">
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-mono font-semibold text-terminal-text break-words">
                     {resource.title}
                   </h3>
                   {resource.description && (
-                    <p className="text-sm font-mono text-terminal-text-muted mt-1">
+                    <p className="text-sm font-mono text-terminal-text-muted mt-1 break-words">
                       {resource.description}
                     </p>
                   )}
@@ -393,12 +393,12 @@ export default function LessonPage({
           </div>
 
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <h1 className="font-mono text-xl sm:text-3xl font-bold text-terminal-green terminal-glow mb-2">
+            <div className="min-w-0 flex-1">
+              <h1 className="font-mono text-xl sm:text-3xl font-bold text-terminal-green terminal-glow mb-2 break-words">
                 {lesson.title}
               </h1>
               {lesson.description && (
-                <p className="font-mono text-sm text-terminal-text-muted">
+                <p className="font-mono text-sm text-terminal-text-muted break-words">
                   {lesson.description}
                 </p>
               )}

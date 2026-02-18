@@ -100,7 +100,7 @@ export default function MyProgrammesPage() {
               >
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <CardTitle className="font-mono text-lg leading-tight">
+                    <CardTitle className="font-mono text-lg leading-tight break-words min-w-0 flex-1">
                       {programme.title}
                     </CardTitle>
                     {programme.isEnrolled && (

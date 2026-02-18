@@ -22,136 +22,140 @@ export async function GET() {
 
     // Parallelize independent queries to improve performance
     // Bolt: Batched 4 independent DB queries into a single Promise.all
-    const [enrollments, lessonProgress, recentCompletions, upcomingAssignments] =
-      await Promise.all([
-        // Fetch student's enrollments with course details
-        prisma.courseEnrollment.findMany({
-          where: {
-            userId,
-            status: { in: ["ACTIVE", "COMPLETED"] },
-          },
-          include: {
-            course: {
-              include: {
-                modules: {
-                  orderBy: { order: "asc" },
-                  include: {
-                    lessons: {
-                      orderBy: { order: "asc" },
-                      select: {
-                        id: true,
-                        title: true,
-                        type: true,
-                        duration: true,
-                        isPublished: true,
-                      },
+    const [
+      enrollments,
+      lessonProgress,
+      recentCompletions,
+      upcomingAssignments,
+    ] = await Promise.all([
+      // Fetch student's enrollments with course details
+      prisma.courseEnrollment.findMany({
+        where: {
+          userId,
+          status: { in: ["ACTIVE", "COMPLETED"] },
+        },
+        include: {
+          course: {
+            include: {
+              modules: {
+                orderBy: { order: "asc" },
+                include: {
+                  lessons: {
+                    orderBy: { order: "asc" },
+                    select: {
+                      id: true,
+                      title: true,
+                      type: true,
+                      duration: true,
+                      isPublished: true,
                     },
                   },
                 },
               },
             },
           },
-          orderBy: { lastAccessedAt: "desc" },
-        }),
+        },
+        orderBy: { lastAccessedAt: "desc" },
+      }),
 
-        // Fetch lesson progress for the student
-        prisma.lessonProgress.findMany({
-          where: { userId },
-          select: {
-            lessonId: true,
-            completed: true,
-            watchedSeconds: true,
-            lastAccessedAt: true,
-          },
-        }),
+      // Fetch lesson progress for the student
+      prisma.lessonProgress.findMany({
+        where: { userId },
+        select: {
+          lessonId: true,
+          completed: true,
+          watchedSeconds: true,
+          lastAccessedAt: true,
+        },
+      }),
 
-        // Get recent activity (completed lessons)
-        prisma.lessonProgress.findMany({
-          where: {
-            userId,
-            completed: true,
-          },
-          include: {
-            lesson: {
-              select: {
-                id: true,
-                title: true,
-                module: {
-                  select: {
-                    title: true,
-                    course: {
-                      select: {
-                        title: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-          orderBy: { lastAccessedAt: "desc" },
-          take: 10,
-        }),
-
-        // Fetch upcoming assignments
-        prisma.assignment.findMany({
-          where: {
-            lesson: {
+      // Get recent activity (completed lessons)
+      prisma.lessonProgress.findMany({
+        where: {
+          userId,
+          completed: true,
+        },
+        include: {
+          lesson: {
+            select: {
+              id: true,
+              title: true,
               module: {
-                course: {
-                  enrollments: {
-                    some: {
-                      userId,
-                      status: "ACTIVE",
+                select: {
+                  title: true,
+                  course: {
+                    select: {
+                      title: true,
                     },
                   },
                 },
               },
             },
-            dueDate: {
-              gte: new Date(),
-            },
-            // Only show assignments without submissions or draft submissions
-            assignmentSubmissions: {
-              none: {
-                userId,
-                status: {
-                  in: ["SUBMITTED", "GRADED"],
+          },
+        },
+        orderBy: { lastAccessedAt: "desc" },
+        take: 10,
+      }),
+
+      // Fetch upcoming assignments
+      prisma.assignment.findMany({
+        where: {
+          lesson: {
+            module: {
+              course: {
+                enrollments: {
+                  some: {
+                    userId,
+                    status: "ACTIVE",
+                  },
                 },
               },
             },
           },
-          include: {
-            lesson: {
-              select: {
-                id: true,
-                title: true,
-                module: {
-                  select: {
-                    title: true,
-                    course: {
-                      select: {
-                        id: true,
-                        title: true,
-                      },
+          dueDate: {
+            gte: new Date(),
+          },
+          // Only show assignments without submissions or draft submissions
+          assignmentSubmissions: {
+            none: {
+              userId,
+              status: {
+                in: ["SUBMITTED", "GRADED"],
+              },
+            },
+          },
+        },
+        include: {
+          lesson: {
+            select: {
+              id: true,
+              title: true,
+              module: {
+                select: {
+                  title: true,
+                  course: {
+                    select: {
+                      id: true,
+                      title: true,
                     },
                   },
                 },
               },
             },
-            assignmentSubmissions: {
-              where: { userId },
-              select: {
-                status: true,
-              },
+          },
+          assignmentSubmissions: {
+            where: { userId },
+            select: {
+              status: true,
             },
           },
-          orderBy: {
-            dueDate: "asc",
-          },
-          take: 5,
-        }),
-      ]);
+        },
+        orderBy: {
+          dueDate: "asc",
+        },
+        take: 5,
+      }),
+    ]);
 
     // Create a map for quick lesson progress lookup
     const progressMap = new Map(lessonProgress.map((p) => [p.lessonId, p]));
@@ -162,13 +166,11 @@ export async function GET() {
 
       // Get all lessons across modules
       const allLessons = course.modules.flatMap((module) =>
-        module.lessons
-          .filter((l) => l.isPublished)
-          .map((lesson) => ({
-            ...lesson,
-            moduleTitle: module.title,
-            moduleId: module.id,
-          })),
+        module.lessons.map((lesson) => ({
+          ...lesson,
+          moduleTitle: module.title,
+          moduleId: module.id,
+        })),
       );
 
       // Find next incomplete lesson

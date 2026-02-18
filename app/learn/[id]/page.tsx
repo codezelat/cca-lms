@@ -232,11 +232,11 @@ export default function ProgrammeDetailPage({
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <div className="flex items-start justify-between gap-3 mb-3 sm:mb-4">
-            <div>
-              <h1 className="font-mono text-xl sm:text-3xl font-bold text-terminal-green terminal-glow mb-2">
+            <div className="min-w-0 flex-1">
+              <h1 className="font-mono text-xl sm:text-3xl font-bold text-terminal-green terminal-glow mb-2 break-words">
                 {programme.title}
               </h1>
-              <p className="font-mono text-sm text-terminal-text-muted">
+              <p className="font-mono text-sm text-terminal-text-muted break-words">
                 {programme.description}
               </p>
             </div>

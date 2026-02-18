@@ -237,7 +237,7 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <BookOpen className="h-5 w-5" />
@@ -245,8 +245,12 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
                     </CardTitle>
                     <CardDescription>Continue your learning</CardDescription>
                   </div>
-                  <Link href="/my-programmes">
-                    <Button variant="outline" size="sm">
+                  <Link href="/my-programmes" className="w-full sm:w-auto">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full sm:w-auto"
+                    >
                       Browse All
                     </Button>
                   </Link>
@@ -270,10 +274,11 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
                       className="p-4 rounded-lg border border-terminal-green/20 bg-terminal-darker/50 hover:bg-terminal-green/5 transition-all"
                     >
                       <div className="flex items-start justify-between mb-3 gap-2">
-                        <h3 className="font-mono font-semibold text-terminal-text leading-tight">
+                        <h3 className="font-mono font-semibold text-terminal-text leading-tight min-w-0 break-words flex-1">
                           {programme.title}
                         </h3>
                         <Badge
+                          className="shrink-0"
                           variant={
                             programme.status === "COMPLETED"
                               ? "success"
@@ -341,11 +346,11 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
                     className="flex items-start gap-3 p-3 rounded-md border border-terminal-green/10 bg-terminal-darker/30"
                   >
                     <CheckCircle2 className="h-4 w-4 text-terminal-green shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm font-mono text-terminal-text">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-mono text-terminal-text break-words">
                         Completed: {activity.lessonTitle}
                       </p>
-                      <p className="text-xs font-mono text-terminal-text-muted mt-1">
+                      <p className="text-xs font-mono text-terminal-text-muted mt-1 break-words">
                         {activity.courseTitle} → {activity.moduleTitle}
                       </p>
                       <p className="text-xs font-mono text-terminal-text-muted mt-1">
@@ -385,7 +390,7 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <h4 className="text-sm font-mono font-semibold text-terminal-text">
+                        <h4 className="text-sm font-mono font-semibold text-terminal-text break-words">
                           {assignment.title}
                         </h4>
                         <Badge

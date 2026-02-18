@@ -204,16 +204,21 @@ export function StudentSubmission({ assignmentId }: StudentSubmissionProps) {
   return (
     <div className="space-y-6">
       <Card className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold">{assignment.title}</h2>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+          <div className="min-w-0">
+            <h2 className="text-2xl font-bold break-words">
+              {assignment.title}
+            </h2>
             {assignment.description && (
-              <p className="text-terminal-text-muted mt-2">
+              <p className="text-terminal-text-muted mt-2 break-words">
                 {assignment.description}
               </p>
             )}
           </div>
-          <Badge variant={isOverdue ? "danger" : "default"}>
+          <Badge
+            variant={isOverdue ? "danger" : "default"}
+            className="shrink-0 self-start"
+          >
             {isOverdue ? "Overdue" : "Active"}
           </Badge>
         </div>
