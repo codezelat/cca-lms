@@ -1078,14 +1078,15 @@ export async function sendAccountInviteEmail(
   to: string,
   inviteToken: string,
   inviterName?: string,
-) {
+): Promise<{ success: boolean; error?: string }> {
   const inviteUrl = `${APP_URL}/auth/accept-invite?token=${inviteToken}`;
 
-  await getResendClient().emails.send({
-    from: FROM_EMAIL,
-    to,
-    subject: `You're Invited to Join ${APP_NAME}`,
-    html: `
+  return await sendEmailSafely(
+    {
+      from: FROM_EMAIL,
+      to,
+      subject: `You're Invited to Join ${APP_NAME}`,
+      html: `
       <!DOCTYPE html>
       <html>
         <head>
@@ -1116,7 +1117,9 @@ export async function sendAccountInviteEmail(
         </body>
       </html>
     `,
-  });
+    },
+    "ACCOUNT_INVITE",
+  );
 }
 
 /**
@@ -1124,14 +1127,18 @@ export async function sendAccountInviteEmail(
  * @param to - Recipient email address
  * @param token - Verification token
  */
-export async function sendEmailVerification(to: string, token: string) {
+export async function sendEmailVerification(
+  to: string,
+  token: string,
+): Promise<{ success: boolean; error?: string }> {
   const verifyUrl = `${APP_URL}/auth/verify-email?token=${token}`;
 
-  await getResendClient().emails.send({
-    from: FROM_EMAIL,
-    to,
-    subject: `Verify Your Email - ${APP_NAME}`,
-    html: `
+  return await sendEmailSafely(
+    {
+      from: FROM_EMAIL,
+      to,
+      subject: `Verify Your Email - ${APP_NAME}`,
+      html: `
       <!DOCTYPE html>
       <html>
         <head>
@@ -1161,7 +1168,9 @@ export async function sendEmailVerification(to: string, token: string) {
         </body>
       </html>
     `,
-  });
+    },
+    "EMAIL_VERIFICATION",
+  );
 }
 
 /**
@@ -1174,12 +1183,14 @@ export async function sendNotificationEmail(
   to: string,
   subject: string,
   message: string,
-) {
-  await getResendClient().emails.send({
-    from: FROM_EMAIL,
-    to,
-    subject: `${subject} - ${APP_NAME}`,
-    html: `
+  userId?: string,
+): Promise<{ success: boolean; error?: string }> {
+  return await sendEmailSafely(
+    {
+      from: FROM_EMAIL,
+      to,
+      subject: `${subject} - ${APP_NAME}`,
+      html: `
       <!DOCTYPE html>
       <html>
         <head>
@@ -1202,5 +1213,8 @@ export async function sendNotificationEmail(
         </body>
       </html>
     `,
-  });
+    },
+    "NOTIFICATION",
+    userId,
+  );
 }
