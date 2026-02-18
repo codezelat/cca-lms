@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendAssignmentDueSoonReminders } from "@/lib/resend";
 
-// POST /api/cron/assignment-reminders - Send due soon reminders
-// Called by Vercel Cron daily at 9 AM
-export async function POST(request: NextRequest) {
+// GET /api/cron/assignment-reminders - Send due soon reminders
+// Called by Vercel Cron daily at 9 AM (Vercel Cron always sends GET requests)
+export async function GET(request: NextRequest) {
   try {
     // Verify this is called from Vercel Cron (check user-agent for Vercel)
     const userAgent = request.headers.get("user-agent") || "";
@@ -133,45 +133,6 @@ export async function POST(request: NextRequest) {
     console.error("Error in assignment reminder cron job:", error);
     return NextResponse.json(
       { error: "Failed to send assignment reminders" },
-      { status: 500 },
-    );
-  }
-}
-
-// GET /api/cron/assignment-reminders - Get upcoming assignments info (for monitoring)
-export async function GET() {
-  try {
-    const now = new Date();
-    const twentyFourHoursFromNow = new Date(
-      now.getTime() + 24 * 60 * 60 * 1000,
-    );
-
-    const assignmentsDueSoon = await prisma.assignment.count({
-      where: {
-        dueDate: {
-          gte: now,
-          lte: twentyFourHoursFromNow,
-        },
-      },
-    });
-
-    const totalActiveAssignments = await prisma.assignment.count({
-      where: {
-        dueDate: {
-          gte: now,
-        },
-      },
-    });
-
-    return NextResponse.json({
-      assignmentsDueSoon,
-      totalActiveAssignments,
-      checkTime: now.toISOString(),
-    });
-  } catch (error) {
-    console.error("Error checking assignment reminders:", error);
-    return NextResponse.json(
-      { error: "Failed to check assignments" },
       { status: 500 },
     );
   }

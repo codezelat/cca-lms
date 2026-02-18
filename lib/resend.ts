@@ -702,7 +702,6 @@ const getEmailStyles = () => `
       opacity: 0.8;
       margin-top: 20px;
     }
-    }
     @media (max-width: 600px) {
       .container { padding: 10px; }
       .header, .content { padding: 15px; }

@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Send email notifications to enrolled students (async, don't block response)
+    // Send email notifications to enrolled students
     if (assignment.lesson.module.course.enrollments.length > 0) {
       const enrolledStudents = assignment.lesson.module.course.enrollments.map(
         (enrollment) => ({
@@ -141,26 +141,24 @@ export async function POST(request: NextRequest) {
         }),
       );
 
-      // Send emails asynchronously
-      setImmediate(async () => {
-        try {
-          await sendAssignmentCreatedEmails(
-            {
-              studentName: "", // Not used for bulk emails
-              studentEmail: "", // Not used for bulk emails
-              assignmentTitle: assignment.title,
-              courseTitle: assignment.lesson.module.course.title,
-              dueDate: assignment.dueDate,
-              assignmentId: assignment.id,
-              courseId: assignment.lesson.module.course.id,
-              lessonId: assignment.lesson.id,
-            },
-            enrolledStudents,
-          );
-        } catch (error) {
-          console.error("Failed to send assignment creation emails:", error);
-        }
-      });
+      // Send emails directly - setImmediate is not available in Vercel serverless
+      try {
+        await sendAssignmentCreatedEmails(
+          {
+            studentName: "", // Not used for bulk emails
+            studentEmail: "", // Not used for bulk emails
+            assignmentTitle: assignment.title,
+            courseTitle: assignment.lesson.module.course.title,
+            dueDate: assignment.dueDate,
+            assignmentId: assignment.id,
+            courseId: assignment.lesson.module.course.id,
+            lessonId: assignment.lesson.id,
+          },
+          enrolledStudents,
+        );
+      } catch (error) {
+        console.error("Failed to send assignment creation emails:", error);
+      }
     }
 
     await createAuditLog({
