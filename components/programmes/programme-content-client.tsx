@@ -332,6 +332,20 @@ export default function ProgrammeContentClient({
     setIsLessonSubmitting(true);
 
     try {
+      // Client-side validation for VIDEO type
+      if (lessonForm.type === "VIDEO") {
+        if (!lessonForm.videoUrl || lessonForm.videoUrl.trim().length === 0) {
+          throw new Error("Video URL is required for video lessons");
+        }
+
+        // Validate URL format
+        try {
+          new URL(lessonForm.videoUrl);
+        } catch {
+          throw new Error("Please enter a valid URL");
+        }
+      }
+
       const url = editingLesson
         ? `/api/admin/lessons/${editingLesson.id}`
         : "/api/admin/lessons";
@@ -914,6 +928,7 @@ export default function ProgrammeContentClient({
                     setLessonForm({ ...lessonForm, videoUrl: e.target.value })
                   }
                   placeholder="https://youtube.com/watch?v=... or https://vimeo.com/..."
+                  required
                   disabled={isLessonSubmitting}
                 />
                 <p className="text-xs text-muted-foreground">

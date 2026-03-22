@@ -90,7 +90,27 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { title, description, content, type, duration, order } = body;
+    const { title, description, content, type, duration, order, videoUrl } = body;
+
+    // Validate video URL for VIDEO type lessons
+    if (type === "VIDEO" && videoUrl !== undefined && (!videoUrl || videoUrl.trim().length === 0)) {
+      return NextResponse.json(
+        { error: "Video URL is required for video lessons" },
+        { status: 400 },
+      );
+    }
+
+    // Validate URL format if provided
+    if (videoUrl && videoUrl.trim().length > 0) {
+      try {
+        new URL(videoUrl);
+      } catch {
+        return NextResponse.json(
+          { error: "Please enter a valid URL" },
+          { status: 400 },
+        );
+      }
+    }
 
     // Check ownership if lecturer
     if (session.user.role === "LECTURER") {
@@ -125,6 +145,7 @@ export async function PUT(
         ...(type !== undefined && { type }),
         ...(duration !== undefined && { duration }),
         ...(order !== undefined && { order }),
+        ...(videoUrl !== undefined && { videoUrl: videoUrl || null }),
       },
       include: {
         _count: {
