@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createAuditLog } from "@/lib/audit";
 import { lessonSchema } from "@/lib/validations";
+import { recalculateCourseProgress } from "@/lib/progress";
 
 // POST /api/admin/lessons - Create new lesson
 export async function POST(request: NextRequest) {
@@ -86,6 +87,15 @@ export async function POST(request: NextRequest) {
         order,
       },
       include: {
+        module: {
+          include: {
+            course: {
+              select: {
+                id: true,
+              },
+            },
+          },
+        },
         _count: {
           select: {
             resources: true,
@@ -100,6 +110,16 @@ export async function POST(request: NextRequest) {
       entityType: "Lesson",
       entityId: lesson.id,
       metadata: { title, type, moduleId },
+    });
+
+    // Recalculate progress for all students enrolled in this course
+    // Run in background to not slow down the create response
+    const courseId = lesson.module.course.id;
+    recalculateCourseProgress(courseId).catch((error) => {
+      console.error(
+        `Failed to recalculate progress for course ${courseId} after lesson creation:`,
+        error
+      );
     });
 
     return NextResponse.json(

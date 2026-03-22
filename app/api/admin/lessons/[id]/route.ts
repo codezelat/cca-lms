@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteFromB2 } from "@/lib/b2";
 import { deleteFromR2 } from "@/lib/r2";
+import { recalculateCourseProgress } from "@/lib/progress";
 
 // GET /api/admin/lessons/[id] - Get single lesson
 export async function GET(
@@ -264,6 +265,9 @@ export async function DELETE(
       }
     }
 
+    // Get courseId before deletion for progress recalculation
+    const courseId = lesson.module.course.id;
+
     // Delete from database first (cascade will clean up relations)
     await prisma.lesson.delete({
       where: { id },
@@ -290,6 +294,15 @@ export async function DELETE(
         }
       }),
     );
+
+    // Recalculate progress for all students enrolled in this course
+    // Run in background to not slow down the delete response
+    recalculateCourseProgress(courseId).catch((error) => {
+      console.error(
+        `Failed to recalculate progress for course ${courseId} after lesson deletion:`,
+        error
+      );
+    });
 
     return NextResponse.json({
       message: "Lesson deleted successfully",
