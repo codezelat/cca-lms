@@ -194,6 +194,7 @@ export async function DELETE(
           include: {
             course: {
               select: {
+                id: true,
                 lecturers: {
                   select: {
                     lecturerId: true,
