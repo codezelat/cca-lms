@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createAuditLog } from "@/lib/audit";
+import { lessonSchema } from "@/lib/validations";
 
 // POST /api/admin/lessons - Create new lesson
 export async function POST(request: NextRequest) {
@@ -23,6 +24,26 @@ export async function POST(request: NextRequest) {
         { error: "Title and moduleId are required" },
         { status: 400 },
       );
+    }
+
+    // Validate video URL for VIDEO type lessons
+    if (type === "VIDEO" && (!videoUrl || videoUrl.trim().length === 0)) {
+      return NextResponse.json(
+        { error: "Video URL is required for video lessons" },
+        { status: 400 },
+      );
+    }
+
+    // Validate URL format if provided
+    if (videoUrl && videoUrl.trim().length > 0) {
+      try {
+        new URL(videoUrl);
+      } catch {
+        return NextResponse.json(
+          { error: "Please enter a valid URL" },
+          { status: 400 },
+        );
+      }
     }
 
     // Check ownership if lecturer

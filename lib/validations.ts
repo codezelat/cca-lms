@@ -60,14 +60,47 @@ export const moduleSchema = z.object({
   order: z.number().int().positive(),
 });
 
-export const lessonSchema = z.object({
-  moduleId: z.string().cuid(),
-  title: z.string().min(3, 'Title must be at least 3 characters'),
-  description: z.string().optional(),
-  videoUrl: z.string().optional(),
-  order: z.number().int().positive(),
-  isPublished: z.boolean().default(false),
-});
+export const lessonSchema = z
+  .object({
+    moduleId: z.string().cuid(),
+    title: z.string().min(3, 'Title must be at least 3 characters'),
+    description: z.string().optional(),
+    type: z.enum(['VIDEO', 'READING', 'QUIZ', 'ASSIGNMENT']).optional(),
+    videoUrl: z.string().optional(),
+    order: z.number().int().positive(),
+    isPublished: z.boolean().default(false),
+  })
+  .refine(
+    (data) => {
+      // If type is VIDEO, videoUrl must be provided and be a valid URL
+      if (data.type === 'VIDEO') {
+        return data.videoUrl && data.videoUrl.trim().length > 0;
+      }
+      return true;
+    },
+    {
+      message: 'Video URL is required for video lessons',
+      path: ['videoUrl'],
+    },
+  )
+  .refine(
+    (data) => {
+      // If videoUrl is provided, it should be a valid URL
+      if (data.videoUrl && data.videoUrl.trim().length > 0) {
+        try {
+          new URL(data.videoUrl);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+      return true;
+    },
+    {
+      message: 'Please enter a valid URL',
+      path: ['videoUrl'],
+    },
+  );
 
 export const lessonResourceSchema = z.object({
   lessonId: z.string().cuid(),
