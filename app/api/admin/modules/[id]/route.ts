@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteFromB2 } from "@/lib/b2";
 import { deleteFromR2 } from "@/lib/r2";
+import { recalculateCourseProgress } from "@/lib/progress";
 
 // GET /api/admin/modules/[id] - Get single module
 export async function GET(
@@ -159,6 +160,7 @@ export async function DELETE(
     const module = await prisma.module.findUnique({
       where: { id },
       select: {
+        courseId: true,
         _count: {
           select: {
             lessons: true,
@@ -170,6 +172,8 @@ export async function DELETE(
     if (!module) {
       return NextResponse.json({ error: "Module not found" }, { status: 404 });
     }
+
+    const courseId = module.courseId;
 
     // Check for force delete query param
     const { searchParams } = new URL(request.url);
@@ -259,6 +263,15 @@ export async function DELETE(
         console.error(`Failed to delete B2 file ${fileKey}:`, error);
       }
     }
+
+    // Recalculate progress for all students enrolled in this course
+    // Run in background to not slow down the delete response
+    recalculateCourseProgress(courseId).catch((error) => {
+      console.error(
+        `Failed to recalculate progress for course ${courseId} after module deletion:`,
+        error
+      );
+    });
 
     return NextResponse.json({
       message: "Module deleted successfully",
