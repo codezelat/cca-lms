@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Activity,
@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format, formatDistanceToNow } from "date-fns";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 interface ActivityLog {
   id: string;
@@ -80,29 +81,42 @@ export default function ActivityLogsPage() {
   );
   const [endDate, setEndDate] = useState(searchParams.get("endDate") || "");
   const [page, setPage] = useState(parseInt(searchParams.get("page") || "1"));
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const activityRequestRef = useRef(0);
 
   useEffect(() => {
-    fetchActivityLogs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search, action, entityType, userId, startDate, endDate]);
+    const controller = new AbortController();
+    fetchActivityLogs(controller.signal);
 
-  const fetchActivityLogs = async () => {
+    return () => {
+      controller.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, debouncedSearch, action, entityType, userId, startDate, endDate]);
+
+  const fetchActivityLogs = async (signal?: AbortSignal) => {
+    const requestId = ++activityRequestRef.current;
+
     try {
       setIsLoading(true);
       const params = new URLSearchParams();
       params.set("page", page.toString());
       params.set("limit", "20");
-      if (search) params.set("search", search);
+      if (debouncedSearch) params.set("search", debouncedSearch);
       if (action) params.set("action", action);
       if (entityType) params.set("entityType", entityType);
       if (userId) params.set("userId", userId);
       if (startDate) params.set("startDate", startDate);
       if (endDate) params.set("endDate", endDate);
 
-      const response = await fetch(`/api/admin/activity-logs?${params}`);
+      const response = await fetch(`/api/admin/activity-logs?${params}`, {
+        signal,
+      });
       if (!response.ok) throw new Error("Failed to fetch activity logs");
 
       const data = await response.json();
+      if (signal?.aborted || requestId !== activityRequestRef.current) return;
+
       setActivities(data.activities);
       setPagination(data.pagination);
       setFilters(data.filters);
@@ -110,9 +124,14 @@ export default function ActivityLogsPage() {
       // Update URL
       router.push(`/activity-logs?${params}`, { scroll: false });
     } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        return;
+      }
       console.error("Error fetching activity logs:", error);
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted && requestId === activityRequestRef.current) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -185,7 +204,9 @@ export default function ActivityLogsPage() {
             </div>
             <div className="flex items-center gap-2">
               <Button
-                onClick={fetchActivityLogs}
+                onClick={() => {
+                  void fetchActivityLogs();
+                }}
                 variant="outline"
                 size="sm"
                 className="gap-2"

@@ -54,6 +54,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Pagination } from "@/components/ui/pagination";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { toast } from "sonner";
 
 interface User {
@@ -106,6 +107,8 @@ export default function UsersClient() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [pageSize] = useState(10);
+  const debouncedSearchQuery = useDebouncedValue(searchQuery.trim());
+  const usersRequestRef = useRef(0);
 
   // Create
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -321,33 +324,47 @@ export default function UsersClient() {
   const [isLoadingEnrollments, setIsLoadingEnrollments] = useState(false);
 
   useEffect(() => {
-    fetchUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, page, searchQuery, statusFilter]);
+    const controller = new AbortController();
+    fetchUsers(controller.signal);
 
-  const fetchUsers = async () => {
+    return () => {
+      controller.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, page, debouncedSearchQuery, statusFilter]);
+
+  const fetchUsers = async (signal?: AbortSignal) => {
+    const requestId = ++usersRequestRef.current;
+
     try {
       setIsLoading(true);
       const params = new URLSearchParams({
         page: page.toString(),
         limit: "10",
         role: activeTab,
-        ...(searchQuery && { search: searchQuery }),
+        ...(debouncedSearchQuery && { search: debouncedSearchQuery }),
         ...(statusFilter !== "all" && { status: statusFilter.toUpperCase() }),
       });
 
-      const response = await fetch(`/api/admin/users?${params}`);
+      const response = await fetch(`/api/admin/users?${params}`, { signal });
       if (!response.ok) throw new Error("Failed to fetch users");
 
       const data = await response.json();
+      if (signal?.aborted || requestId !== usersRequestRef.current) return;
+
       setUsers(data.users);
       setTotalPages(data.pagination.totalPages);
       setTotalCount(data.pagination.total);
       setPage(data.pagination.page);
     } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        return;
+      }
       console.error("Error fetching users:", error);
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted && requestId === usersRequestRef.current) {
+        setIsLoading(false);
+      }
     }
   };
 

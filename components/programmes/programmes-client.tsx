@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   BookOpen,
@@ -54,6 +54,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Pagination } from "@/components/ui/pagination";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { toast } from "sonner";
 
 interface Programme {
@@ -125,6 +126,8 @@ export default function ProgrammesClient() {
   const [pageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const debouncedSearchQuery = useDebouncedValue(searchQuery.trim());
+  const programmesRequestRef = useRef(0);
 
   // View dialog
   const [showViewDialog, setShowViewDialog] = useState(false);
@@ -179,33 +182,50 @@ export default function ProgrammesClient() {
   const [isRemovingBulk, setIsRemovingBulk] = useState(false);
 
   useEffect(() => {
-    fetchProgrammes();
     fetchLecturers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, searchQuery, statusFilter]);
+  }, []);
 
-  const fetchProgrammes = async () => {
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchProgrammes(controller.signal);
+
+    return () => {
+      controller.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, debouncedSearchQuery, statusFilter]);
+
+  const fetchProgrammes = async (signal?: AbortSignal) => {
+    const requestId = ++programmesRequestRef.current;
+
     try {
       setIsLoading(true);
       const params = new URLSearchParams({
         page: page.toString(),
         limit: "10",
-        ...(searchQuery && { search: searchQuery }),
+        ...(debouncedSearchQuery && { search: debouncedSearchQuery }),
         ...(statusFilter !== "all" && { status: statusFilter.toUpperCase() }),
       });
 
-      const response = await fetch(`/api/admin/programmes?${params}`);
+      const response = await fetch(`/api/admin/programmes?${params}`, { signal });
       if (!response.ok) throw new Error("Failed to fetch programmes");
 
       const data = await response.json();
+      if (signal?.aborted || requestId !== programmesRequestRef.current) return;
+
       setProgrammes(data.programmes);
       setTotalPages(data.pagination.totalPages);
       setTotalCount(data.pagination.total);
       setPage(data.pagination.page);
     } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        return;
+      }
       console.error("Error fetching programmes:", error);
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted && requestId === programmesRequestRef.current) {
+        setIsLoading(false);
+      }
     }
   };
 

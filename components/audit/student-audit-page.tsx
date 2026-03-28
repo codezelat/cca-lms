@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 interface ProgrammeOption {
   id: string;
@@ -145,6 +146,8 @@ export default function StudentAuditPage() {
   const [page, setPage] = useState(
     parseInt(searchParams.get("page") || "1"),
   );
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const studentAuditRequestRef = useRef(0);
 
   const hasFilters = useMemo(() => {
     return (
@@ -161,9 +164,14 @@ export default function StudentAuditPage() {
   }, []);
 
   useEffect(() => {
-    fetchStudents();
+    const controller = new AbortController();
+    fetchStudents(controller.signal);
+
+    return () => {
+      controller.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search, programmeId, enrollmentStatus, accountStatus, segment]);
+  }, [page, debouncedSearch, programmeId, enrollmentStatus, accountStatus, segment]);
 
   const fetchProgrammes = async () => {
     try {
@@ -176,7 +184,9 @@ export default function StudentAuditPage() {
     }
   };
 
-  const fetchStudents = async () => {
+  const fetchStudents = async (signal?: AbortSignal) => {
+    const requestId = ++studentAuditRequestRef.current;
+
     try {
       setIsLoading(true);
       setError(null);
@@ -184,7 +194,7 @@ export default function StudentAuditPage() {
       const params = new URLSearchParams();
       params.set("page", page.toString());
       params.set("limit", "10");
-      if (search) params.set("search", search);
+      if (debouncedSearch) params.set("search", debouncedSearch);
       if (programmeId !== "all") params.set("programmeId", programmeId);
       if (enrollmentStatus !== "all")
         params.set("enrollmentStatus", enrollmentStatus);
@@ -192,22 +202,33 @@ export default function StudentAuditPage() {
         params.set("accountStatus", accountStatus);
       if (segment !== "all") params.set("segment", segment);
 
-      const response = await fetch(`/api/admin/student-audit?${params}`);
+      const response = await fetch(`/api/admin/student-audit?${params}`, {
+        signal,
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch student audit data");
       }
 
       const data = await response.json();
+      if (signal?.aborted || requestId !== studentAuditRequestRef.current) {
+        return;
+      }
+
       setStudents(data.students || []);
       setPagination(data.pagination || null);
       setSummary(data.summary || null);
 
       router.push(`/audit-students?${params}`, { scroll: false });
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        return;
+      }
       console.error(err);
       setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted && requestId === studentAuditRequestRef.current) {
+        setIsLoading(false);
+      }
     }
   };
 
