@@ -1278,7 +1278,7 @@ The system uses **15 Prisma models**:
 
 ### **Automated Daily Backups**
 
-The LMS includes a production-ready database backup system built around GitHub Actions, the Supabase CLI, and private Cloudflare R2 storage.
+The LMS includes a production-ready database backup system built around GitHub Actions, PostgreSQL dump tools, and private Cloudflare R2 storage.
 
 #### **Features**
 
@@ -1302,7 +1302,7 @@ R2 Bucket: cca-lms-uploads
 #### **Architecture**
 
 1. GitHub Actions runs the scheduled `db-backup.yml` workflow once per day.
-2. The workflow uses `supabase db dump` to export `roles.sql`, `schema.sql`, and `data.sql`.
+2. The workflow validates `SUPABASE_DB_URL`, normalizes it, then uses `pg_dumpall` and `pg_dump` to export `roles.sql`, `schema.sql`, and `data.sql`.
 3. `scripts/process-db-backup.ts` packages those files into a zip archive with `manifest.json` and `RESTORE.md`.
 4. The archive is uploaded to private Cloudflare R2 under `db-backups/`, using `DB_BACKUP_BUCKET_NAME` when configured or falling back to `R2_BUCKET_NAME`.
 5. Archives older than 14 days are removed automatically.
@@ -1324,7 +1324,7 @@ Configure these in GitHub for `.github/workflows/db-backup.yml`:
 
 | Secret                    | Purpose |
 | ------------------------- | ------- |
-| `SUPABASE_DB_URL`         | Direct PostgreSQL connection string used by `supabase db dump` |
+| `SUPABASE_DB_URL`         | Percent-encoded PostgreSQL connection string used by `pg_dump` and `pg_dumpall` |
 | `R2_ACCOUNT_ID`           | Cloudflare R2 account ID |
 | `R2_ACCESS_KEY_ID`        | R2 access key |
 | `R2_SECRET_ACCESS_KEY`    | R2 secret key |

@@ -23,7 +23,7 @@ interface BackupManifest {
   createdAt: string;
   retentionDays: number;
   prefix: string;
-  source: "supabase-cli";
+  source: "postgres-tools";
   repository: string | null;
   runId: string | null;
   commitSha: string | null;
@@ -139,7 +139,7 @@ async function buildArchive(backupDir: string) {
     createdAt,
     retentionDays,
     prefix,
-    source: "supabase-cli",
+    source: "postgres-tools",
     repository: process.env.GITHUB_REPOSITORY || null,
     runId: process.env.GITHUB_RUN_ID || null,
     commitSha: process.env.GITHUB_SHA || null,
@@ -149,7 +149,7 @@ async function buildArchive(backupDir: string) {
     notes: [
       "This archive contains database dumps only.",
       "Cloudflare R2, Backblaze B2, and other object storage contents are excluded.",
-      "The schema and data were exported with the Supabase CLI.",
+      "The schema and data were exported with pg_dump and pg_dumpall.",
     ],
     files: files.map((file) => ({
       name: file.name,
