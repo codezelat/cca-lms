@@ -15,8 +15,6 @@ import {
   Play,
   RefreshCw,
   Search,
-  Shield,
-  Terminal,
   Workflow,
   XCircle,
 } from "lucide-react";
@@ -25,7 +23,6 @@ import { toast } from "sonner";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -404,70 +401,64 @@ export default function AdminBackupsPage() {
 
   return (
     <div className="min-h-screen bg-terminal-dark">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Database className="h-6 w-6 text-terminal-green" />
-                <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
-                  $ backups --database
-                </h1>
-              </div>
-              <p className="font-mono text-sm text-terminal-text-muted">
-                Daily full PostgreSQL dumps, private R2 storage, and restore readiness for admins only.
-              </p>
-            </div>
-
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-3">
+              <Database className="h-6 w-6 text-terminal-green" />
+              <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
+                Database Backups
+              </h1>
               <Badge variant={getHealthBadgeVariant(data.health.status)}>
                 {data.health.status}
               </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => void fetchOverview({ background: true })}
-                disabled={isRefreshing}
-              >
-                <RefreshCw
-                  className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
-                />
-                Refresh
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleRunBackup}
-                disabled={!data.config.workflowConfigured || isRunningBackup}
-              >
-                {isRunningBackup ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Play className="h-4 w-4 mr-2" />
-                )}
-                Run Backup Now
-              </Button>
+            </div>
+            <p className="font-mono text-sm text-terminal-text-muted">
+              {data.health.message}
+            </p>
+            <div className="flex flex-wrap gap-3 font-mono text-xs text-terminal-text-muted">
+              <span>Updated {formatTimestamp(data.timestamp)}</span>
+              <span>Next run {formatTimestamp(nextScheduledRun.toISOString())}</span>
+              <span>Retention {data.config.retentionDays} days</span>
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-3 font-mono text-xs text-terminal-text-muted">
-            <span>Last refreshed: {formatTimestamp(data.timestamp)}</span>
-            <span>Next scheduled run: {formatTimestamp(nextScheduledRun.toISOString())}</span>
-            <span>Retention: {data.config.retentionDays} days</span>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void fetchOverview({ background: true })}
+              disabled={isRefreshing}
+            >
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleRunBackup}
+              disabled={!data.config.workflowConfigured || isRunningBackup}
+            >
+              {isRunningBackup ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Play className="mr-2 h-4 w-4" />
+              )}
+              Run Backup Now
+            </Button>
           </div>
         </div>
 
         {data.config.warnings.length > 0 && (
           <Card className="mb-6 border-yellow-500/30">
-            <CardHeader>
+            <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-yellow-400">
                 <AlertCircle className="h-5 w-5" />
-                Configuration Warnings
+                Action Needed
               </CardTitle>
-              <CardDescription>
-                Fix these items so scheduled backups, workflow telemetry, and downloads all work correctly.
-              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2">
               {data.config.warnings.map((warning) => (
                 <div
                   key={warning}
@@ -480,87 +471,157 @@ export default function AdminBackupsPage() {
           </Card>
         )}
 
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4 mb-6">
+        <div className="mb-6 grid gap-4 xl:grid-cols-[1.25fr_0.9fr_0.9fr]">
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <Shield className="h-6 w-6 text-terminal-green" />
-                <Badge variant={getHealthBadgeVariant(data.health.status)}>
-                  {data.health.status}
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Latest Backup
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {data.latestBackup ? (
+                <div className="space-y-4">
+                  <div className="rounded-md border border-terminal-green/15 bg-terminal-darker/40 p-4">
+                    <div className="font-mono text-base font-semibold text-terminal-text break-all">
+                      {data.latestBackup.fileName}
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-3 font-mono text-xs text-terminal-text-muted">
+                      <span>{data.latestBackup.sizeMB} MB</span>
+                      <span>{formatRelativeTime(data.latestBackup.lastModified)}</span>
+                      <span>{formatTimestamp(data.latestBackup.lastModified)}</span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      window.location.href = data.latestBackup!.downloadPath;
+                    }}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Latest
+                  </Button>
+                </div>
+              ) : (
+                <p className="font-mono text-sm text-terminal-text-muted">
+                  No backup yet.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <HardDrive className="h-5 w-5" />
+                Storage
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-md border border-terminal-green/10 bg-terminal-darker/30 p-3">
+                  <div className="font-mono text-2xl font-bold text-terminal-green">
+                    {data.totalBackups}
+                  </div>
+                  <div className="font-mono text-xs text-terminal-text-muted">
+                    archives
+                  </div>
+                </div>
+                <div className="rounded-md border border-terminal-green/10 bg-terminal-darker/30 p-3">
+                  <div className="font-mono text-2xl font-bold text-terminal-green">
+                    {data.totalSizeMB}
+                  </div>
+                  <div className="font-mono text-xs text-terminal-text-muted">
+                    MB stored
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2 font-mono text-xs text-terminal-text-muted">
+                <div>Bucket: {data.config.bucketName || "Not configured"}</div>
+                <div>Prefix: {data.config.prefix}</div>
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-terminal-green/15 px-3 py-1 font-mono text-xs text-terminal-text-muted">
+                {data.config.storageConfigured ? (
+                  <CheckCircle2 className="h-3.5 w-3.5 text-terminal-green" />
+                ) : (
+                  <XCircle className="h-3.5 w-3.5 text-red-400" />
+                )}
+                {data.config.usesDedicatedBucket
+                  ? "Dedicated backup bucket"
+                  : "Shared R2 bucket"}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <Workflow className="h-5 w-5" />
+                Workflow
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <Badge variant={workflowRunBadge.variant}>
+                  {workflowRunBadge.label}
                 </Badge>
+                <div className="inline-flex items-center gap-2 rounded-full border border-terminal-green/15 px-3 py-1 font-mono text-xs text-terminal-text-muted">
+                  {data.config.workflowConfigured ? (
+                    <CheckCircle2 className="h-3.5 w-3.5 text-terminal-green" />
+                  ) : (
+                    <XCircle className="h-3.5 w-3.5 text-red-400" />
+                  )}
+                  {data.config.workflowConfigured ? "Connected" : "Not configured"}
+                </div>
               </div>
-              <div className="font-mono text-2xl font-bold text-terminal-green mb-2">
-                {data.health.status === "healthy" ? "Healthy" : "Attention"}
-              </div>
-              <p className="font-mono text-sm text-terminal-text-muted">
-                {data.health.message}
-              </p>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <Archive className="h-6 w-6 text-blue-400" />
-                <span className="font-mono text-3xl font-bold text-terminal-green">
-                  {data.totalBackups}
-                </span>
-              </div>
-              <p className="font-mono text-sm text-terminal-text-muted mb-1">
-                Backup archives retained
-              </p>
-              <p className="font-mono text-xs text-terminal-text-muted">
-                Bucket: {data.config.bucketName || "Not configured"}
-              </p>
-              <p className="font-mono text-xs text-terminal-text-muted">
-                Prefix: {data.config.prefix}
-              </p>
-            </CardContent>
-          </Card>
+              {data.workflow.latestRun ? (
+                <div className="rounded-md border border-terminal-green/10 bg-terminal-darker/30 p-3">
+                  <div className="font-mono text-sm font-semibold text-terminal-text">
+                    Run #{data.workflow.latestRun.runNumber}
+                  </div>
+                  <div className="mt-1 font-mono text-xs text-terminal-text-muted">
+                    {formatRelativeTime(data.workflow.latestRun.updatedAt)}
+                  </div>
+                  <div className="mt-1 font-mono text-xs text-terminal-text-muted">
+                    {data.workflow.latestRun.event} on {data.workflow.latestRun.branch}
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-md border border-terminal-green/10 bg-terminal-darker/30 p-3 font-mono text-sm text-terminal-text-muted">
+                  No workflow runs yet.
+                </div>
+              )}
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <HardDrive className="h-6 w-6 text-yellow-400" />
-                <span className="font-mono text-3xl font-bold text-terminal-green">
-                  {data.totalSizeMB}
-                </span>
+              <div className="space-y-2 font-mono text-xs text-terminal-text-muted">
+                <div>{data.config.scheduleDescription}</div>
+                <div className="truncate">
+                  {data.config.workflowRepository || "Workflow not configured"}
+                </div>
               </div>
-              <p className="font-mono text-sm text-terminal-text-muted mb-1">
-                Total stored size (MB)
-              </p>
-              <p className="font-mono text-xs text-terminal-text-muted">
-                Private R2 archive storage
-              </p>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <Workflow className="h-6 w-6 text-purple-400" />
-                <Badge variant={workflowRunBadge.variant}>{workflowRunBadge.label}</Badge>
-              </div>
-              <div className="font-mono text-sm font-semibold text-terminal-text mb-1 truncate">
-                {data.config.workflowRepository || "Workflow not configured"}
-              </div>
-              <p className="font-mono text-xs text-terminal-text-muted">
-                {data.config.scheduleDescription}
-              </p>
+              {data.workflow.latestRun && (
+                <a
+                  href={data.workflow.latestRun.htmlUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 font-mono text-xs text-terminal-green hover:text-terminal-green-light"
+                >
+                  Open latest run
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              )}
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[1.35fr_1fr]">
+        <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2">
                 <Archive className="h-5 w-5" />
-                Backup Archives
+                Archives
               </CardTitle>
-              <CardDescription>
-                Portable SQL bundles stored privately in R2. Download an archive when you need to inspect or restore a point-in-time dump.
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -569,25 +630,25 @@ export default function AdminBackupsPage() {
                   <Input
                     value={archiveSearch}
                     onChange={(event) => setArchiveSearch(event.target.value)}
-                    placeholder="Filter archives by file name"
+                    placeholder="Search archives"
                     className="pl-9"
                   />
                 </div>
                 <div className="font-mono text-xs text-terminal-text-muted">
-                  Showing {filteredBackups.length} of {data.backups.length} archives
+                  {filteredBackups.length} / {data.backups.length}
                 </div>
               </div>
 
               {data.backups.length === 0 ? (
                 <div className="rounded-md border border-dashed border-terminal-green/20 bg-terminal-darker/30 px-4 py-8 text-center">
                   <p className="font-mono text-sm text-terminal-text-muted">
-                    No backup archives have been uploaded yet.
+                    No archives yet.
                   </p>
                 </div>
               ) : filteredBackups.length === 0 ? (
                 <div className="rounded-md border border-dashed border-terminal-green/20 bg-terminal-darker/30 px-4 py-8 text-center">
                   <p className="font-mono text-sm text-terminal-text-muted">
-                    No archives match the current filter.
+                    No matches.
                   </p>
                 </div>
               ) : (
@@ -595,33 +656,28 @@ export default function AdminBackupsPage() {
                   {filteredBackups.map((backup) => (
                     <div
                       key={backup.key}
-                      className="rounded-md border border-terminal-green/15 bg-terminal-darker/40 p-4"
+                      className="flex flex-col gap-4 rounded-md border border-terminal-green/15 bg-terminal-darker/40 p-4 lg:flex-row lg:items-center lg:justify-between"
                     >
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="min-w-0">
-                          <div className="font-mono font-semibold text-terminal-text truncate">
-                            {backup.fileName}
-                          </div>
-                          <div className="mt-2 flex flex-wrap gap-3 font-mono text-xs text-terminal-text-muted">
-                            <span>{backup.sizeMB} MB</span>
-                            <span>{formatRelativeTime(backup.lastModified)}</span>
-                            <span>{formatTimestamp(backup.lastModified)}</span>
-                          </div>
+                      <div className="min-w-0">
+                        <div className="font-mono text-sm font-semibold text-terminal-text truncate">
+                          {backup.fileName}
                         </div>
-
-                        <div className="flex flex-wrap gap-2 lg:justify-end">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              window.location.href = backup.downloadPath;
-                            }}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download
-                          </Button>
+                        <div className="mt-2 flex flex-wrap gap-3 font-mono text-xs text-terminal-text-muted">
+                          <span>{backup.sizeMB} MB</span>
+                          <span>{formatRelativeTime(backup.lastModified)}</span>
+                          <span>{formatTimestamp(backup.lastModified)}</span>
                         </div>
                       </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          window.location.href = backup.downloadPath;
+                        }}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Download
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -631,72 +687,27 @@ export default function AdminBackupsPage() {
 
           <div className="space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Latest Archive
-                </CardTitle>
-                <CardDescription>
-                  The newest backup bundle currently available for restore.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {data.latestBackup ? (
-                  <div className="space-y-3 font-mono text-sm">
-                    <div className="rounded-md border border-terminal-green/20 bg-terminal-darker/40 p-3">
-                      <div className="text-terminal-text font-semibold break-all">
-                        {data.latestBackup.fileName}
-                      </div>
-                      <div className="mt-2 text-terminal-text-muted space-y-1">
-                        <div>Created: {formatTimestamp(data.latestBackup.lastModified)}</div>
-                        <div>Age: {formatRelativeTime(data.latestBackup.lastModified)}</div>
-                        <div>Size: {data.latestBackup.sizeMB} MB</div>
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => {
-                        window.location.href = data.latestBackup!.downloadPath;
-                      }}
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Latest Backup
-                    </Button>
-                  </div>
-                ) : (
-                  <p className="font-mono text-sm text-terminal-text-muted">
-                    No archive is available yet.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
+              <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2">
                   <Workflow className="h-5 w-5" />
-                  Workflow Runs
+                  Recent Runs
                 </CardTitle>
-              <CardDescription>
-                Recent GitHub Actions runs for the backup workflow.
-              </CardDescription>
-            </CardHeader>
+              </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2 text-terminal-text-muted">
                     <Filter className="h-4 w-4" />
-                    <span className="font-mono text-xs">Run status filter</span>
+                    <span className="font-mono text-xs">Filter</span>
                   </div>
                   <Select
                     value={workflowStatusFilter}
                     onValueChange={setWorkflowStatusFilter}
                   >
-                    <SelectTrigger className="w-full sm:w-48 border-terminal-green/30 bg-terminal-darker font-mono text-terminal-text">
+                    <SelectTrigger className="w-full border-terminal-green/30 bg-terminal-darker font-mono text-terminal-text sm:w-44">
                       <SelectValue placeholder="All runs" />
                     </SelectTrigger>
                     <SelectContent className="border-terminal-green/20 bg-terminal-darker font-mono text-terminal-text">
-                      <SelectItem value="all">All runs</SelectItem>
+                      <SelectItem value="all">All</SelectItem>
                       <SelectItem value="success">Successful</SelectItem>
                       <SelectItem value="failure">Failed</SelectItem>
                       <SelectItem value="in_progress">In progress</SelectItem>
@@ -707,11 +718,11 @@ export default function AdminBackupsPage() {
 
                 {data.workflow.recentRuns.length === 0 ? (
                   <p className="font-mono text-sm text-terminal-text-muted">
-                    Workflow telemetry is not available yet.
+                    No workflow history yet.
                   </p>
                 ) : filteredWorkflowRuns.length === 0 ? (
                   <p className="font-mono text-sm text-terminal-text-muted">
-                    No workflow runs match the selected filter.
+                    No matching runs.
                   </p>
                 ) : (
                   <div className="space-y-3">
@@ -727,26 +738,24 @@ export default function AdminBackupsPage() {
                               <div className="font-mono text-sm font-semibold text-terminal-text">
                                 Run #{run.runNumber}
                               </div>
-                              <div className="font-mono text-xs text-terminal-text-muted mt-1">
+                              <div className="mt-1 font-mono text-xs text-terminal-text-muted">
                                 {run.event} on {run.branch}
                               </div>
                             </div>
                             <Badge variant={badge.variant}>{badge.label}</Badge>
                           </div>
-
-                          <div className="mt-3 font-mono text-xs text-terminal-text-muted space-y-1">
-                            <div>Started: {formatTimestamp(run.createdAt)}</div>
-                            <div>Updated: {formatRelativeTime(run.updatedAt)}</div>
-                            <div>Actor: {run.actor || "GitHub Actions"}</div>
+                          <div className="mt-3 flex flex-wrap gap-3 font-mono text-xs text-terminal-text-muted">
+                            <span>{formatTimestamp(run.createdAt)}</span>
+                            <span>{formatRelativeTime(run.updatedAt)}</span>
+                            <span>{run.actor || "GitHub Actions"}</span>
                           </div>
-
                           <a
                             href={run.htmlUrl}
                             target="_blank"
                             rel="noreferrer"
                             className="mt-3 inline-flex items-center gap-2 font-mono text-xs text-terminal-green hover:text-terminal-green-light"
                           >
-                            Open workflow run
+                            Open run
                             <ExternalLink className="h-3.5 w-3.5" />
                           </a>
                         </div>
@@ -756,124 +765,44 @@ export default function AdminBackupsPage() {
                 )}
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2">
+                  <Download className="h-5 w-5" />
+                  Restore Commands
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="space-y-2">
+                  <div className="rounded-md border border-terminal-green/20 bg-terminal-darker/50 p-3">
+                    <div className="mb-2 font-mono text-xs uppercase tracking-wide text-terminal-text-muted">
+                      Schema
+                    </div>
+                    <code className="font-mono text-sm text-terminal-green break-all">
+                      {data.restore.commands.schema}
+                    </code>
+                  </div>
+                  <div className="rounded-md border border-terminal-green/20 bg-terminal-darker/50 p-3">
+                    <div className="mb-2 font-mono text-xs uppercase tracking-wide text-terminal-text-muted">
+                      Data
+                    </div>
+                    <code className="font-mono text-sm text-terminal-green break-all">
+                      {data.restore.commands.data}
+                    </code>
+                  </div>
+                  <div className="rounded-md border border-terminal-green/20 bg-terminal-darker/50 p-3">
+                    <div className="mb-2 font-mono text-xs uppercase tracking-wide text-terminal-text-muted">
+                      Roles (optional)
+                    </div>
+                    <code className="font-mono text-sm text-terminal-green break-all">
+                      {data.restore.commands.roles}
+                    </code>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-2 mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Terminal className="h-5 w-5" />
-                Restore Runbook
-              </CardTitle>
-              <CardDescription>
-                Keep restores explicit and operator-controlled. This page does not execute destructive restores from the browser.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-md border border-blue-500/20 bg-blue-500/10 px-4 py-3 font-mono text-sm text-blue-300">
-                {data.restore.note}
-              </div>
-
-              <div className="space-y-2">
-                {data.restore.steps.map((step) => (
-                  <div
-                    key={step}
-                    className="rounded-md border border-terminal-green/10 bg-terminal-darker/30 px-4 py-3 font-mono text-sm text-terminal-text-muted"
-                  >
-                    {step}
-                  </div>
-                ))}
-              </div>
-
-              <div className="space-y-2">
-                <div className="rounded-md border border-terminal-green/20 bg-terminal-darker/50 p-3">
-                  <div className="font-mono text-xs uppercase tracking-wide text-terminal-text-muted mb-2">
-                    Restore roles
-                  </div>
-                  <code className="font-mono text-sm text-terminal-green break-all">
-                    {data.restore.commands.roles}
-                  </code>
-                </div>
-                <div className="rounded-md border border-terminal-green/20 bg-terminal-darker/50 p-3">
-                  <div className="font-mono text-xs uppercase tracking-wide text-terminal-text-muted mb-2">
-                    Restore schema
-                  </div>
-                  <code className="font-mono text-sm text-terminal-green break-all">
-                    {data.restore.commands.schema}
-                  </code>
-                </div>
-                <div className="rounded-md border border-terminal-green/20 bg-terminal-darker/50 p-3">
-                  <div className="font-mono text-xs uppercase tracking-wide text-terminal-text-muted mb-2">
-                    Restore data
-                  </div>
-                  <code className="font-mono text-sm text-terminal-green break-all">
-                    {data.restore.commands.data}
-                  </code>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5" />
-                Operational Checklist
-              </CardTitle>
-              <CardDescription>
-                What must be configured for this backup system to stay healthy in production.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-start justify-between gap-3 rounded-md border border-terminal-green/10 bg-terminal-darker/30 p-4">
-                <div>
-                  <div className="font-mono text-sm font-semibold text-terminal-text">
-                    Private R2 storage
-                  </div>
-                  <div className="font-mono text-xs text-terminal-text-muted mt-1">
-                    App-side access for archive listing and short-lived download links.
-                    {data.config.usesDedicatedBucket
-                      ? " Using a dedicated backup bucket."
-                      : " Using the shared R2 bucket fallback."}
-                  </div>
-                </div>
-                {data.config.storageConfigured ? (
-                  <CheckCircle2 className="h-5 w-5 text-terminal-green shrink-0" />
-                ) : (
-                  <XCircle className="h-5 w-5 text-red-400 shrink-0" />
-                )}
-              </div>
-
-              <div className="flex items-start justify-between gap-3 rounded-md border border-terminal-green/10 bg-terminal-darker/30 p-4">
-                <div>
-                  <div className="font-mono text-sm font-semibold text-terminal-text">
-                    GitHub workflow dispatch
-                  </div>
-                  <div className="font-mono text-xs text-terminal-text-muted mt-1">
-                    Requires repository, branch, workflow file, and a token with Actions read/write access.
-                  </div>
-                </div>
-                {data.config.workflowConfigured ? (
-                  <CheckCircle2 className="h-5 w-5 text-terminal-green shrink-0" />
-                ) : (
-                  <XCircle className="h-5 w-5 text-red-400 shrink-0" />
-                )}
-              </div>
-
-              <div className="flex items-start justify-between gap-3 rounded-md border border-terminal-green/10 bg-terminal-darker/30 p-4">
-                <div>
-                  <div className="font-mono text-sm font-semibold text-terminal-text">
-                    Daily schedule and retention
-                  </div>
-                  <div className="font-mono text-xs text-terminal-text-muted mt-1">
-                    The workflow keeps one archive per day and deletes anything older than {data.config.retentionDays} days.
-                  </div>
-                </div>
-                <CheckCircle2 className="h-5 w-5 text-terminal-green shrink-0" />
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
