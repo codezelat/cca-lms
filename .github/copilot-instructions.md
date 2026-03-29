@@ -76,7 +76,7 @@ cca-lms/
 ├── types/
 │   └── next-auth.d.ts      # Augmented session/user types
 ├── proxy.ts                 # Auth-based route protection
-└── scripts/                # Utility scripts (backup restore, sanitization verify)
+└── scripts/                # Utility scripts (database backup packaging, sanitization verify)
 ```
 
 ---

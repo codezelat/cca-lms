@@ -1,0 +1,101 @@
+name: Database Backup
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+    inputs:
+      triggered_by:
+        description: "Who triggered the backup run"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Create database backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+      R2_REGION: ${{ secrets.R2_REGION }}
+      DB_BACKUP_BUCKET_NAME: ${{ secrets.DB_BACKUP_BUCKET_NAME }}
+      DB_BACKUP_PREFIX: ${{ secrets.DB_BACKUP_PREFIX }}
+      DB_BACKUP_RETENTION_DAYS: ${{ secrets.DB_BACKUP_RETENTION_DAYS }}
+      BACKUP_APP_URL: ${{ secrets.BACKUP_APP_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      BACKUP_TRIGGERED_BY: ${{ inputs.triggered_by || github.event_name }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Prepare backup workspace
+        run: |
+          rm -rf .artifacts/db-backup
+          mkdir -p .artifacts/db-backup
+
+      - name: Dump roles
+        run: supabase db dump --db-url "$SUPABASE_DB_URL" -f .artifacts/db-backup/roles.sql --role-only
+
+      - name: Dump schema
+        run: supabase db dump --db-url "$SUPABASE_DB_URL" -f .artifacts/db-backup/schema.sql --schema public
+
+      - name: Dump data
+        run: supabase db dump --db-url "$SUPABASE_DB_URL" -f .artifacts/db-backup/data.sql --data-only --schema public --use-copy
+
+      - name: Bundle and upload backup
+        id: bundle
+        run: npx tsx scripts/process-db-backup.ts .artifacts/db-backup
+
+      - name: Upload workflow artifact metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-result
+          path: .artifacts/db-backup/result.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Report success to app
+        if: success() && env.BACKUP_APP_URL != '' && env.CRON_SECRET != ''
+        continue-on-error: true
+        run: |
+          curl --fail-with-body \
+            -X POST "$BACKUP_APP_URL/api/cron/db-backup" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            -d "{\"status\":\"success\",\"artifactKey\":\"${{ steps.bundle.outputs.artifact_key }}\",\"artifactSizeBytes\":${{ steps.bundle.outputs.artifact_size_bytes }},\"artifactChecksum\":\"${{ steps.bundle.outputs.artifact_checksum }}\",\"durationMs\":${{ steps.bundle.outputs.duration_ms }},\"cleanupDeletedCount\":${{ steps.bundle.outputs.cleanup_deleted_count }},\"triggeredBy\":\"${BACKUP_TRIGGERED_BY}\",\"workflowRunUrl\":\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",\"workflowRunId\":\"${{ github.run_id }}\"}"
+
+      - name: Report failure to app
+        if: failure() && env.BACKUP_APP_URL != '' && env.CRON_SECRET != ''
+        continue-on-error: true
+        run: |
+          curl --fail-with-body \
+            -X POST "$BACKUP_APP_URL/api/cron/db-backup" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            -d "{\"status\":\"failure\",\"triggeredBy\":\"${BACKUP_TRIGGERED_BY}\",\"error\":\"Backup workflow failed before completion. Review the workflow logs.\",\"workflowRunUrl\":\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",\"workflowRunId\":\"${{ github.run_id }}\"}"

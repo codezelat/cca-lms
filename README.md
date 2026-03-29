@@ -375,16 +375,16 @@ Comprehensive assignment management for file-based submissions:
 - **Prepared Statements**: Prisma prevents SQL injection
 - **Connection Pooling**: Optimized database connections
 - **Encrypted Connections**: SSL/TLS for all database traffic
-- **Automated Backups**: Daily full database backups to Cloudflare R2
+- **Automated Backups**: Daily full PostgreSQL dumps to private Cloudflare R2
 
 #### **Backup & Recovery**
 
-- **Daily Automated Backups**: Full database export via Vercel Cron at 2:00 AM UTC
+- **Daily Automated Backups**: Full PostgreSQL logical dumps via GitHub Actions at 12:00 AM UTC
 - **14-Day Retention**: Automatic cleanup of older backups
-- **Compressed Storage**: Gzipped JSON backups (~85% size reduction)
+- **Portable SQL Archives**: `roles.sql`, `schema.sql`, `data.sql`, `manifest.json`, and `RESTORE.md`
 - **Secure Storage**: Private R2 bucket, no public access
-- **Audit Logged**: All backup operations tracked (BACKUP_CREATED, BACKUP_FAILED, BACKUP_CLEANUP)
-- **Easy Restore**: CLI script for disaster recovery
+- **Audit Logged**: Workflow success, failure, and retention cleanup are tracked in `AuditLog`
+- **Easy Restore**: Download an archive and restore with standard `psql`
 
 #### **File Security**
 
@@ -416,7 +416,7 @@ Every action tracked with:
 - RESOURCE_UPLOADED, RESOURCE_UPDATED, RESOURCE_DELETED
 - ENROLLMENT_CREATED, ENROLLMENT_DELETED
 - BULK_ENROLLMENT_STARTED, BULK_ENROLLMENT_COMPLETED
-- BACKUP_CREATED, BACKUP_FAILED, BACKUP_CLEANUP, BACKUP_RESTORED
+- BACKUP_CREATED, BACKUP_FAILED, BACKUP_CLEANUP
 
 #### **SEO & Privacy**
 
@@ -822,17 +822,26 @@ NEXTAUTH_SECRET="your-secret-key-here-generate-with-openssl"
 NEXTAUTH_URL="http://localhost:3000"
 
 # Cloudflare R2 (File Storage)
-CLOUDFLARE_R2_ACCOUNT_ID="your-account-id"
-CLOUDFLARE_R2_ACCESS_KEY_ID="your-access-key"
-CLOUDFLARE_R2_SECRET_ACCESS_KEY="your-secret-key"
-CLOUDFLARE_R2_BUCKET_NAME="your-bucket-name"
-CLOUDFLARE_R2_PUBLIC_URL="https://your-bucket.r2.cloudflarestorage.com"
+R2_ACCOUNT_ID="your-account-id"
+R2_ACCESS_KEY_ID="your-access-key"
+R2_SECRET_ACCESS_KEY="your-secret-key"
+R2_BUCKET_NAME="your-bucket-name"
+R2_PUBLIC_URL="https://your-bucket.r2.cloudflarestorage.com"
+
+# Database backup monitoring and manual trigger
+GITHUB_BACKUP_REPOSITORY="your-org/your-repo"
+GITHUB_BACKUP_WORKFLOW_FILE="db-backup.yml"
+GITHUB_BACKUP_REF="main"
+GITHUB_BACKUP_TOKEN="github_pat_your_token_here"
+DB_BACKUP_BUCKET_NAME="your-private-db-backup-bucket"
+DB_BACKUP_PREFIX="db-backups"
+DB_BACKUP_RETENTION_DAYS="14"
 
 # Resend (Email - Optional)
 RESEND_API_KEY="re_your_api_key_here"
 RESEND_FROM_EMAIL="noreply@yourdomain.com"
 
-# Cron Jobs Security (Required for Vercel)
+# Job callback security
 # Generate with: openssl rand -base64 32
 CRON_SECRET="your-cron-secret-here"
 
@@ -1269,68 +1278,84 @@ The system uses **15 Prisma models**:
 
 ### **Automated Daily Backups**
 
-The LMS includes a production-ready backup system that automatically backs up your entire database to Cloudflare R2 storage.
+The LMS includes a production-ready database backup system built around GitHub Actions, the Supabase CLI, and private Cloudflare R2 storage.
 
 #### **Features**
 
-- ⏰ **Daily Schedule**: Runs at 2:00 AM UTC via Vercel Cron
-- 📦 **Full Database Export**: All 23 tables backed up
-- 🗜️ **Compression**: ~85% size reduction with gzip
+- ⏰ **Daily Schedule**: Runs at 12:00 AM UTC via `.github/workflows/db-backup.yml`
+- 📦 **Full Database Export**: Creates portable PostgreSQL logical dumps
+- 🧱 **Structured Restore Bundle**: Includes `roles.sql`, `schema.sql`, `data.sql`, `manifest.json`, and `RESTORE.md`
 - 🔒 **Secure Storage**: Private R2 bucket, not publicly accessible
 - 🧹 **Auto-Cleanup**: Backups older than 14 days automatically deleted
-- 📝 **Audit Logged**: All operations tracked in AuditLog
+- 📝 **Audit Logged**: Success, failure, and cleanup events tracked in `AuditLog`
+- 🖥️ **Admin Visibility**: Admin-only `/backups` page for health, workflow runs, downloads, and restore guidance
 
 #### **Backup Location**
 
 ```
 R2 Bucket: cca-lms-uploads
-└── backups/
+└── db-backups/
     └── 2026-02-02/
-        └── 2026-02-02_02-00-00_full.json.gz
+        └── 2026-02-02_00-00-00_db-backup.zip
 ```
 
-#### **API Endpoints**
+#### **Architecture**
 
-| Endpoint              | Method | Description                            |
-| --------------------- | ------ | -------------------------------------- |
-| `/api/cron/db-backup` | POST   | Trigger backup (Vercel Cron or manual) |
-| `/api/cron/db-backup` | GET    | Check backup health status             |
-| `/api/admin/backups`  | GET    | List all available backups             |
+1. GitHub Actions runs the scheduled `db-backup.yml` workflow once per day.
+2. The workflow uses `supabase db dump` to export `roles.sql`, `schema.sql`, and `data.sql`.
+3. `scripts/process-db-backup.ts` packages those files into a zip archive with `manifest.json` and `RESTORE.md`.
+4. The archive is uploaded to private Cloudflare R2 under `db-backups/`, using `DB_BACKUP_BUCKET_NAME` when configured or falling back to `R2_BUCKET_NAME`.
+5. Archives older than 14 days are removed automatically.
+6. The workflow reports success or failure back to `/api/cron/db-backup` for audit logging.
 
-#### **Manual Backup Trigger**
+#### **App Endpoints**
 
-```bash
-curl -X POST https://your-app.vercel.app/api/cron/db-backup \
-  -H "Authorization: Bearer YOUR_CRON_SECRET"
-```
+| Endpoint                      | Method | Description                                    |
+| ----------------------------- | ------ | ---------------------------------------------- |
+| `/api/admin/backups`          | GET    | Admin overview for health, archives, and runs  |
+| `/api/admin/backups/run`      | POST   | Admin-only manual workflow dispatch            |
+| `/api/admin/backups/download` | GET    | Admin-only signed download redirect            |
+| `/api/cron/db-backup`         | POST   | Internal workflow callback for audit reporting |
+| `/api/cron/db-backup`         | GET    | Internal health endpoint for automated jobs    |
 
-#### **Check Backup Health**
+#### **GitHub Repository Secrets**
 
-```bash
-curl https://your-app.vercel.app/api/cron/db-backup \
-  -H "Authorization: Bearer YOUR_CRON_SECRET"
-```
+Configure these in GitHub for `.github/workflows/db-backup.yml`:
+
+| Secret                    | Purpose |
+| ------------------------- | ------- |
+| `SUPABASE_DB_URL`         | Direct PostgreSQL connection string used by `supabase db dump` |
+| `R2_ACCOUNT_ID`           | Cloudflare R2 account ID |
+| `R2_ACCESS_KEY_ID`        | R2 access key |
+| `R2_SECRET_ACCESS_KEY`    | R2 secret key |
+| `R2_BUCKET_NAME`          | Shared R2 bucket fallback if a dedicated backup bucket is not configured |
+| `DB_BACKUP_BUCKET_NAME`   | Recommended dedicated private bucket for backup archives |
+| `R2_REGION`               | Optional R2 region, usually `auto` |
+| `DB_BACKUP_PREFIX`        | Optional R2 prefix, defaults to `db-backups` |
+| `DB_BACKUP_RETENTION_DAYS`| Optional retention days, defaults to `14` |
+| `BACKUP_APP_URL`          | Production app URL used for workflow status callbacks |
+| `CRON_SECRET`             | Shared secret for authenticated backup workflow callbacks |
 
 #### **Restore from Backup**
 
-1. Download backup from R2 (using Cloudflare dashboard or CLI)
-2. Run the restore script:
+1. Download a backup archive from the admin `/backups` page.
+2. Extract `roles.sql`, `schema.sql`, `data.sql`, and `manifest.json`.
+3. Restore into a target PostgreSQL database with `psql`:
 
 ```bash
-# Dry run (preview only)
-npx tsx scripts/restore-backup.ts ./backup-2026-02-02.json.gz --dry-run
-
-# Actual restore
-npx tsx scripts/restore-backup.ts ./backup-2026-02-02.json.gz
+psql "$TARGET_DATABASE_URL" -f roles.sql
+psql "$TARGET_DATABASE_URL" -f schema.sql
+psql "$TARGET_DATABASE_URL" -f data.sql
 ```
 
-⚠️ **Warning**: Restore will DELETE all existing data and replace with backup contents.
+⚠️ **Warning**: restore into an isolated target database first and validate the application before promoting that database to production use.
 
 #### **Security**
 
-- **CRON_SECRET Required**: All backup endpoints require `Authorization: Bearer <CRON_SECRET>`
-- **Vercel Auto-Auth**: Vercel Cron automatically includes the secret
-- **No Public Access**: R2 bucket is private
+- **Admin Only**: Archive listing, downloads, and manual dispatch are available only to signed-in admins
+- **CRON_SECRET Required**: Workflow status callbacks require `Authorization: Bearer <CRON_SECRET>`
+- **GitHub Token Required**: Manual dispatch and workflow inspection require `GITHUB_BACKUP_TOKEN`
+- **No Public Access**: use a dedicated private `DB_BACKUP_BUCKET_NAME` if your main `R2_BUCKET_NAME` is exposed through `R2_PUBLIC_URL`
 - **Audit Trail**: All backup operations logged
 
 ---
@@ -1354,26 +1379,34 @@ git push -u origin main
 
 3. **Set Environment Variables** in Vercel project settings:
 
-| Variable               | Description                                | Required |
-| ---------------------- | ------------------------------------------ | -------- |
-| `DATABASE_URL`         | Supabase PostgreSQL connection string      | ✅       |
-| `DIRECT_URL`           | Direct database URL (for migrations)       | ✅       |
-| `AUTH_SECRET`          | NextAuth.js secret key                     | ✅       |
-| `R2_ACCOUNT_ID`        | Cloudflare R2 account ID                   | ✅       |
-| `R2_ACCESS_KEY_ID`     | R2 access key                              | ✅       |
-| `R2_SECRET_ACCESS_KEY` | R2 secret key                              | ✅       |
-| `R2_BUCKET_NAME`       | R2 bucket name                             | ✅       |
-| `R2_PUBLIC_URL`        | R2 public URL for file access              | ✅       |
-| `CRON_SECRET`          | Secret for authenticating Vercel Cron jobs | ✅       |
-| `RESEND_API_KEY`       | Resend email API key                       | ✅       |
-| `ADMIN_API_SECRET`     | Admin API authentication secret            | Optional |
+| Variable                 | Description                                                 | Required |
+| ------------------------ | ----------------------------------------------------------- | -------- |
+| `DATABASE_URL`           | Supabase PostgreSQL pooled connection string                | ✅       |
+| `DIRECT_DATABASE_URL`    | Direct PostgreSQL connection string for migrations          | ✅       |
+| `NEXTAUTH_SECRET`        | NextAuth.js secret key                                      | ✅       |
+| `R2_ACCOUNT_ID`          | Cloudflare R2 account ID                                    | ✅       |
+| `R2_ACCESS_KEY_ID`       | R2 access key                                               | ✅       |
+| `R2_SECRET_ACCESS_KEY`   | R2 secret key                                               | ✅       |
+| `R2_BUCKET_NAME`         | R2 bucket name                                              | ✅       |
+| `R2_PUBLIC_URL`          | R2 public URL for file access                               | ✅       |
+| `DB_BACKUP_BUCKET_NAME`  | Recommended private bucket dedicated to database backups    | Optional |
+| `GITHUB_BACKUP_REPOSITORY` | Repository containing `.github/workflows/db-backup.yml`   | ✅       |
+| `GITHUB_BACKUP_WORKFLOW_FILE` | Backup workflow file name, usually `db-backup.yml`     | ✅       |
+| `GITHUB_BACKUP_REF`      | Branch used for manual backup dispatch                      | ✅       |
+| `GITHUB_BACKUP_TOKEN`    | GitHub token with Actions read/write access                 | ✅       |
+| `DB_BACKUP_PREFIX`       | Optional R2 prefix for backup archives                      | Optional |
+| `DB_BACKUP_RETENTION_DAYS` | Optional retention override, defaults to `14`             | Optional |
+| `CRON_SECRET`            | Secret for authenticated backup workflow callbacks          | ✅       |
+| `RESEND_API_KEY`         | Resend email API key                                        | ✅       |
+| `ADMIN_API_SECRET`       | Optional admin API authentication secret                    | Optional |
 
 4. **Deploy** - Vercel auto-deploys on push to main
 
-5. **Verify Cron Jobs:**
-   - Go to your Vercel project → Settings → Cron Jobs
-   - Confirm `db-backup` job is scheduled for `0 2 * * *` (2:00 AM UTC daily)
-   - Test manually: `curl -X POST https://your-domain.vercel.app/api/cron/db-backup -H "Authorization: Bearer YOUR_CRON_SECRET"`
+5. **Verify Scheduled Jobs:**
+   - In Vercel, confirm the remaining app cron jobs you need, such as `assignment-reminders`
+   - In GitHub, confirm `.github/workflows/db-backup.yml` is enabled and scheduled for `0 0 * * *`
+   - Add the required GitHub repository secrets listed in the backup section above
+   - Open `/backups` as an admin after deployment and confirm health, workflow visibility, and manual dispatch work
 
 ---
 

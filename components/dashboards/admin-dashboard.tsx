@@ -6,6 +6,7 @@ import {
   BookOpen,
   Users,
   Activity,
+  Archive,
   Terminal,
   Clock,
   ArrowRight,
@@ -284,6 +285,12 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
       icon: Shield,
       href: "/activity-logs",
       description: "System activity monitoring",
+    },
+    {
+      label: "Database Backups",
+      icon: Archive,
+      href: "/backups",
+      description: "Daily dumps and restore readiness",
     },
     {
       label: "System Settings",

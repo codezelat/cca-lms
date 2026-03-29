@@ -40,7 +40,7 @@ This file provides repository-wide instructions for AI coding agents working in 
 - `/Users/sayuru/Documents/GitHub/cca-lms/prisma`: schema, migrations, seed, and RLS SQL
 - `/Users/sayuru/Documents/GitHub/cca-lms/generated/prisma`: generated Prisma client; do not edit manually
 - `/Users/sayuru/Documents/GitHub/cca-lms/proxy.ts`: request interception and auth redirects for protected routes
-- `/Users/sayuru/Documents/GitHub/cca-lms/scripts`: operational scripts such as backup restore and sanitization verification
+- `/Users/sayuru/Documents/GitHub/cca-lms/scripts`: operational scripts such as database backup packaging and sanitization verification
 
 ## How To Work In This Repo
 
