@@ -1318,9 +1318,11 @@ R2 Bucket: cca-lms-uploads
 | `/api/cron/db-backup`         | POST   | Internal workflow callback for audit reporting |
 | `/api/cron/db-backup`         | GET    | Internal health endpoint for automated jobs    |
 
-#### **GitHub Repository Secrets**
+#### **GitHub Actions Secrets**
 
-Configure these in GitHub for `.github/workflows/db-backup.yml`:
+Configure these in GitHub for `/Users/sayuru/Documents/GitHub/cca-lms/.github/workflows/db-backup.yml`.
+The workflow runs in the GitHub `production` environment, so environment secrets there are available to it.
+Repository or organization secrets also work.
 
 | Secret                    | Purpose |
 | ------------------------- | ------- |
