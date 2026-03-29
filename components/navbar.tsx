@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { ThemeSelector } from "./theme-selector";
+import { GlobalActivityIndicator } from "@/components/ui/global-activity-indicator";
 
 // Role-based navigation items
 const adminNavItems = [
@@ -116,6 +117,7 @@ export function Navbar() {
 
           {/* Right side actions */}
           <div className="flex items-center gap-3">
+            <GlobalActivityIndicator />
             {session?.user && (
               <button
                 onClick={handleLogout}
