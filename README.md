@@ -2,11 +2,11 @@
 
 <div align="center">
 
-![Next.js](https://img.shields.io/badge/Next.js-16.1.4-black?style=for-the-badge&logo=next.js)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?style=for-the-badge&logo=typescript)
-![Prisma](https://img.shields.io/badge/Prisma-6.19.2-2D3748?style=for-the-badge&logo=prisma)
+![Next.js](https://img.shields.io/badge/Next.js-16.2.1-black?style=for-the-badge&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?style=for-the-badge&logo=typescript)
+![Prisma](https://img.shields.io/badge/Prisma-7.3.0-2D3748?style=for-the-badge&logo=prisma)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-316192?style=for-the-badge&logo=postgresql)
-![React](https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react)
+![React](https://img.shields.io/badge/React-19.2.4-61DAFB?style=for-the-badge&logo=react)
 
 **Production-Ready Learning Management System by Codezela Technologies**
 
@@ -460,9 +460,9 @@ Every action tracked with:
 
 | Technology     | Version | Purpose                              |
 | -------------- | ------- | ------------------------------------ |
-| **Next.js**    | 16.1.4  | React framework with App Router      |
-| **React**      | 19.0.2  | UI library with Server Components    |
-| **TypeScript** | 5.7     | Type safety across the entire stack  |
+| **Next.js**    | 16.2.1  | React framework with App Router      |
+| **React**      | 19.2.4  | UI library with Server Components    |
+| **TypeScript** | 5.x     | Type safety across the entire stack  |
 | **Turbopack**  | Latest  | Fast development bundler (3x faster) |
 
 ### **Backend & Database**
@@ -470,7 +470,7 @@ Every action tracked with:
 | Technology      | Version       | Purpose                                 |
 | --------------- | ------------- | --------------------------------------- |
 | **PostgreSQL**  | 14+           | Primary relational database             |
-| **Prisma**      | 6.19.2        | Type-safe ORM with migration management |
+| **Prisma**      | 7.3.0         | Type-safe ORM with migration management |
 | **NextAuth.js** | 5.0.0-beta.30 | Authentication and session management   |
 | **bcryptjs**    | 3.0.3         | Password hashing with salt rounds       |
 | **Zod**         | 4.3.6         | Runtime schema validation               |

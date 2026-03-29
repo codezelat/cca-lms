@@ -75,7 +75,7 @@ cca-lms/
 │   └── migrations/         # Migration history
 ├── types/
 │   └── next-auth.d.ts      # Augmented session/user types
-├── middleware.ts            # Auth-based route protection
+├── proxy.ts                 # Auth-based route protection
 └── scripts/                # Utility scripts (backup restore, sanitization verify)
 ```
 
@@ -158,7 +158,7 @@ npm run db:setup
 - After any schema change, run `npm run db:generate` to regenerate the Prisma client.
 
 ### Authentication & Authorization
-- Protect pages via `middleware.ts` (checks session role).
+- Protect pages via `proxy.ts` (checks session role).
 - Use the `auth()` helper from `lib/auth.ts` inside API routes to get the current session.
 - Roles are `STUDENT`, `LECTURER`, `ADMIN` (defined in the `UserRole` enum in `prisma/schema.prisma`).
 
