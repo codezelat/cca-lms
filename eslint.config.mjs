@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Prisma generated client is committed for this repo's current workflow.
+    "generated/prisma/**",
   ]),
 ]);
 

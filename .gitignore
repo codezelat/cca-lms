@@ -41,7 +41,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-/app/generated/prisma
+# Prisma client is generated to /generated/prisma from prisma/schema.prisma
+# and is currently committed because application code imports from it directly.
+# Do not ignore it unless the generation/deploy workflow is changed deliberately.
 
 # Claude local settings
 .claude/settings.local.json
