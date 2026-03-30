@@ -379,7 +379,7 @@ Comprehensive assignment management for file-based submissions:
 
 #### **Backup & Recovery**
 
-- **Daily Automated Backups**: Full PostgreSQL logical dumps via GitHub Actions at 12:00 AM UTC
+- **Daily Automated Backups**: Full PostgreSQL logical dumps via GitHub Actions at 12:17 AM UTC
 - **14-Day Retention**: Automatic cleanup of older backups
 - **Portable SQL Archives**: `roles.sql`, `schema.sql`, `data.sql`, `manifest.json`, and `RESTORE.md`
 - **Secure Storage**: Private R2 bucket, no public access
@@ -1282,7 +1282,7 @@ The LMS includes a production-ready database backup system built around GitHub A
 
 #### **Features**
 
-- ⏰ **Daily Schedule**: Runs at 12:00 AM UTC via `.github/workflows/db-backup.yml`
+- ⏰ **Daily Schedule**: Runs at 12:17 AM UTC via `.github/workflows/db-backup.yml`
 - 📦 **Full Database Export**: Creates portable PostgreSQL logical dumps
 - 🧱 **Structured Restore Bundle**: Includes `roles.sql`, `schema.sql`, `data.sql`, `manifest.json`, and `RESTORE.md`
 - 🔒 **Secure Storage**: Private R2 bucket, not publicly accessible
@@ -1406,7 +1406,7 @@ git push -u origin main
 
 5. **Verify Scheduled Jobs:**
    - In Vercel, confirm the remaining app cron jobs you need, such as `assignment-reminders`
-   - In GitHub, confirm `.github/workflows/db-backup.yml` is enabled and scheduled for `0 0 * * *`
+   - In GitHub, confirm `.github/workflows/db-backup.yml` is enabled and scheduled for `17 0 * * *`
    - Add the required GitHub repository secrets listed in the backup section above
    - Open `/backups` as an admin after deployment and confirm health, workflow visibility, and manual dispatch work
 

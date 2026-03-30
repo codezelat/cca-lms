@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { getNextDbBackupRun } from "@/lib/db-backup-schedule";
 import {
   Card,
   CardContent,
@@ -117,18 +118,6 @@ function formatTimestamp(value: string) {
 
 function formatRelativeTime(value: string) {
   return formatDistanceToNow(new Date(value), { addSuffix: true });
-}
-
-function getNextScheduledRun() {
-  const now = new Date();
-  const next = new Date(now);
-
-  next.setUTCHours(0, 0, 0, 0);
-  if (next.getTime() <= now.getTime()) {
-    next.setUTCDate(next.getUTCDate() + 1);
-  }
-
-  return next;
 }
 
 function getHealthBadgeVariant(status: DatabaseBackupsResponse["health"]["status"]) {
@@ -333,7 +322,7 @@ export default function AdminBackupsPage() {
     }
   };
 
-  const nextScheduledRun = getNextScheduledRun();
+  const nextScheduledRun = getNextDbBackupRun();
   const workflowRunBadge = getRunBadge(data?.workflow.latestRun || null);
   const normalizedArchiveSearch = archiveSearch.trim().toLowerCase();
   const backups = data?.backups || [];

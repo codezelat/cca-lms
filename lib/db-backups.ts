@@ -4,12 +4,17 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl as getS3SignedUrl } from "@aws-sdk/s3-request-presigner";
+import {
+  DB_BACKUP_CRON,
+  DB_BACKUP_SCHEDULE_DESCRIPTION,
+  getDbBackupSlotDeadline,
+  getMostRecentDbBackupSlot,
+} from "@/lib/db-backup-schedule";
 
 const DEFAULT_PREFIX = "db-backups";
 const DEFAULT_RETENTION_DAYS = 14;
 const DEFAULT_WORKFLOW_FILE = "db-backup.yml";
 const DEFAULT_WORKFLOW_REF = "main";
-const DEFAULT_SCHEDULE = "0 0 * * *";
 
 function normalizePrefix(prefix: string) {
   return prefix.replace(/^\/+|\/+$/g, "");
@@ -180,8 +185,8 @@ function buildConfig(): BackupSystemConfig {
     bucketName: getBackupBucketName(),
     usesDedicatedBucket: Boolean(process.env.DB_BACKUP_BUCKET_NAME),
     retentionDays: getDbBackupRetentionDays(),
-    schedule: DEFAULT_SCHEDULE,
-    scheduleDescription: "Daily at 12:00 AM UTC",
+    schedule: DB_BACKUP_CRON,
+    scheduleDescription: DB_BACKUP_SCHEDULE_DESCRIPTION,
     storageConfigured: isStorageConfigured(),
     workflowConfigured: isWorkflowConfigured(),
     workflowRepository: workflow.repository,
@@ -296,6 +301,7 @@ interface GitHubWorkflowRunResponse {
 
 export async function getRecentBackupWorkflowRuns(
   limit = 5,
+  event?: string,
 ): Promise<BackupWorkflowRun[]> {
   const config = getGitHubBackupConfig();
 
@@ -307,6 +313,9 @@ export async function getRecentBackupWorkflowRuns(
     per_page: String(limit),
     branch: config.ref,
   });
+  if (event) {
+    params.set("event", event);
+  }
 
   const response = await fetchGitHubApi<GitHubWorkflowRunResponse>(
     `/repos/${config.repository}/actions/workflows/${encodeURIComponent(config.workflowFile)}/runs?${params.toString()}`,
@@ -328,13 +337,15 @@ export async function getRecentBackupWorkflowRuns(
 
 export async function getDatabaseBackupsOverview(): Promise<DatabaseBackupsOverview> {
   const config = buildConfig();
-  const [backups, workflowRuns] = await Promise.all([
+  const [backups, workflowRuns, scheduledRuns] = await Promise.all([
     listDatabaseBackups(),
     getRecentBackupWorkflowRuns().catch(() => []),
+    getRecentBackupWorkflowRuns(3, "schedule").catch(() => []),
   ]);
 
   const latestBackup = backups[0] || null;
   const latestRun = workflowRuns[0] || null;
+  const latestScheduledRun = scheduledRuns[0] || null;
   const totalSizeBytes = backups.reduce((sum, backup) => sum + backup.sizeBytes, 0);
 
   const health = (() => {
@@ -366,10 +377,28 @@ export async function getDatabaseBackupsOverview(): Promise<DatabaseBackupsOverv
       };
     }
 
-    if (latestRun?.conclusion === "failure") {
+    const mostRecentScheduledSlot = getMostRecentDbBackupSlot();
+    const scheduledDeadline = getDbBackupSlotDeadline(mostRecentScheduledSlot);
+    const latestScheduledRunTime = latestScheduledRun
+      ? new Date(latestScheduledRun.createdAt).getTime()
+      : 0;
+    const scheduledRunCovered =
+      latestScheduledRunTime >= mostRecentScheduledSlot.getTime();
+
+    if (
+      Date.now() >= scheduledDeadline.getTime() &&
+      !scheduledRunCovered
+    ) {
       return {
         status: "warning" as const,
-        message: "The latest backup workflow run failed. Review the workflow logs.",
+        message: "The scheduled backup for today has not run yet.",
+      };
+    }
+
+    if (latestScheduledRun?.conclusion === "failure") {
+      return {
+        status: "warning" as const,
+        message: "The latest scheduled backup run failed. Review the workflow logs.",
       };
     }
 
