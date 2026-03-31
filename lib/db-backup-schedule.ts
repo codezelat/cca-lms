@@ -1,5 +1,5 @@
 export const DB_BACKUP_CRON = "17 0 * * *";
-export const DB_BACKUP_SCHEDULE_DESCRIPTION = "Daily at 12:17 AM UTC";
+export const DB_BACKUP_SCHEDULE_DESCRIPTION = "Daily target 12:17 AM UTC";
 export const DB_BACKUP_UTC_HOUR = 0;
 export const DB_BACKUP_UTC_MINUTE = 17;
 export const DB_BACKUP_SCHEDULE_GRACE_MINUTES = 120;

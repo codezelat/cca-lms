@@ -379,7 +379,7 @@ Comprehensive assignment management for file-based submissions:
 
 #### **Backup & Recovery**
 
-- **Daily Automated Backups**: Full PostgreSQL logical dumps via GitHub Actions at 12:17 AM UTC
+- **Daily Automated Backups**: Full PostgreSQL logical dumps triggered daily via Vercel Cron
 - **14-Day Retention**: Automatic cleanup of older backups
 - **Portable SQL Archives**: `roles.sql`, `schema.sql`, `data.sql`, `manifest.json`, and `RESTORE.md`
 - **Secure Storage**: Private R2 bucket, no public access
@@ -1278,11 +1278,11 @@ The system uses **15 Prisma models**:
 
 ### **Automated Daily Backups**
 
-The LMS includes a production-ready database backup system built around GitHub Actions, PostgreSQL dump tools, and private Cloudflare R2 storage.
+The LMS includes a production-ready database backup system built around Vercel Cron, GitHub Actions, PostgreSQL dump tools, and private Cloudflare R2 storage.
 
 #### **Features**
 
-- ⏰ **Daily Schedule**: Runs at 12:17 AM UTC via `.github/workflows/db-backup.yml`
+- ⏰ **Daily Schedule**: Vercel Cron targets 12:17 AM UTC each day and dispatches the GitHub backup workflow
 - 📦 **Full Database Export**: Creates portable PostgreSQL logical dumps
 - 🧱 **Structured Restore Bundle**: Includes `roles.sql`, `schema.sql`, `data.sql`, `manifest.json`, and `RESTORE.md`
 - 🔒 **Secure Storage**: Private R2 bucket, not publicly accessible
@@ -1301,12 +1301,13 @@ R2 Bucket: cca-lms-uploads
 
 #### **Architecture**
 
-1. GitHub Actions runs the scheduled `db-backup.yml` workflow once per day.
-2. The workflow validates `SUPABASE_DB_URL`, normalizes it, then uses `pg_dumpall` and `pg_dump` to export `roles.sql`, `schema.sql`, and `data.sql`.
-3. `scripts/process-db-backup.ts` packages those files into a zip archive with `manifest.json` and `RESTORE.md`.
-4. The archive is uploaded to private Cloudflare R2 under `db-backups/`, using `DB_BACKUP_BUCKET_NAME` when configured or falling back to `R2_BUCKET_NAME`.
-5. Archives older than 14 days are removed automatically.
-6. The workflow reports success or failure back to `/api/cron/db-backup` for audit logging.
+1. Vercel Cron calls `/api/cron/db-backup-dispatch` once per day on the production deployment.
+2. The dispatch route verifies `CRON_SECRET`, skips duplicate runs for the current daily window, and triggers `.github/workflows/db-backup.yml`.
+3. The GitHub workflow validates `SUPABASE_DB_URL`, normalizes it, then uses `pg_dumpall` and `pg_dump` to export `roles.sql`, `schema.sql`, and `data.sql`.
+4. `scripts/process-db-backup.ts` packages those files into a zip archive with `manifest.json` and `RESTORE.md`.
+5. The archive is uploaded to private Cloudflare R2 under `db-backups/`, using `DB_BACKUP_BUCKET_NAME` when configured or falling back to `R2_BUCKET_NAME`.
+6. Archives older than 14 days are removed automatically.
+7. The workflow reports success or failure back to `/api/cron/db-backup` for audit logging.
 
 #### **App Endpoints**
 
@@ -1315,6 +1316,7 @@ R2 Bucket: cca-lms-uploads
 | `/api/admin/backups`          | GET    | Admin overview for health, archives, and runs  |
 | `/api/admin/backups/run`      | POST   | Admin-only manual workflow dispatch            |
 | `/api/admin/backups/download` | GET    | Admin-only signed download redirect            |
+| `/api/cron/db-backup-dispatch`| GET    | Vercel Cron trigger for the daily GitHub workflow |
 | `/api/cron/db-backup`         | POST   | Internal workflow callback for audit reporting |
 | `/api/cron/db-backup`         | GET    | Internal health endpoint for automated jobs    |
 
@@ -1336,7 +1338,7 @@ Repository or organization secrets also work.
 | `DB_BACKUP_PREFIX`        | Optional R2 prefix, defaults to `db-backups` |
 | `DB_BACKUP_RETENTION_DAYS`| Optional retention days, defaults to `14` |
 | `BACKUP_APP_URL`          | Production app URL used for workflow status callbacks |
-| `CRON_SECRET`             | Shared secret for authenticated backup workflow callbacks |
+| `CRON_SECRET`             | Shared secret for Vercel cron dispatch and authenticated backup workflow callbacks |
 
 #### **Restore from Backup**
 
@@ -1355,7 +1357,7 @@ psql "$TARGET_DATABASE_URL" -f data.sql
 #### **Security**
 
 - **Admin Only**: Archive listing, downloads, and manual dispatch are available only to signed-in admins
-- **CRON_SECRET Required**: Workflow status callbacks require `Authorization: Bearer <CRON_SECRET>`
+- **CRON_SECRET Required**: Vercel cron dispatch and workflow status callbacks require `Authorization: Bearer <CRON_SECRET>`
 - **GitHub Token Required**: Manual dispatch and workflow inspection require `GITHUB_BACKUP_TOKEN`
 - **No Public Access**: use a dedicated private `DB_BACKUP_BUCKET_NAME` if your main `R2_BUCKET_NAME` is exposed through `R2_PUBLIC_URL`
 - **Audit Trail**: All backup operations logged
@@ -1398,15 +1400,15 @@ git push -u origin main
 | `GITHUB_BACKUP_TOKEN`    | GitHub token with Actions read/write access                 | ✅       |
 | `DB_BACKUP_PREFIX`       | Optional R2 prefix for backup archives                      | Optional |
 | `DB_BACKUP_RETENTION_DAYS` | Optional retention override, defaults to `14`             | Optional |
-| `CRON_SECRET`            | Secret for authenticated backup workflow callbacks          | ✅       |
+| `CRON_SECRET`            | Secret for Vercel cron dispatch and workflow callbacks      | ✅       |
 | `RESEND_API_KEY`         | Resend email API key                                        | ✅       |
 | `ADMIN_API_SECRET`       | Optional admin API authentication secret                    | Optional |
 
 4. **Deploy** - Vercel auto-deploys on push to main
 
 5. **Verify Scheduled Jobs:**
-   - In Vercel, confirm the remaining app cron jobs you need, such as `assignment-reminders`
-   - In GitHub, confirm `.github/workflows/db-backup.yml` is enabled and scheduled for `17 0 * * *`
+   - In Vercel, confirm `vercel.json` includes `/api/cron/db-backup-dispatch` on `17 0 * * *`
+   - Confirm `CRON_SECRET` is set in Vercel for the production deployment
    - Add the required GitHub repository secrets listed in the backup section above
    - Open `/backups` as an admin after deployment and confirm health, workflow visibility, and manual dispatch work
 

@@ -156,6 +156,12 @@ function getWarnings(): string[] {
     );
   }
 
+  if (!process.env.CRON_SECRET) {
+    warnings.push(
+      "CRON_SECRET is missing. Vercel backup scheduling and workflow status callbacks are disabled.",
+    );
+  }
+
   if (process.env.R2_PUBLIC_URL && !process.env.DB_BACKUP_BUCKET_NAME) {
     warnings.push(
       "R2_PUBLIC_URL is configured for file delivery. Use a separate private DB_BACKUP_BUCKET_NAME so backup archives are not stored in the public-facing bucket.",
@@ -337,15 +343,13 @@ export async function getRecentBackupWorkflowRuns(
 
 export async function getDatabaseBackupsOverview(): Promise<DatabaseBackupsOverview> {
   const config = buildConfig();
-  const [backups, workflowRuns, scheduledRuns] = await Promise.all([
+  const [backups, workflowRuns] = await Promise.all([
     listDatabaseBackups(),
     getRecentBackupWorkflowRuns().catch(() => []),
-    getRecentBackupWorkflowRuns(3, "schedule").catch(() => []),
   ]);
 
   const latestBackup = backups[0] || null;
   const latestRun = workflowRuns[0] || null;
-  const latestScheduledRun = scheduledRuns[0] || null;
   const totalSizeBytes = backups.reduce((sum, backup) => sum + backup.sizeBytes, 0);
 
   const health = (() => {
@@ -363,6 +367,18 @@ export async function getDatabaseBackupsOverview(): Promise<DatabaseBackupsOverv
       };
     }
 
+    const mostRecentScheduledSlot = getMostRecentDbBackupSlot();
+    const scheduledDeadline = getDbBackupSlotDeadline(mostRecentScheduledSlot);
+    const latestBackupTime = new Date(latestBackup.lastModified).getTime();
+    const backupCovered = latestBackupTime >= mostRecentScheduledSlot.getTime();
+
+    if (Date.now() >= scheduledDeadline.getTime() && !backupCovered) {
+      return {
+        status: "warning" as const,
+        message: "The backup for today has not completed yet.",
+      };
+    }
+
     if (latestBackup.ageInDays > 1) {
       return {
         status: "warning" as const,
@@ -377,28 +393,10 @@ export async function getDatabaseBackupsOverview(): Promise<DatabaseBackupsOverv
       };
     }
 
-    const mostRecentScheduledSlot = getMostRecentDbBackupSlot();
-    const scheduledDeadline = getDbBackupSlotDeadline(mostRecentScheduledSlot);
-    const latestScheduledRunTime = latestScheduledRun
-      ? new Date(latestScheduledRun.createdAt).getTime()
-      : 0;
-    const scheduledRunCovered =
-      latestScheduledRunTime >= mostRecentScheduledSlot.getTime();
-
-    if (
-      Date.now() >= scheduledDeadline.getTime() &&
-      !scheduledRunCovered
-    ) {
+    if (latestRun?.conclusion === "failure") {
       return {
         status: "warning" as const,
-        message: "The scheduled backup for today has not run yet.",
-      };
-    }
-
-    if (latestScheduledRun?.conclusion === "failure") {
-      return {
-        status: "warning" as const,
-        message: "The latest scheduled backup run failed. Review the workflow logs.",
+        message: "The latest backup workflow run failed. Review the workflow logs.",
       };
     }
 

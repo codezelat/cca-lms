@@ -407,7 +407,7 @@ export default function AdminBackupsPage() {
             </p>
             <div className="flex flex-wrap gap-3 font-mono text-xs text-terminal-text-muted">
               <span>Updated {formatTimestamp(data.timestamp)}</span>
-              <span>Next run {formatTimestamp(nextScheduledRun.toISOString())}</span>
+              <span>Next target {formatTimestamp(nextScheduledRun.toISOString())}</span>
               <span>Retention {data.config.retentionDays} days</span>
             </div>
           </div>
