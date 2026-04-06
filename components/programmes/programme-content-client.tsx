@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  ArrowDown,
+  ArrowUp,
   Plus,
   Loader2,
   Edit,
@@ -19,10 +21,9 @@ import {
   MoreVertical,
   Upload,
   HelpCircle,
-  Eye,
   FileCheck,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -55,6 +56,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { QuizBuilder } from "@/components/quizzes/quiz-builder";
 import { ResourceManager } from "@/components/resources/resource-manager";
 import { AssignmentList } from "@/components/assignments/assignment-list";
+import { cn } from "@/lib/utils";
 
 interface Module {
   id: string;
@@ -94,6 +96,77 @@ interface Programme {
   modules: Module[];
 }
 
+type LessonDragState = {
+  lessonId: string;
+  moduleId: string;
+};
+
+function applySequentialOrder<T extends { order: number }>(items: T[]): T[] {
+  return items.map((item, index) => ({
+    ...item,
+    order: index + 1,
+  }));
+}
+
+function moveItemByIndex<T extends { id: string; order: number }>(
+  items: T[],
+  itemId: string,
+  targetIndex: number,
+) {
+  const sourceIndex = items.findIndex((item) => item.id === itemId);
+
+  if (
+    sourceIndex === -1 ||
+    targetIndex < 0 ||
+    targetIndex >= items.length ||
+    sourceIndex === targetIndex
+  ) {
+    return null;
+  }
+
+  const reorderedItems = [...items];
+  const [movedItem] = reorderedItems.splice(sourceIndex, 1);
+  reorderedItems.splice(targetIndex, 0, movedItem);
+
+  return applySequentialOrder(reorderedItems);
+}
+
+function moveItemByTarget<T extends { id: string; order: number }>(
+  items: T[],
+  draggedItemId: string,
+  targetItemId: string,
+) {
+  const targetIndex = items.findIndex((item) => item.id === targetItemId);
+  return moveItemByIndex(items, draggedItemId, targetIndex);
+}
+
+function moveItemByDirection<T extends { id: string; order: number }>(
+  items: T[],
+  itemId: string,
+  direction: "up" | "down",
+) {
+  const currentIndex = items.findIndex((item) => item.id === itemId);
+
+  if (currentIndex === -1) {
+    return null;
+  }
+
+  return moveItemByIndex(
+    items,
+    itemId,
+    direction === "up" ? currentIndex - 1 : currentIndex + 1,
+  );
+}
+
+async function getErrorMessage(response: Response, fallback: string) {
+  try {
+    const data = await response.json();
+    return typeof data?.error === "string" ? data.error : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export default function ProgrammeContentClient({
   programmeId,
 }: {
@@ -106,6 +179,19 @@ export default function ProgrammeContentClient({
   const [expandedModules, setExpandedModules] = useState<Set<string>>(
     new Set(),
   );
+  const [draggedModuleId, setDraggedModuleId] = useState<string | null>(null);
+  const [moduleDropTargetId, setModuleDropTargetId] = useState<string | null>(
+    null,
+  );
+  const [isModuleReordering, setIsModuleReordering] = useState(false);
+  const [draggedLesson, setDraggedLesson] = useState<LessonDragState | null>(
+    null,
+  );
+  const [lessonDropTarget, setLessonDropTarget] =
+    useState<LessonDragState | null>(null);
+  const [reorderingLessonModuleId, setReorderingLessonModuleId] = useState<
+    string | null
+  >(null);
 
   // Module dialogs
   const [showModuleDialog, setShowModuleDialog] = useState(false);
@@ -174,6 +260,328 @@ export default function ProgrammeContentClient({
       newExpanded.add(moduleId);
     }
     setExpandedModules(newExpanded);
+  };
+
+  const updateProgrammeModules = (nextModules: Module[]) => {
+    setProgramme((currentProgramme) =>
+      currentProgramme
+        ? {
+            ...currentProgramme,
+            modules: nextModules,
+          }
+        : currentProgramme,
+    );
+  };
+
+  const updateModuleLessons = (moduleId: string, nextLessons: Lesson[]) => {
+    setProgramme((currentProgramme) =>
+      currentProgramme
+        ? {
+            ...currentProgramme,
+            modules: currentProgramme.modules.map((module) =>
+              module.id === moduleId
+                ? {
+                    ...module,
+                    lessons: nextLessons,
+                    _count: {
+                      ...module._count,
+                      lessons: nextLessons.length,
+                    },
+                  }
+                : module,
+            ),
+          }
+        : currentProgramme,
+    );
+  };
+
+  const persistModuleOrder = async (
+    nextModules: Module[],
+    successDescription: string,
+  ) => {
+    if (!programme || isModuleReordering) {
+      return;
+    }
+
+    const previousModules = programme.modules;
+    updateProgrammeModules(nextModules);
+    setIsModuleReordering(true);
+
+    try {
+      const response = await fetch("/api/admin/modules/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          moduleIds: nextModules.map((module) => module.id),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          await getErrorMessage(response, "Failed to reorder modules"),
+        );
+      }
+
+      toast.success("Module order updated", {
+        description: successDescription,
+      });
+    } catch (error) {
+      updateProgrammeModules(previousModules);
+      toast.error("Module reorder failed", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to reorder modules",
+      });
+      await fetchProgramme();
+    } finally {
+      setIsModuleReordering(false);
+      setDraggedModuleId(null);
+      setModuleDropTargetId(null);
+    }
+  };
+
+  const persistLessonOrder = async (
+    moduleId: string,
+    nextLessons: Lesson[],
+    successDescription: string,
+  ) => {
+    if (!programme || reorderingLessonModuleId) {
+      return;
+    }
+
+    const module = programme.modules.find(
+      (programmeModule) => programmeModule.id === moduleId,
+    );
+
+    if (!module?.lessons) {
+      return;
+    }
+
+    const previousLessons = module.lessons;
+    updateModuleLessons(moduleId, nextLessons);
+    setReorderingLessonModuleId(moduleId);
+
+    try {
+      const response = await fetch("/api/admin/lessons/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lessonIds: nextLessons.map((lesson) => lesson.id),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          await getErrorMessage(response, "Failed to reorder lessons"),
+        );
+      }
+
+      toast.success("Lesson order updated", {
+        description: successDescription,
+      });
+    } catch (error) {
+      updateModuleLessons(moduleId, previousLessons);
+      toast.error("Lesson reorder failed", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to reorder lessons",
+      });
+      await fetchProgramme();
+    } finally {
+      setReorderingLessonModuleId(null);
+      setDraggedLesson(null);
+      setLessonDropTarget(null);
+    }
+  };
+
+  const handleMoveModule = async (
+    moduleId: string,
+    direction: "up" | "down",
+  ) => {
+    if (!programme) {
+      return;
+    }
+
+    const nextModules = moveItemByDirection(
+      programme.modules,
+      moduleId,
+      direction,
+    );
+
+    if (!nextModules) {
+      return;
+    }
+
+    await persistModuleOrder(
+      nextModules,
+      `Module moved ${direction === "up" ? "up" : "down"}.`,
+    );
+  };
+
+  const handleMoveLesson = async (
+    moduleId: string,
+    lessonId: string,
+    direction: "up" | "down",
+  ) => {
+    const module = programme?.modules.find(
+      (programmeModule) => programmeModule.id === moduleId,
+    );
+    const lessons = module?.lessons ?? [];
+    const nextLessons = moveItemByDirection(lessons, lessonId, direction);
+
+    if (!nextLessons) {
+      return;
+    }
+
+    await persistLessonOrder(
+      moduleId,
+      nextLessons,
+      `Lesson moved ${direction === "up" ? "up" : "down"}.`,
+    );
+  };
+
+  const handleModuleDragStart = (
+    event: React.DragEvent<HTMLDivElement>,
+    moduleId: string,
+  ) => {
+    if (isModuleReordering || !programme || programme.modules.length < 2) {
+      event.preventDefault();
+      return;
+    }
+
+    setDraggedModuleId(moduleId);
+    setModuleDropTargetId(moduleId);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", moduleId);
+  };
+
+  const handleModuleDragOver = (
+    event: React.DragEvent<HTMLElement>,
+    moduleId: string,
+  ) => {
+    if (!draggedModuleId || draggedModuleId === moduleId) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setModuleDropTargetId(moduleId);
+  };
+
+  const handleModuleDrop = async (
+    event: React.DragEvent<HTMLElement>,
+    moduleId: string,
+  ) => {
+    event.preventDefault();
+
+    if (!programme || !draggedModuleId || draggedModuleId === moduleId) {
+      setModuleDropTargetId(null);
+      return;
+    }
+
+    const nextModules = moveItemByTarget(
+      programme.modules,
+      draggedModuleId,
+      moduleId,
+    );
+
+    if (!nextModules) {
+      setDraggedModuleId(null);
+      setModuleDropTargetId(null);
+      return;
+    }
+
+    await persistModuleOrder(nextModules, "Module position updated.");
+  };
+
+  const handleModuleDragEnd = () => {
+    setDraggedModuleId(null);
+    setModuleDropTargetId(null);
+  };
+
+  const handleLessonDragStart = (
+    event: React.DragEvent<HTMLDivElement>,
+    moduleId: string,
+    lessonId: string,
+  ) => {
+    const module = programme?.modules.find(
+      (programmeModule) => programmeModule.id === moduleId,
+    );
+
+    if (
+      reorderingLessonModuleId ||
+      !module?.lessons ||
+      module.lessons.length < 2
+    ) {
+      event.preventDefault();
+      return;
+    }
+
+    const nextDraggedLesson = { moduleId, lessonId };
+    setDraggedLesson(nextDraggedLesson);
+    setLessonDropTarget(nextDraggedLesson);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", lessonId);
+  };
+
+  const handleLessonDragOver = (
+    event: React.DragEvent<HTMLDivElement>,
+    moduleId: string,
+    lessonId: string,
+  ) => {
+    if (
+      !draggedLesson ||
+      draggedLesson.moduleId !== moduleId ||
+      draggedLesson.lessonId === lessonId
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setLessonDropTarget({ moduleId, lessonId });
+  };
+
+  const handleLessonDrop = async (
+    event: React.DragEvent<HTMLDivElement>,
+    moduleId: string,
+    lessonId: string,
+  ) => {
+    event.preventDefault();
+
+    if (
+      !draggedLesson ||
+      draggedLesson.moduleId !== moduleId ||
+      draggedLesson.lessonId === lessonId
+    ) {
+      setLessonDropTarget(null);
+      return;
+    }
+
+    const module = programme?.modules.find(
+      (programmeModule) => programmeModule.id === moduleId,
+    );
+    const lessons = module?.lessons ?? [];
+    const nextLessons = moveItemByTarget(
+      lessons,
+      draggedLesson.lessonId,
+      lessonId,
+    );
+
+    if (!nextLessons) {
+      setDraggedLesson(null);
+      setLessonDropTarget(null);
+      return;
+    }
+
+    await persistLessonOrder(moduleId, nextLessons, "Lesson position updated.");
+  };
+
+  const handleLessonDragEnd = () => {
+    setDraggedLesson(null);
+    setLessonDropTarget(null);
   };
 
   // Module CRUD
@@ -518,7 +926,11 @@ export default function ProgrammeContentClient({
                 <span>{programme._count.enrollments} students enrolled</span>
               </div>
             </div>
-            <Button className="gap-2" onClick={openCreateModuleDialog}>
+            <Button
+              className="gap-2"
+              onClick={openCreateModuleDialog}
+              disabled={isModuleReordering}
+            >
               <Plus className="h-4 w-4" />
               Add Module
             </Button>
@@ -544,16 +956,70 @@ export default function ProgrammeContentClient({
           </Card>
         ) : (
           <div className="space-y-4">
+            {programme.modules.length > 1 && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-terminal-green/20 bg-terminal-darker/40 px-4 py-3 text-xs text-terminal-text-muted">
+                <span>
+                  Drag modules or use the arrow controls to adjust programme
+                  order.
+                </span>
+                {isModuleReordering && (
+                  <span className="inline-flex items-center gap-2 font-mono text-terminal-green">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Saving module order...
+                  </span>
+                )}
+              </div>
+            )}
             {programme.modules.map((module, index) => (
-              <Card key={module.id} className="overflow-hidden">
-                <CardHeader className="bg-terminal-darker/50">
+              <Card
+                key={module.id}
+                className={cn(
+                  "overflow-hidden transition-all",
+                  draggedModuleId === module.id && "opacity-80",
+                  moduleDropTargetId === module.id &&
+                    draggedModuleId !== module.id &&
+                    "border-terminal-green/60 ring-1 ring-terminal-green/50",
+                )}
+              >
+                <CardHeader
+                  className="bg-terminal-darker/50"
+                  onDragOver={(event) => handleModuleDragOver(event, module.id)}
+                  onDrop={(event) => handleModuleDrop(event, module.id)}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1">
+                      <div
+                        draggable={
+                          !isModuleReordering && programme.modules.length > 1
+                        }
+                        onDragStart={(event) =>
+                          handleModuleDragStart(event, module.id)
+                        }
+                        onDragEnd={handleModuleDragEnd}
+                        className={cn(
+                          "flex items-center text-terminal-text-muted",
+                          !isModuleReordering && programme.modules.length > 1
+                            ? "cursor-grab active:cursor-grabbing"
+                            : "opacity-40",
+                        )}
+                        aria-label={`Drag to reorder ${module.title}`}
+                        title={
+                          programme.modules.length > 1
+                            ? "Drag to reorder module"
+                            : "Add another module to enable reordering"
+                        }
+                      >
+                        <GripVertical className="h-4 w-4" />
+                        <span className="sr-only">
+                          Drag to reorder this module
+                        </span>
+                      </div>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => toggleModule(module.id)}
                         className="p-0 h-auto"
+                        disabled={isModuleReordering}
                       >
                         {expandedModules.has(module.id) ? (
                           <ChevronDown className="h-5 w-5" />
@@ -581,17 +1047,52 @@ export default function ProgrammeContentClient({
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      <div className="flex items-center rounded-md border border-terminal-green/20 bg-terminal-dark/60 p-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() => handleMoveModule(module.id, "up")}
+                          disabled={isModuleReordering || index === 0}
+                          aria-label={`Move ${module.title} up`}
+                          title="Move module up"
+                        >
+                          <ArrowUp className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() => handleMoveModule(module.id, "down")}
+                          disabled={
+                            isModuleReordering ||
+                            index === programme.modules.length - 1
+                          }
+                          aria-label={`Move ${module.title} down`}
+                          title="Move module down"
+                        >
+                          <ArrowDown className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => openCreateLessonDialog(module.id)}
+                        disabled={
+                          isModuleReordering ||
+                          Boolean(reorderingLessonModuleId)
+                        }
                       >
                         <Plus className="h-3 w-3 mr-1" />
                         Add Lesson
                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button size="icon" variant="ghost">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            disabled={isModuleReordering}
+                          >
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -628,6 +1129,10 @@ export default function ProgrammeContentClient({
                           size="sm"
                           variant="outline"
                           onClick={() => openCreateLessonDialog(module.id)}
+                          disabled={
+                            isModuleReordering ||
+                            Boolean(reorderingLessonModuleId)
+                          }
                         >
                           <Plus className="h-3 w-3 mr-1" />
                           Add First Lesson
@@ -635,11 +1140,72 @@ export default function ProgrammeContentClient({
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {module.lessons.map((lesson, lessonIndex) => (
+                        {module.lessons.length > 1 && (
+                          <div className="flex items-center justify-between rounded-md border border-terminal-green/15 bg-terminal-dark/40 px-3 py-2 text-xs text-terminal-text-muted">
+                            <span>
+                              Drag lessons or use the arrows to change lesson
+                              order.
+                            </span>
+                            {reorderingLessonModuleId === module.id && (
+                              <span className="inline-flex items-center gap-2 font-mono text-terminal-green">
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                Saving lesson order...
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {(module.lessons ?? []).map((lesson, lessonIndex) => (
                           <div
                             key={lesson.id}
-                            className="flex items-center gap-3 p-3 rounded-lg border border-terminal-green/20 bg-terminal-darker/30 hover:bg-terminal-green/5 transition-colors group"
+                            onDragOver={(event) =>
+                              handleLessonDragOver(event, module.id, lesson.id)
+                            }
+                            onDrop={(event) =>
+                              handleLessonDrop(event, module.id, lesson.id)
+                            }
+                            className={cn(
+                              "flex items-center gap-3 rounded-lg border border-terminal-green/20 bg-terminal-darker/30 p-3 transition-colors group",
+                              Boolean(reorderingLessonModuleId) &&
+                                "opacity-80",
+                              lessonDropTarget?.moduleId === module.id &&
+                                lessonDropTarget.lessonId === lesson.id &&
+                                draggedLesson?.lessonId !== lesson.id &&
+                                "border-terminal-green/60 ring-1 ring-terminal-green/50",
+                              "hover:bg-terminal-green/5",
+                            )}
                           >
+                            <div
+                              draggable={
+                                !reorderingLessonModuleId &&
+                                (module.lessons?.length ?? 0) > 1
+                              }
+                              onDragStart={(event) =>
+                                handleLessonDragStart(
+                                  event,
+                                  module.id,
+                                  lesson.id,
+                                )
+                              }
+                              onDragEnd={handleLessonDragEnd}
+                              className={cn(
+                                "flex items-center text-terminal-text-muted",
+                                !reorderingLessonModuleId &&
+                                  (module.lessons?.length ?? 0) > 1
+                                  ? "cursor-grab active:cursor-grabbing"
+                                  : "opacity-40",
+                              )}
+                              aria-label={`Drag to reorder ${lesson.title}`}
+                              title={
+                                (module.lessons?.length ?? 0) > 1
+                                  ? "Drag to reorder lesson"
+                                  : "Add another lesson to enable reordering"
+                              }
+                            >
+                              <GripVertical className="h-4 w-4" />
+                              <span className="sr-only">
+                                Drag to reorder this lesson
+                              </span>
+                            </div>
                             <div className="flex items-center gap-2 text-terminal-text-muted">
                               {getLessonIcon(lesson.type)}
                               <span className="font-mono text-xs">
@@ -666,10 +1232,59 @@ export default function ProgrammeContentClient({
                               <Badge variant="outline" className="text-[10px]">
                                 {lesson.type}
                               </Badge>
+                              <div className="flex items-center rounded-md border border-terminal-green/20 bg-terminal-dark/60 p-1">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7"
+                                  onClick={() =>
+                                    handleMoveLesson(
+                                      module.id,
+                                      lesson.id,
+                                      "up",
+                                    )
+                                  }
+                                  disabled={
+                                    Boolean(reorderingLessonModuleId) ||
+                                    lessonIndex === 0
+                                  }
+                                  aria-label={`Move ${lesson.title} up`}
+                                  title="Move lesson up"
+                                >
+                                  <ArrowUp className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7"
+                                  onClick={() =>
+                                    handleMoveLesson(
+                                      module.id,
+                                      lesson.id,
+                                      "down",
+                                    )
+                                  }
+                                  disabled={
+                                    Boolean(reorderingLessonModuleId) ||
+                                    lessonIndex ===
+                                      (module.lessons?.length ?? 0) - 1
+                                  }
+                                  aria-label={`Move ${lesson.title} down`}
+                                  title="Move lesson down"
+                                >
+                                  <ArrowDown className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
                               <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
-                                    <Button size="icon" variant="ghost">
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      disabled={
+                                        Boolean(reorderingLessonModuleId)
+                                      }
+                                    >
                                       <MoreVertical className="h-4 w-4" />
                                     </Button>
                                   </DropdownMenuTrigger>
