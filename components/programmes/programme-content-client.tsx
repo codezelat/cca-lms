@@ -1130,20 +1130,15 @@ export default function ProgrammeContentClient({
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {module.lessons.length > 1 && (
-                          <div className="flex items-center justify-between rounded-md border border-terminal-green/15 bg-terminal-dark/40 px-3 py-2 text-xs text-terminal-text-muted">
-                            <span>
-                              Drag lessons or use the arrows to change lesson
-                              order.
-                            </span>
-                            {reorderingLessonModuleId === module.id && (
+                        {module.lessons.length > 1 &&
+                          reorderingLessonModuleId === module.id && (
+                            <div className="flex items-center justify-between rounded-md border border-terminal-green/15 bg-terminal-dark/40 px-3 py-2 text-xs text-terminal-text-muted">
                               <span className="inline-flex items-center gap-2 font-mono text-terminal-green">
                                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                 Saving lesson order...
                               </span>
-                            )}
-                          </div>
-                        )}
+                            </div>
+                          )}
                         {(module.lessons ?? []).map((lesson, lessonIndex) => (
                           <div
                             key={lesson.id}
