@@ -329,9 +329,7 @@ export default function ProgrammeContentClient({
       updateProgrammeModules(previousModules);
       toast.error("Module reorder failed", {
         description:
-          error instanceof Error
-            ? error.message
-            : "Failed to reorder modules",
+          error instanceof Error ? error.message : "Failed to reorder modules",
       });
       await fetchProgramme();
     } finally {
@@ -384,9 +382,7 @@ export default function ProgrammeContentClient({
       updateModuleLessons(moduleId, previousLessons);
       toast.error("Lesson reorder failed", {
         description:
-          error instanceof Error
-            ? error.message
-            : "Failed to reorder lessons",
+          error instanceof Error ? error.message : "Failed to reorder lessons",
       });
       await fetchProgramme();
     } finally {
@@ -956,18 +952,12 @@ export default function ProgrammeContentClient({
           </Card>
         ) : (
           <div className="space-y-4">
-            {programme.modules.length > 1 && (
+            {programme.modules.length > 1 && isModuleReordering && (
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-terminal-green/20 bg-terminal-darker/40 px-4 py-3 text-xs text-terminal-text-muted">
-                <span>
-                  Drag modules or use the arrow controls to adjust programme
-                  order.
+                <span className="inline-flex items-center gap-2 font-mono text-terminal-green">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Saving module order...
                 </span>
-                {isModuleReordering && (
-                  <span className="inline-flex items-center gap-2 font-mono text-terminal-green">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    Saving module order...
-                  </span>
-                )}
               </div>
             )}
             {programme.modules.map((module, index) => (
@@ -1165,8 +1155,7 @@ export default function ProgrammeContentClient({
                             }
                             className={cn(
                               "flex items-center gap-3 rounded-lg border border-terminal-green/20 bg-terminal-darker/30 p-3 transition-colors group",
-                              Boolean(reorderingLessonModuleId) &&
-                                "opacity-80",
+                              Boolean(reorderingLessonModuleId) && "opacity-80",
                               lessonDropTarget?.moduleId === module.id &&
                                 lessonDropTarget.lessonId === lesson.id &&
                                 draggedLesson?.lessonId !== lesson.id &&
@@ -1238,11 +1227,7 @@ export default function ProgrammeContentClient({
                                   variant="ghost"
                                   className="h-7 w-7"
                                   onClick={() =>
-                                    handleMoveLesson(
-                                      module.id,
-                                      lesson.id,
-                                      "up",
-                                    )
+                                    handleMoveLesson(module.id, lesson.id, "up")
                                   }
                                   disabled={
                                     Boolean(reorderingLessonModuleId) ||
@@ -1281,9 +1266,9 @@ export default function ProgrammeContentClient({
                                     <Button
                                       size="icon"
                                       variant="ghost"
-                                      disabled={
-                                        Boolean(reorderingLessonModuleId)
-                                      }
+                                      disabled={Boolean(
+                                        reorderingLessonModuleId,
+                                      )}
                                     >
                                       <MoreVertical className="h-4 w-4" />
                                     </Button>
