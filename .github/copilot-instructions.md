@@ -76,7 +76,7 @@ cca-lms/
 ├── types/
 │   └── next-auth.d.ts      # Augmented session/user types
 ├── proxy.ts                 # Auth-based route protection
-└── scripts/                # Utility scripts (database backup packaging, sanitization verify)
+└── scripts/                # Utility scripts (database backup packaging, sanitization verify, local bulk student import)
 ```
 
 ---
@@ -98,6 +98,9 @@ npm start
 
 # Lint (ESLint 9)
 npm run lint
+
+# Local bulk student import help
+npm run students:import -- --help
 
 # Database – generate Prisma client after schema changes
 npm run db:generate

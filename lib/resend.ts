@@ -56,7 +56,30 @@ const sendEmailWithRetry = async (
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "noreply@codezela.com";
 const APP_NAME = "Codezela Career Accelerator - LMS";
-const APP_URL = process.env.APP_URL || "https://lms.cca.it.com"; // Default to production URL
+const PRODUCTION_APP_URL = "https://lms.cca.it.com";
+
+function resolveEmailAppUrl() {
+  const configuredUrl =
+    process.env.EMAIL_APP_URL?.trim() || process.env.APP_URL?.trim();
+
+  if (!configuredUrl) {
+    return PRODUCTION_APP_URL;
+  }
+
+  try {
+    const parsedUrl = new URL(configuredUrl);
+    const isLocalhost =
+      parsedUrl.hostname === "localhost" ||
+      parsedUrl.hostname === "127.0.0.1" ||
+      parsedUrl.hostname === "::1";
+
+    return isLocalhost ? PRODUCTION_APP_URL : parsedUrl.origin;
+  } catch {
+    return PRODUCTION_APP_URL;
+  }
+}
+
+const APP_URL = resolveEmailAppUrl();
 const SUPPORT_EMAIL = "ca@codezela.com";
 
 // Assignment Email Templates

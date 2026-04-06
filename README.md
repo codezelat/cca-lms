@@ -122,6 +122,7 @@ The system supports diverse lesson formats:
 - User Management
   - Create, edit, delete users (students, lecturers, admins)
   - Bulk CSV enrollment with validation
+  - Local bulk student import with dry-run, reporting, and welcome emails
   - Download enrollment templates
   - Account status management (Active, Suspended, Deleted)
   - Password reset capabilities
@@ -934,6 +935,18 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+### **Local Bulk Student Import**
+
+To create student accounts from a CSV, assign up to 3 programmes per student, and optionally send welcome emails with passwords:
+
+```bash
+npm run students:import -- --help
+```
+
+Full guide:
+
+- [`docs/local-bulk-student-import.md`](/Users/sayuru/Documents/GitHub/cca-lms/docs/local-bulk-student-import.md)
+
 ### **Verify Installation**
 
 1. **Login as Admin:**
@@ -1130,9 +1143,17 @@ cca-lms/
 ├── next.config.ts                      # Next.js configuration
 ├── next-env.d.ts                       # Next.js types
 ├── package.json                        # Dependencies & scripts
+├── docs/                               # Operator guides and workflows
+│   └── local-bulk-student-import.md    # Local student CSV import guide
 ├── postcss.config.mjs                  # PostCSS config
 ├── prisma.config.ts                    # Prisma config
 ├── README.md                           # This file
+├── scripts/                            # Operational scripts and CSV templates
+│   ├── bulk-import-students.ts         # Local student import with dry-run and reporting
+│   ├── process-db-backup.ts            # Database backup packaging
+│   ├── verify-sanitization.ts          # Sanitization verification
+│   └── templates/
+│       └── student-bulk-import-template.csv
 ├── tailwind.config.ts                  # Tailwind configuration
 └── tsconfig.json                       # TypeScript configuration
 ```
