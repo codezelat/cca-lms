@@ -8,8 +8,10 @@ Key capabilities:
 - Multi-format lesson content: video, rich text, quizzes, assignments, PDFs, links
 - Interactive assessments: MCQ, true/false, short/long-answer quizzes with auto-grading
 - Assignment system with file uploads, grading, and feedback
-- Bulk student enrollment via CSV upload
-- Real-time progress tracking and analytics
+- Bulk student enrollment via CSV upload and local CSV import script
+- Module and lesson reordering with persisted ordering audit metadata
+- Cross-programme module duplication without copying learner activity or sending assignment-created emails
+- Real-time progress tracking and analytics with integrity-safe recalculation when content changes
 - Audit logging (20+ action types) with IP and user-agent capture
 - Email notifications via Resend
 - Role-based access control (RBAC): STUDENT, LECTURER, ADMIN
@@ -168,6 +170,12 @@ npm run db:setup
 ### Audit Logging
 - Call `createAuditLog()` from `lib/audit.ts` for all significant user actions.
 - Include the action type (from the `AuditAction` enum), user ID, and relevant metadata.
+- For reorder flows, capture both the previous and next order in audit metadata.
+- For module duplication, preserve entity-level audit coverage for the duplicated module, lessons, resources, quizzes, and assignments.
+
+### Progress Integrity
+- When programme content changes lesson counts, recalculate enrollment progress in the same request path when correctness depends on the updated state.
+- Preserve `DROPPED` enrollment status, move back to `ACTIVE` when progress falls below 100%, and clear `completedAt` for non-complete active enrollments.
 
 ### Error Handling
 - Return structured JSON error responses from API routes: `{ error: "message" }` with the appropriate HTTP status.
@@ -204,6 +212,8 @@ B2_BUCKET_NAME=
 # Email
 RESEND_API_KEY=
 RESEND_FROM_EMAIL=
+EMAIL_APP_URL=
+APP_URL=
 
 # Security
 CRON_SECRET=
@@ -217,5 +227,6 @@ CLOUDFLARE_TURNSTILE_SECRET=
 - **Server-first**: Next.js Server Components and API routes handle all data fetching and mutations; client components are limited to interactive UI.
 - **Security-first**: Passwords hashed with bcryptjs; all HTML input sanitized; Zod validation at every boundary; Cloudflare Turnstile on login; Row-Level Security in PostgreSQL.
 - **Storage split**: Course assets go to Cloudflare R2 (fast CDN delivery); assignment submissions go to Backblaze B2 (cost-effective, student-uploaded content).
+- **Content operations safety**: module duplication reuses permission checks on both source and target programmes and never copies learner submissions, grades, quiz attempts, or progress.
 - **Prisma Postgres adapter**: Uses the native Prisma Postgres adapter for optimal query performance with Supabase.
 - **No test framework currently configured**: There is no existing test suite; do not add tests unless explicitly requested.

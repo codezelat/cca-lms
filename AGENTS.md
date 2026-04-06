@@ -50,6 +50,7 @@ This file provides repository-wide instructions for AI coding agents working in 
 - Reuse existing helpers and patterns before introducing new abstractions.
 - When you change an API response shape, update every affected client and loading state in the same pass.
 - When you change a dashboard, management page, or search/filter flow, inspect both the UI component and its backing route handler.
+- When you change programme structure operations such as lesson creation/deletion, reordering, or module duplication, verify both progress recalculation and audit coverage in the same task.
 
 ## Framework Rules
 
@@ -71,6 +72,7 @@ This file provides repository-wide instructions for AI coding agents working in 
 - Sanitize user-provided HTML with `/Users/sayuru/Documents/GitHub/cca-lms/lib/sanitize.ts` before storage or rendering.
 - Keep audit logging for significant actions using `/Users/sayuru/Documents/GitHub/cca-lms/lib/audit.ts`.
 - Keep storage boundaries intact: R2 for course assets and lesson resources, B2 for assignment submission files.
+- Module duplication must not copy learner attempts, submissions, grades, or progress records, and it must not send assignment-created emails into the target programme.
 
 ## UI And Frontend Rules
 
@@ -81,6 +83,7 @@ This file provides repository-wide instructions for AI coding agents working in 
   - debounced search: `/Users/sayuru/Documents/GitHub/cca-lms/lib/use-debounced-value.ts`
   - global in-page loading state: `/Users/sayuru/Documents/GitHub/cca-lms/components/ui/fetch-activity.tsx`
   - top-right global activity indicator: `/Users/sayuru/Documents/GitHub/cca-lms/components/ui/global-activity-indicator.tsx`
+- For programme content management, keep drag-and-drop behavior backed by non-drag affordances where practical so touch, keyboard, and failure recovery still work.
 
 ## Coding Conventions
 

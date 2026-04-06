@@ -55,7 +55,7 @@ _Developed with ❤️ by [Codezela Technologies](https://codezela.com)_
 ✅ **Type-Safe** - 100% TypeScript with Prisma-generated types  
 ✅ **Secure by Design** - Row-Level Security, audit logging, NextAuth v5  
 ✅ **Performance Optimized** - Turbopack bundling, React Server Components, edge runtime  
-✅ **Fully Featured** - Quiz system, multi-format resources, bulk enrollment, analytics  
+✅ **Fully Featured** - Quiz system, multi-format resources, local bulk imports, duplication, analytics
 ✅ **Responsive Design** - Mobile-first UI that works on all devices  
 ✅ **SEO Protected** - robots.txt and meta tags configured for privacy  
 ✅ **Google Analytics** - Built-in tracking and insights
@@ -65,8 +65,9 @@ _Developed with ❤️ by [Codezela Technologies](https://codezela.com)_
 - **Terminal Aesthetic** - Dark green on black theme inspired by classic terminals
 - **Intelligent Content Rendering** - Automatically detects and embeds YouTube, Vimeo videos
 - **Admin-Controlled Enrollment** - No self-service enrollment, full admin control
-- **Bulk CSV Enrollment** - Upload hundreds of students instantly
-- **Real-time Progress Tracking** - Live lesson completion and quiz scores
+- **Bulk CSV Enrollment** - Browser bulk enrollment plus local scripted student imports
+- **Safe Content Operations** - Reorder modules and lessons, duplicate modules across programmes
+- **Real-time Progress Tracking** - Live lesson completion with integrity-safe recalculation
 - **Multi-Format Resources** - Videos, PDFs, links, embedded content, rich text notes
 
 ---
@@ -78,11 +79,12 @@ _Developed with ❤️ by [Codezela Technologies](https://codezela.com)_
 #### **Programme Structure**
 
 - **Three-Tier Hierarchy**: Programmes → Modules → Lessons
-- **Drag-and-Drop Reordering**: Intuitive content organization
+- **Drag-and-Drop Reordering**: Intuitive module and lesson ordering with persisted audit trails
+- **Module Duplication**: Copy a full module into another programme without copying learner activity
 - **Status Management**: Draft, Published, Archived states
 - **Visibility Controls**: Schedule content release dates
 - **Enrollment Tracking**: Real-time capacity monitoring
-- **Bulk Operations**: Mass student enrollment via CSV
+- **Bulk Operations**: Browser bulk enrollment and local CSV-based student onboarding
 
 #### **Lesson Types**
 
@@ -123,12 +125,14 @@ The system supports diverse lesson formats:
   - Create, edit, delete users (students, lecturers, admins)
   - Bulk CSV enrollment with validation
   - Local bulk student import with dry-run, reporting, and welcome emails
+  - CSV-based programme assignment for up to 3 programmes per student
   - Download enrollment templates
   - Account status management (Active, Suspended, Deleted)
   - Password reset capabilities
 - Programme Management
   - Create/edit/delete programmes
-  - Module and lesson organization
+  - Module and lesson reordering
+  - Cross-programme module duplication with source/target permission checks
   - Content visibility controls
   - Enrollment capacity settings
 - Analytics Dashboard
@@ -140,6 +144,7 @@ The system supports diverse lesson formats:
   - Every user action logged with metadata
   - IP address and user agent tracking
   - Timestamps and entity references
+  - Ordering and duplication metadata for content changes
   - Filterable audit trail
 
 #### **👨‍🏫 Lecturer**
@@ -841,6 +846,8 @@ DB_BACKUP_RETENTION_DAYS="14"
 # Resend (Email - Optional)
 RESEND_API_KEY="re_your_api_key_here"
 RESEND_FROM_EMAIL="noreply@yourdomain.com"
+EMAIL_APP_URL="https://lms.cca.it.com"
+APP_URL="http://localhost:3000"
 
 # Job callback security
 # Generate with: openssl rand -base64 32
@@ -855,6 +862,12 @@ NEXT_PUBLIC_GA_ID="G-S1F397DHHS"
 ```bash
 openssl rand -base64 32
 ```
+
+**Email Link Routing:**
+
+- Set `EMAIL_APP_URL` to force the public domain used in transactional emails.
+- If `EMAIL_APP_URL` is not set, email templates use `APP_URL`.
+- If `APP_URL` points to localhost, email templates automatically fall back to `https://lms.cca.it.com`.
 
 #### **Step 4: Database Setup**
 
@@ -947,6 +960,18 @@ Full guide:
 
 - [`docs/local-bulk-student-import.md`](/Users/sayuru/Documents/GitHub/cca-lms/docs/local-bulk-student-import.md)
 
+Checked-in CSV assets:
+
+- [`scripts/templates/student-bulk-import-template.csv`](/Users/sayuru/Documents/GitHub/cca-lms/scripts/templates/student-bulk-import-template.csv)
+- [`scripts/templates/student-bulk-import-sample.csv`](/Users/sayuru/Documents/GitHub/cca-lms/scripts/templates/student-bulk-import-sample.csv)
+
+### **Content Management Notes**
+
+- Module and lesson reorder requests are persisted through dedicated reorder endpoints and logged with previous and next order values.
+- Module duplication copies lessons, resources, quizzes, and assignments into another programme.
+- Module duplication does not copy learner submissions, quiz attempts, grades, lesson progress, or send assignment-created emails.
+- Programme content mutations recalculate enrollment progress so completion status stays aligned with the current lesson count.
+
 ### **Verify Installation**
 
 1. **Login as Admin:**
@@ -986,7 +1011,7 @@ cca-lms/
 │   │   │   │   └── submit/              # Process enrollments
 │   │   │   ├── dashboard-stats/          # Admin dashboard data
 │   │   │   ├── lessons/                  # Lesson CRUD + reorder
-│   │   │   ├── modules/                  # Module CRUD + reorder
+│   │   │   ├── modules/                  # Module CRUD + reorder + duplicate
 │   │   │   ├── programmes/               # Programme CRUD
 │   │   │   ├── quizzes/                  # Quiz CRUD
 │   │   │   ├── resources/                # Resource CRUD + reorder
@@ -1057,6 +1082,7 @@ cca-lms/
 │   ├── programmes/                      # Programme components
 │   │   ├── module-list.tsx             # Module manager
 │   │   ├── lesson-list.tsx             # Lesson manager
+│   │   ├── programme-content-client.tsx # Programme editor with reorder + duplicate flows
 │   │   └── content-editor.tsx          # Rich text editor
 │   ├── quizzes/                         # Quiz components
 │   │   ├── quiz-builder.tsx            # Visual quiz creator (673 lines)
@@ -1153,10 +1179,19 @@ cca-lms/
 │   ├── process-db-backup.ts            # Database backup packaging
 │   ├── verify-sanitization.ts          # Sanitization verification
 │   └── templates/
+│       ├── student-bulk-import-sample.csv
 │       └── student-bulk-import-template.csv
 ├── tailwind.config.ts                  # Tailwind configuration
 └── tsconfig.json                       # TypeScript configuration
 ```
+
+---
+
+## 📚 Documentation
+
+- [`docs/local-bulk-student-import.md`](/Users/sayuru/Documents/GitHub/cca-lms/docs/local-bulk-student-import.md) - CSV format, dry-run workflow, apply mode, reports, and email-link behavior for local student onboarding.
+- [`AGENTS.md`](/Users/sayuru/Documents/GitHub/cca-lms/AGENTS.md) - repository-wide engineering and validation rules for coding agents.
+- [`.github/copilot-instructions.md`](/Users/sayuru/Documents/GitHub/cca-lms/.github/copilot-instructions.md) - project architecture, environment, and implementation guidance for code assistants.
 
 ---
 
@@ -1423,6 +1458,9 @@ git push -u origin main
 | `DB_BACKUP_RETENTION_DAYS` | Optional retention override, defaults to `14`             | Optional |
 | `CRON_SECRET`            | Secret for Vercel cron dispatch and workflow callbacks      | ✅       |
 | `RESEND_API_KEY`         | Resend email API key                                        | ✅       |
+| `RESEND_FROM_EMAIL`      | From address for transactional email                        | Recommended |
+| `EMAIL_APP_URL`          | Public base URL used in transactional emails                | Recommended |
+| `APP_URL`                | Runtime app URL fallback when `EMAIL_APP_URL` is not set    | Recommended |
 | `ADMIN_API_SECRET`       | Optional admin API authentication secret                    | Optional |
 
 4. **Deploy** - Vercel auto-deploys on push to main

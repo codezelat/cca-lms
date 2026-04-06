@@ -34,6 +34,7 @@ Rules:
 Checked-in starter template:
 
 - [`scripts/templates/student-bulk-import-template.csv`](/Users/sayuru/Documents/GitHub/cca-lms/scripts/templates/student-bulk-import-template.csv)
+- [`scripts/templates/student-bulk-import-sample.csv`](/Users/sayuru/Documents/GitHub/cca-lms/scripts/templates/student-bulk-import-sample.csv)
 
 ## Commands
 
@@ -91,12 +92,13 @@ Also required when sending emails:
 
 - `RESEND_API_KEY`
 - `RESEND_FROM_EMAIL` recommended
-- `APP_URL` recommended
+- `EMAIL_APP_URL` recommended
+- `APP_URL` recommended as fallback
 
 Email link behavior:
 
 - If `EMAIL_APP_URL` is set, emails use that domain.
-- Otherwise emails use `APP_URL`.
+- Otherwise emails use `APP_URL` when it is not a localhost URL.
 - If `APP_URL` points to localhost, emails automatically fall back to `https://lms.cca.it.com`.
 
 ## Reports
