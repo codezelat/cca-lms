@@ -264,9 +264,7 @@ export async function DELETE(
       }
     }
 
-    // Recalculate progress for all students enrolled in this course
-    // Run in background to not slow down the delete response
-    recalculateCourseProgress(courseId).catch((error) => {
+    await recalculateCourseProgress(courseId).catch((error) => {
       console.error(
         `Failed to recalculate progress for course ${courseId} after module deletion:`,
         error

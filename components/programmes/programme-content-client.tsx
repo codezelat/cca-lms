@@ -1502,11 +1502,6 @@ export default function ProgrammeContentClient({
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Duplicate Module</DialogTitle>
-            <DialogDescription>
-              Copy one full module into another programme. Lessons, resources,
-              quizzes, and assignment settings are copied. Student progress,
-              attempts, submissions, grades, and emails are not copied.
-            </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleDuplicateModule} className="space-y-4">

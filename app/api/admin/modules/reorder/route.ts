@@ -91,6 +91,7 @@ export async function POST(request: NextRequest) {
       select: {
         id: true,
         courseId: true,
+        order: true,
         course: {
           select: {
             lecturers: {
@@ -119,6 +120,16 @@ export async function POST(request: NextRequest) {
     }
 
     const [courseId] = [...courseIds];
+    const previousOrder = [...modulesWithCourse]
+      .sort((left, right) => left.order - right.order)
+      .map((module) => ({
+        id: module.id,
+        order: module.order,
+      }));
+    const nextOrder = moduleIds.map((moduleId, index) => ({
+      id: moduleId,
+      order: index + 1,
+    }));
 
     const totalModuleCount = await prisma.module.count({
       where: { courseId },
@@ -165,6 +176,8 @@ export async function POST(request: NextRequest) {
       entityId: courseId,
       metadata: {
         moduleIds,
+        previousOrder,
+        nextOrder,
         reorderedByRole: session.user.role,
         type: "modules_reordered",
       },

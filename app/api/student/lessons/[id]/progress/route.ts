@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { auditActions } from "@/lib/audit";
+import {
+  buildEnrollmentProgressState,
+  calculateEnrollmentProgress,
+} from "@/lib/progress";
 
 export async function POST(
   request: NextRequest,
@@ -117,25 +121,6 @@ export async function POST(
         m.lessons.map((l) => l.id)
       );
 
-      // Handle edge case: course with no lessons
-      if (allLessonIds.length === 0) {
-        const updatedEnrollment = await tx.courseEnrollment.update({
-          where: {
-            userId_courseId: {
-              userId: session.user.id,
-              courseId,
-            },
-          },
-          data: {
-            progress: 0,
-            status: "ACTIVE",
-            completedAt: null,
-            lastAccessedAt: new Date(),
-          },
-        });
-        return { progress, courseProgress: 0, enrollment: updatedEnrollment };
-      }
-
       const allProgress = await tx.lessonProgress.findMany({
         where: {
           userId: session.user.id,
@@ -145,8 +130,13 @@ export async function POST(
 
       const completedCount = allProgress.filter((p) => p.completed).length;
       const totalCount = allLessonIds.length;
-      const courseProgress =
-        totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+      const courseProgress = calculateEnrollmentProgress(completedCount, totalCount);
+      const nextEnrollmentState = buildEnrollmentProgressState({
+        currentCompletedAt: enrollment.completedAt,
+        currentStatus: enrollment.status,
+        progress: courseProgress,
+        completedAtWhenCompleting: new Date(),
+      });
 
       // Update enrollment progress
       const updatedEnrollment = await tx.courseEnrollment.update({
@@ -157,13 +147,9 @@ export async function POST(
           },
         },
         data: {
-          progress: courseProgress,
-          status: courseProgress === 100 ? "COMPLETED" : enrollment.status,
-          completedAt: courseProgress === 100 && !enrollment.completedAt
-            ? new Date()
-            : courseProgress === 100
-            ? enrollment.completedAt
-            : null,
+          progress: nextEnrollmentState.progress,
+          status: nextEnrollmentState.status,
+          completedAt: nextEnrollmentState.completedAt,
           lastAccessedAt: new Date(),
         },
       });

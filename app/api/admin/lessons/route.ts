@@ -112,10 +112,8 @@ export async function POST(request: NextRequest) {
       metadata: { title, type, moduleId },
     });
 
-    // Recalculate progress for all students enrolled in this course
-    // Run in background to not slow down the create response
     const courseId = lesson.module.course.id;
-    recalculateCourseProgress(courseId).catch((error) => {
+    await recalculateCourseProgress(courseId).catch((error) => {
       console.error(
         `Failed to recalculate progress for course ${courseId} after lesson creation:`,
         error

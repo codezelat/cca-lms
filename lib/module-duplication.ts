@@ -1,5 +1,5 @@
 import type { Prisma } from "@/generated/prisma";
-import { createAuditLog } from "@/lib/audit";
+import { createAuditLogs } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { recalculateCourseProgress } from "@/lib/progress";
 import { deleteFromR2, duplicateInR2 } from "@/lib/r2";
@@ -97,11 +97,63 @@ const targetCourseSelect = {
   },
 } as const;
 
+const duplicatedModuleSelect = {
+  courseId: true,
+  id: true,
+  order: true,
+  title: true,
+  lessons: {
+    orderBy: {
+      order: "asc",
+    },
+    select: {
+      id: true,
+      title: true,
+      order: true,
+      type: true,
+      assignments: {
+        orderBy: {
+          createdAt: "asc",
+        },
+        select: {
+          id: true,
+          title: true,
+          dueDate: true,
+        },
+      },
+      quiz: {
+        select: {
+          id: true,
+          title: true,
+          questions: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      },
+      resources: {
+        orderBy: {
+          order: "asc",
+        },
+        select: {
+          id: true,
+          order: true,
+          type: true,
+        },
+      },
+    },
+  },
+} as const;
+
 type SourceModuleRecord = Prisma.ModuleGetPayload<{
   include: typeof moduleSourceInclude;
 }>;
 
 type SourceResourceRecord = SourceModuleRecord["lessons"][number]["resources"][number];
+type DuplicatedModuleRecord = Prisma.ModuleGetPayload<{
+  select: typeof duplicatedModuleSelect;
+}>;
 
 function canLecturerManageCourse(
   lecturers: Array<{ lecturerId: string }>,
@@ -219,6 +271,167 @@ async function buildResourceCreateInput(
         }
       : {}),
   };
+}
+
+function buildModuleDuplicationAuditLogs({
+  actorRole,
+  actorUserId,
+  duplicatedModule,
+  sourceModule,
+  stats,
+  targetCourse,
+}: {
+  actorRole: ActorRole;
+  actorUserId: string;
+  duplicatedModule: DuplicatedModuleRecord;
+  sourceModule: SourceModuleRecord;
+  stats: DuplicateModuleResult["stats"];
+  targetCourse: Prisma.CourseGetPayload<{ select: typeof targetCourseSelect }>;
+}) {
+  const sharedMetadata = {
+    duplicatedModuleId: duplicatedModule.id,
+    duplicatedModuleTitle: duplicatedModule.title,
+    performedByRole: actorRole,
+    sourceCourseId: sourceModule.course.id,
+    sourceCourseTitle: sourceModule.course.title,
+    sourceModuleId: sourceModule.id,
+    sourceModuleTitle: sourceModule.title,
+    targetCourseId: targetCourse.id,
+    targetCourseTitle: targetCourse.title,
+  };
+
+  const logs: Parameters<typeof createAuditLogs>[0] = [
+    {
+      userId: actorUserId,
+      action: "COURSE_UPDATED",
+      entityType: "Course",
+      entityId: sourceModule.course.id,
+      metadata: {
+        ...sharedMetadata,
+        stats,
+        type: "module_duplicated_from_source",
+      },
+    },
+    {
+      userId: actorUserId,
+      action: "COURSE_UPDATED",
+      entityType: "Course",
+      entityId: targetCourse.id,
+      metadata: {
+        ...sharedMetadata,
+        stats,
+        type: "module_duplicated_into_target",
+      },
+    },
+    {
+      userId: actorUserId,
+      action: "COURSE_UPDATED",
+      entityType: "Module",
+      entityId: duplicatedModule.id,
+      metadata: {
+        ...sharedMetadata,
+        moduleOrder: duplicatedModule.order,
+        stats,
+        type: "module_duplicated",
+      },
+    },
+  ];
+
+  duplicatedModule.lessons.forEach((duplicatedLesson, lessonIndex) => {
+    const sourceLesson = sourceModule.lessons[lessonIndex];
+
+    logs.push({
+      userId: actorUserId,
+      action: "LESSON_CREATED",
+      entityType: "Lesson",
+      entityId: duplicatedLesson.id,
+      metadata: {
+        ...sharedMetadata,
+        assignmentIds: duplicatedLesson.assignments.map((assignment) => assignment.id),
+        duplicatedResources: duplicatedLesson.resources.map((resource, resourceIndex) => ({
+          id: resource.id,
+          order: resource.order,
+          sourceResourceId: sourceLesson?.resources[resourceIndex]?.id ?? null,
+          type: resource.type,
+        })),
+        lessonOrder: duplicatedLesson.order,
+        moduleId: duplicatedModule.id,
+        moduleTitle: duplicatedModule.title,
+        quizId: duplicatedLesson.quiz?.id ?? null,
+        sourceLessonId: sourceLesson?.id ?? null,
+        sourceLessonTitle: sourceLesson?.title ?? null,
+        sourceLessonType: sourceLesson?.type ?? null,
+        type: "module_duplicated",
+      },
+    });
+
+    duplicatedLesson.resources.forEach((resource, resourceIndex) => {
+      const sourceResource = sourceLesson?.resources[resourceIndex];
+
+      logs.push({
+        userId: actorUserId,
+        action: "FILE_UPLOADED",
+        entityType: "LessonResource",
+        entityId: resource.id,
+        metadata: {
+          ...sharedMetadata,
+          downloadable: sourceResource?.downloadable ?? null,
+          lessonId: duplicatedLesson.id,
+          lessonTitle: duplicatedLesson.title,
+          moduleId: duplicatedModule.id,
+          order: resource.order,
+          resourceType: resource.type,
+          sourceLessonId: sourceLesson?.id ?? null,
+          sourceResourceId: sourceResource?.id ?? null,
+          title: sourceResource?.title ?? null,
+          type: "module_duplicated",
+          visibility: sourceResource?.visibility ?? null,
+        },
+      });
+    });
+
+    if (duplicatedLesson.quiz) {
+      logs.push({
+        userId: actorUserId,
+        action: "LESSON_CREATED",
+        entityType: "Quiz",
+        entityId: duplicatedLesson.quiz.id,
+        metadata: {
+          ...sharedMetadata,
+          lessonId: duplicatedLesson.id,
+          moduleId: duplicatedModule.id,
+          questionCount: duplicatedLesson.quiz.questions.length,
+          sourceLessonId: sourceLesson?.id ?? null,
+          sourceQuizId: sourceLesson?.quiz?.id ?? null,
+          type: "module_duplicated",
+        },
+      });
+    }
+
+    duplicatedLesson.assignments.forEach((assignment, assignmentIndex) => {
+      const sourceAssignment = sourceLesson?.assignments[assignmentIndex];
+
+      logs.push({
+        userId: actorUserId,
+        action: "ASSIGNMENT_CREATED",
+        entityType: "Assignment",
+        entityId: assignment.id,
+        metadata: {
+          ...sharedMetadata,
+          dueDate: assignment.dueDate.toISOString(),
+          lessonId: duplicatedLesson.id,
+          moduleId: duplicatedModule.id,
+          sendsEmails: false,
+          sourceAssignmentId: sourceAssignment?.id ?? null,
+          sourceAssignmentTitle: sourceAssignment?.title ?? null,
+          sourceLessonId: sourceLesson?.id ?? null,
+          type: "module_duplicated",
+        },
+      });
+    });
+  });
+
+  return logs;
 }
 
 export async function duplicateModuleToCourse({
@@ -406,32 +619,22 @@ export async function duplicateModuleToCourse({
               }
             : {}),
         },
-        select: {
-          courseId: true,
-          id: true,
-          title: true,
-        },
+        select: duplicatedModuleSelect,
       });
     });
 
-    await createAuditLog({
-      userId: actorUserId,
-      action: "COURSE_UPDATED",
-      entityType: "Course",
-      entityId: targetCourseId,
-      metadata: {
-        duplicatedModuleId: duplicatedModule.id,
-        duplicatedModuleTitle: duplicatedModule.title,
-        sourceCourseId: sourceModule.course.id,
-        sourceCourseTitle: sourceModule.course.title,
-        sourceModuleId: sourceModule.id,
-        sourceModuleTitle: sourceModule.title,
+    await createAuditLogs(
+      buildModuleDuplicationAuditLogs({
+        actorRole,
+        actorUserId,
+        duplicatedModule,
+        sourceModule,
         stats,
-        type: "module_duplicated",
-      },
-    });
+        targetCourse,
+      }),
+    );
 
-    recalculateCourseProgress(targetCourseId).catch((error) => {
+    await recalculateCourseProgress(targetCourseId).catch((error) => {
       console.error(
         `Failed to recalculate progress for course ${targetCourseId} after module duplication:`,
         error,
@@ -439,7 +642,11 @@ export async function duplicateModuleToCourse({
     });
 
     return {
-      module: duplicatedModule,
+      module: {
+        courseId: duplicatedModule.courseId,
+        id: duplicatedModule.id,
+        title: duplicatedModule.title,
+      },
       sourceCourseId: sourceModule.course.id,
       sourceCourseTitle: sourceModule.course.title,
       stats,

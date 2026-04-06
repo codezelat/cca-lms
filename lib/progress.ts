@@ -12,7 +12,79 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@/generated/prisma";
+import type { EnrollmentStatus, Prisma } from "@/generated/prisma";
+
+export function calculateEnrollmentProgress(
+  completedLessons: number,
+  totalLessons: number,
+) {
+  if (totalLessons <= 0) {
+    return 0;
+  }
+
+  return (completedLessons / totalLessons) * 100;
+}
+
+export function resolveEnrollmentStatusForProgress({
+  currentStatus,
+  progress,
+}: {
+  currentStatus: EnrollmentStatus;
+  progress: number;
+}): EnrollmentStatus {
+  if (currentStatus === "DROPPED") {
+    return "DROPPED";
+  }
+
+  return progress >= 100 ? "COMPLETED" : "ACTIVE";
+}
+
+export function resolveEnrollmentCompletedAt({
+  currentCompletedAt,
+  nextStatus,
+  completedAtWhenCompleting,
+}: {
+  currentCompletedAt: Date | null;
+  nextStatus: EnrollmentStatus;
+  completedAtWhenCompleting?: Date;
+}) {
+  if (nextStatus === "DROPPED") {
+    return currentCompletedAt;
+  }
+
+  if (nextStatus === "COMPLETED") {
+    return currentCompletedAt ?? completedAtWhenCompleting ?? new Date();
+  }
+
+  return null;
+}
+
+export function buildEnrollmentProgressState({
+  currentCompletedAt,
+  currentStatus,
+  progress,
+  completedAtWhenCompleting,
+}: {
+  currentCompletedAt: Date | null;
+  currentStatus: EnrollmentStatus;
+  progress: number;
+  completedAtWhenCompleting?: Date;
+}) {
+  const status = resolveEnrollmentStatusForProgress({
+    currentStatus,
+    progress,
+  });
+
+  return {
+    progress,
+    status,
+    completedAt: resolveEnrollmentCompletedAt({
+      currentCompletedAt,
+      nextStatus: status,
+      completedAtWhenCompleting,
+    }),
+  };
+}
 
 /**
  * Recalculate progress for a single student enrollment in a course
@@ -24,7 +96,7 @@ import type { Prisma } from "@/generated/prisma";
 export async function recalculateEnrollmentProgress(
   userId: string,
   courseId: string,
-): Promise<{ progress: number; status: string } | null> {
+): Promise<{ progress: number; status: EnrollmentStatus } | null> {
   try {
     // Get all lesson IDs in the course
     const course = await prisma.course.findUnique({
@@ -64,48 +136,30 @@ export async function recalculateEnrollmentProgress(
       module.lessons.map((lesson) => lesson.id)
     );
 
-    // Handle edge case: course with no lessons
-    if (allLessonIds.length === 0) {
-      const updated = await prisma.courseEnrollment.update({
+    let completedCount = 0;
+    const totalCount = allLessonIds.length;
+
+    if (allLessonIds.length > 0) {
+      const lessonProgress = await prisma.lessonProgress.findMany({
         where: {
-          userId_courseId: {
-            userId,
-            courseId,
-          },
+          userId,
+          lessonId: { in: allLessonIds },
         },
-        data: {
-          progress: 0,
-          status: "ACTIVE",
-          completedAt: null,
+        select: {
+          completed: true,
         },
       });
-      return { progress: updated.progress, status: updated.status };
+
+      completedCount = lessonProgress.filter((progress) => progress.completed).length;
     }
 
-    // Get student's lesson progress
-    const lessonProgress = await prisma.lessonProgress.findMany({
-      where: {
-        userId,
-        lessonId: { in: allLessonIds },
-      },
-      select: {
-        lessonId: true,
-        completed: true,
-      },
+    const progress = calculateEnrollmentProgress(completedCount, totalCount);
+    const nextState = buildEnrollmentProgressState({
+      currentCompletedAt: enrollment.completedAt,
+      currentStatus: enrollment.status,
+      progress,
+      completedAtWhenCompleting: new Date(),
     });
-
-    // Calculate progress
-    const completedCount = lessonProgress.filter((p) => p.completed).length;
-    const totalCount = allLessonIds.length;
-    const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
-
-    // Determine status
-    const status = progress === 100 ? "COMPLETED" : enrollment.status;
-    const completedAt = progress === 100 && !enrollment.completedAt
-      ? new Date()
-      : progress === 100
-      ? enrollment.completedAt
-      : null;
 
     // Update enrollment
     const updated = await prisma.courseEnrollment.update({
@@ -116,9 +170,9 @@ export async function recalculateEnrollmentProgress(
         },
       },
       data: {
-        progress,
-        status,
-        completedAt,
+        progress: nextState.progress,
+        status: nextState.status,
+        completedAt: nextState.completedAt,
       },
     });
 
@@ -293,6 +347,11 @@ export async function validateEnrollmentProgress(
   storedProgress: number;
   calculatedProgress: number;
   difference: number;
+  storedStatus: EnrollmentStatus;
+  expectedStatus: EnrollmentStatus;
+  statusValid: boolean;
+  storedCompletedAt: Date | null;
+  completedAtValid: boolean;
 }> {
   try {
     // Get enrollment
@@ -331,38 +390,51 @@ export async function validateEnrollmentProgress(
       module.lessons.map((lesson) => lesson.id)
     );
 
-    if (allLessonIds.length === 0) {
-      return {
-        valid: enrollment.progress === 0,
-        storedProgress: enrollment.progress,
-        calculatedProgress: 0,
-        difference: enrollment.progress,
-      };
+    let completedCount = 0;
+
+    if (allLessonIds.length > 0) {
+      const lessonProgress = await prisma.lessonProgress.findMany({
+        where: {
+          userId,
+          lessonId: { in: allLessonIds },
+        },
+        select: {
+          completed: true,
+        },
+      });
+
+      completedCount = lessonProgress.filter((progress) => progress.completed).length;
     }
 
-    // Get student's lesson progress
-    const lessonProgress = await prisma.lessonProgress.findMany({
-      where: {
-        userId,
-        lessonId: { in: allLessonIds },
-      },
-      select: {
-        completed: true,
-      },
-    });
-
-    const completedCount = lessonProgress.filter((p) => p.completed).length;
-    const calculatedProgress = (completedCount / allLessonIds.length) * 100;
+    const calculatedProgress = calculateEnrollmentProgress(
+      completedCount,
+      allLessonIds.length,
+    );
     const difference = Math.abs(enrollment.progress - calculatedProgress);
+    const expectedStatus = resolveEnrollmentStatusForProgress({
+      currentStatus: enrollment.status,
+      progress: calculatedProgress,
+    });
+    const statusValid = enrollment.status === expectedStatus;
+    const completedAtValid = expectedStatus === "DROPPED"
+      ? true
+      : expectedStatus === "COMPLETED"
+      ? enrollment.completedAt !== null
+      : enrollment.completedAt === null;
 
     // Allow small floating point differences
-    const valid = difference < 0.01;
+    const valid = difference < 0.01 && statusValid && completedAtValid;
 
     return {
       valid,
       storedProgress: enrollment.progress,
       calculatedProgress,
       difference,
+      storedStatus: enrollment.status,
+      expectedStatus,
+      statusValid,
+      storedCompletedAt: enrollment.completedAt,
+      completedAtValid,
     };
   } catch (error) {
     console.error("Error validating progress:", error);
