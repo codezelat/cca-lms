@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   ArrowDown,
   ArrowUp,
+  Copy,
   Plus,
   Loader2,
   Edit,
@@ -96,6 +97,14 @@ interface Programme {
   modules: Module[];
 }
 
+interface ManageableProgrammeOption {
+  activeStudentCount: number;
+  id: string;
+  moduleCount: number;
+  status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+  title: string;
+}
+
 type LessonDragState = {
   lessonId: string;
   moduleId: string;
@@ -169,8 +178,10 @@ async function getErrorMessage(response: Response, fallback: string) {
 
 export default function ProgrammeContentClient({
   programmeId,
+  viewerRole,
 }: {
   programmeId: string;
+  viewerRole: "ADMIN" | "LECTURER";
 }) {
   const router = useRouter();
   const confirm = useConfirm();
@@ -223,6 +234,26 @@ export default function ProgrammeContentClient({
   const [showQuizBuilder, setShowQuizBuilder] = useState(false);
   const [showAssignmentManager, setShowAssignmentManager] = useState(false);
   const [selectedLessonId, setSelectedLessonId] = useState<string>("");
+  const [showDuplicateModuleDialog, setShowDuplicateModuleDialog] =
+    useState(false);
+  const [duplicatingModule, setDuplicatingModule] = useState<Module | null>(
+    null,
+  );
+  const [manageableProgrammes, setManageableProgrammes] = useState<
+    ManageableProgrammeOption[]
+  >([]);
+  const [manageableProgrammesError, setManageableProgrammesError] =
+    useState("");
+  const [isLoadingManageableProgrammes, setIsLoadingManageableProgrammes] =
+    useState(false);
+  const [isDuplicatingModule, setIsDuplicatingModule] = useState(false);
+  const [duplicateModuleError, setDuplicateModuleError] = useState("");
+  const [duplicateProgrammeSearch, setDuplicateProgrammeSearch] =
+    useState("");
+  const [duplicateModuleForm, setDuplicateModuleForm] = useState({
+    targetProgrammeId: "",
+    title: "",
+  });
 
   useEffect(() => {
     fetchProgramme();
@@ -580,6 +611,113 @@ export default function ProgrammeContentClient({
     setLessonDropTarget(null);
   };
 
+  const fetchManageableProgrammes = async () => {
+    try {
+      setIsLoadingManageableProgrammes(true);
+      setManageableProgrammesError("");
+
+      const response = await fetch("/api/programmes/manageable");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to load target programmes");
+      }
+
+      setManageableProgrammes(data.programmes || []);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to load target programmes";
+
+      setManageableProgrammesError(message);
+      setManageableProgrammes([]);
+    } finally {
+      setIsLoadingManageableProgrammes(false);
+    }
+  };
+
+  const openDuplicateModuleDialog = async (module: Module) => {
+    setDuplicatingModule(module);
+    setDuplicateModuleForm({
+      targetProgrammeId: "",
+      title: module.title,
+    });
+    setDuplicateModuleError("");
+    setDuplicateProgrammeSearch("");
+    setShowDuplicateModuleDialog(true);
+    await fetchManageableProgrammes();
+  };
+
+  const closeDuplicateModuleDialog = (force = false) => {
+    if (isDuplicatingModule && !force) {
+      return;
+    }
+
+    setShowDuplicateModuleDialog(false);
+    setDuplicatingModule(null);
+    setDuplicateModuleError("");
+    setDuplicateProgrammeSearch("");
+    setManageableProgrammesError("");
+    setDuplicateModuleForm({
+      targetProgrammeId: "",
+      title: "",
+    });
+  };
+
+  const handleDuplicateModule = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!duplicatingModule) {
+      return;
+    }
+
+    setIsDuplicatingModule(true);
+    setDuplicateModuleError("");
+
+    try {
+      const response = await fetch(
+        `/api/admin/modules/${duplicatingModule.id}/duplicate`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            targetCourseId: duplicateModuleForm.targetProgrammeId,
+            title: duplicateModuleForm.title,
+          }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to duplicate module");
+      }
+
+      const summary = [
+        `${data.stats.lessons} lesson${data.stats.lessons === 1 ? "" : "s"}`,
+        `${data.stats.assignments} assignment${data.stats.assignments === 1 ? "" : "s"}`,
+      ].join(", ");
+
+      const trailingNote =
+        data.stats.pastDueAssignments > 0
+          ? ` ${data.stats.pastDueAssignments} copied assignment${data.stats.pastDueAssignments === 1 ? " is" : "s are"} already overdue.`
+          : "";
+
+      toast.success("Module duplicated", {
+        description: `Copied to ${data.targetCourseTitle} with ${summary}. Student activity and emails were not copied.${trailingNote}`,
+      });
+
+      closeDuplicateModuleDialog(true);
+    } catch (error) {
+      setDuplicateModuleError(
+        error instanceof Error ? error.message : "Failed to duplicate module",
+      );
+    } finally {
+      setIsDuplicatingModule(false);
+    }
+  };
+
   // Module CRUD
   const openCreateModuleDialog = () => {
     setEditingModule(null);
@@ -862,6 +1000,18 @@ export default function ProgrammeContentClient({
     return `${hours}h ${mins}m`;
   };
 
+  const filteredTargetProgrammes = manageableProgrammes.filter((targetProgramme) =>
+    targetProgramme.id !== programmeId &&
+    targetProgramme.title
+      .toLowerCase()
+      .includes(duplicateProgrammeSearch.trim().toLowerCase()),
+  );
+
+  const selectedDuplicateTargetProgramme = manageableProgrammes.find(
+    (targetProgramme) =>
+      targetProgramme.id === duplicateModuleForm.targetProgrammeId,
+  );
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-terminal-dark flex items-center justify-center">
@@ -1089,6 +1239,12 @@ export default function ProgrammeContentClient({
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => openDuplicateModuleDialog(module)}
+                          >
+                            <Copy className="h-4 w-4 mr-2" />
+                            Duplicate to Programme
+                          </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => openEditModuleDialog(module)}
                           >
@@ -1334,6 +1490,182 @@ export default function ProgrammeContentClient({
           </div>
         )}
       </div>
+
+      <Dialog
+        open={showDuplicateModuleDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeDuplicateModuleDialog();
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Duplicate Module</DialogTitle>
+            <DialogDescription>
+              Copy one full module into another programme. Lessons, resources,
+              quizzes, and assignment settings are copied. Student progress,
+              attempts, submissions, grades, and emails are not copied.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleDuplicateModule} className="space-y-4">
+            {duplicateModuleError && (
+              <div className="rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                {duplicateModuleError}
+              </div>
+            )}
+
+            {manageableProgrammesError && (
+              <div className="rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                {manageableProgrammesError}
+              </div>
+            )}
+
+            <div className="rounded-lg border border-terminal-green/20 bg-terminal-darker/40 p-4 text-sm">
+              <p className="font-medium text-terminal-text">
+                Source Module
+              </p>
+              <p className="mt-1 text-terminal-text-muted">
+                {duplicatingModule?.title || "No module selected"}
+              </p>
+              <p className="mt-2 text-xs text-terminal-text-muted">
+                The duplicate is appended to the end of the target programme and
+                can be reordered afterwards.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="duplicate-module-title">New Module Title *</Label>
+              <Input
+                id="duplicate-module-title"
+                value={duplicateModuleForm.title}
+                onChange={(event) =>
+                  setDuplicateModuleForm((currentForm) => ({
+                    ...currentForm,
+                    title: event.target.value,
+                  }))
+                }
+                placeholder="Module title in the target programme"
+                required
+                disabled={isDuplicatingModule}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="duplicate-programme-search">
+                Filter Target Programmes
+              </Label>
+              <Input
+                id="duplicate-programme-search"
+                value={duplicateProgrammeSearch}
+                onChange={(event) =>
+                  setDuplicateProgrammeSearch(event.target.value)
+                }
+                placeholder="Type to narrow the programme list"
+                disabled={isDuplicatingModule || isLoadingManageableProgrammes}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Target Programme *</Label>
+              <Select
+                value={duplicateModuleForm.targetProgrammeId}
+                onValueChange={(value) =>
+                  setDuplicateModuleForm((currentForm) => ({
+                    ...currentForm,
+                    targetProgrammeId: value,
+                  }))
+                }
+                disabled={isDuplicatingModule || isLoadingManageableProgrammes}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      isLoadingManageableProgrammes
+                        ? "Loading programmes..."
+                        : "Select a target programme"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredTargetProgrammes.map((targetProgramme) => (
+                    <SelectItem
+                      key={targetProgramme.id}
+                      value={targetProgramme.id}
+                    >
+                      {targetProgramme.title} ({targetProgramme.status})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!isLoadingManageableProgrammes &&
+                filteredTargetProgrammes.length === 0 && (
+                  <p className="text-xs text-terminal-text-muted">
+                    No other accessible programmes match this filter.
+                  </p>
+                )}
+            </div>
+
+            {selectedDuplicateTargetProgramme && (
+              <div className="rounded-lg border border-terminal-green/20 bg-terminal-darker/40 p-4 text-xs text-terminal-text-muted space-y-2">
+                <p>
+                  Target status: {selectedDuplicateTargetProgramme.status}.{" "}
+                  Existing modules: {selectedDuplicateTargetProgramme.moduleCount}
+                  .
+                </p>
+                {selectedDuplicateTargetProgramme.activeStudentCount > 0 && (
+                  <p>
+                    {selectedDuplicateTargetProgramme.activeStudentCount} active
+                    student
+                    {selectedDuplicateTargetProgramme.activeStudentCount === 1
+                      ? ""
+                      : "s"}{" "}
+                    are enrolled. Their progress will be recalculated after the
+                    copy, but no assignment emails will be sent.
+                  </p>
+                )}
+                <p>
+                  Assignment due dates are kept exactly as they exist in the
+                  source module.
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                type="submit"
+                disabled={
+                  isDuplicatingModule ||
+                  isLoadingManageableProgrammes ||
+                  !duplicateModuleForm.targetProgrammeId
+                }
+                className="flex-1"
+              >
+                {isDuplicatingModule ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Duplicating...
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Duplicate Module
+                  </>
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => closeDuplicateModuleDialog()}
+                disabled={isDuplicatingModule}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Module Dialog */}
       <Dialog open={showModuleDialog} onOpenChange={setShowModuleDialog}>
@@ -1677,7 +2009,7 @@ export default function ProgrammeContentClient({
             </DialogDescription>
           </DialogHeader>
           {selectedLessonId && (
-            <AssignmentList lessonId={selectedLessonId} role="ADMIN" />
+            <AssignmentList lessonId={selectedLessonId} role={viewerRole} />
           )}
           <div className="flex justify-end pt-4">
             <Button onClick={() => setShowAssignmentManager(false)}>

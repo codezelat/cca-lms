@@ -3,8 +3,10 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
+  CopyObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl as getS3SignedUrl } from "@aws-sdk/s3-request-presigner";
+import { randomUUID } from "crypto";
 
 // Lazy initialization of R2/S3 client
 function getR2Client() {
@@ -59,6 +61,61 @@ export async function uploadToR2(
   await getR2Client().send(command);
 
   return { key };
+}
+
+/**
+ * Duplicate an existing object in R2 and return the new key.
+ * Falls back to a read/write copy if the bucket copy operation is unavailable.
+ */
+export async function duplicateInR2(
+  sourceKey: string,
+  fileName?: string | null,
+): Promise<{ key: string }> {
+  const extension =
+    fileName?.split(".").pop() || sourceKey.split(".").pop() || "bin";
+  const baseName =
+    fileName?.replace(new RegExp(`\\.${extension}$`), "") ||
+    sourceKey.split("/").pop()?.replace(new RegExp(`\\.${extension}$`), "") ||
+    "resource-copy";
+  const sanitizedBaseName = baseName.replace(/[^a-zA-Z0-9-_]/g, "_");
+  const key = `resources/${Date.now()}-${randomUUID()}-${sanitizedBaseName}.${extension}`;
+  const client = getR2Client();
+
+  try {
+    await client.send(
+      new CopyObjectCommand({
+        Bucket: BUCKET_NAME,
+        CopySource: `${BUCKET_NAME}/${sourceKey}`,
+        Key: key,
+      }),
+    );
+
+    return { key };
+  } catch (copyError) {
+    const sourceObject = await client.send(
+      new GetObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: sourceKey,
+      }),
+    );
+
+    if (!sourceObject.Body) {
+      throw copyError;
+    }
+
+    const buffer = Buffer.from(await sourceObject.Body.transformToByteArray());
+
+    await client.send(
+      new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+        Body: buffer,
+        ContentType: sourceObject.ContentType,
+      }),
+    );
+
+    return { key };
+  }
 }
 
 /**

@@ -37,5 +37,10 @@ export default async function ProgrammeDetailPage({
     redirect("/dashboard");
   }
 
-  return <ProgrammeContentClient programmeId={id} />;
+  return (
+    <ProgrammeContentClient
+      programmeId={id}
+      viewerRole={session.user.role}
+    />
+  );
 }
