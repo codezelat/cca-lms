@@ -58,7 +58,7 @@ export default function BulkEnrollClient() {
 
   const fetchProgrammes = async () => {
     try {
-      const response = await fetch("/api/admin/programmes?perPage=1000");
+      const response = await fetch("/api/admin/programmes?limit=1000");
       if (!response.ok) throw new Error("Failed to fetch programmes");
       const data = await response.json();
       setProgrammes(data.programmes);

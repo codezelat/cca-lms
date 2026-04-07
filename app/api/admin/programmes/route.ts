@@ -15,7 +15,12 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const requestedLimit = parseInt(
+      searchParams.get("limit") || searchParams.get("perPage") || "10",
+    );
+    const limit = Number.isFinite(requestedLimit)
+      ? Math.min(Math.max(requestedLimit, 1), 1000)
+      : 10;
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") || "";
 
