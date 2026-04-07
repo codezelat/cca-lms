@@ -68,6 +68,12 @@ Apply the import without sending emails:
 npm run students:import -- --csv ./imports/students.csv --apply --skip-emails
 ```
 
+Apply the import and automatically restore matching suspended students before assigning programmes:
+
+```bash
+npm run students:import -- --csv ./imports/students.csv --apply --reactivate-existing
+```
+
 Default operator name shown in the email and audit metadata is `CCA`.
 
 Set a different operator name for a single run:
@@ -122,7 +128,8 @@ Treat `credentials.csv` as sensitive and delete it after you finish distributing
 
 - Duplicate emails inside the CSV are blocked in preflight.
 - Existing `LECTURER` or `ADMIN` accounts are blocked.
-- Existing non-active students are blocked.
+- Existing suspended students stay blocked by default, with a clear restore path in Users or `--reactivate-existing` for the local script.
+- Existing deleted students stay blocked and must be restored manually before reuse.
 - Existing students with no password are blocked.
 - Duplicate programmes in the same row are deduplicated with a warning.
 - Existing student enrollments are skipped instead of duplicated.

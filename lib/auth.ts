@@ -5,6 +5,17 @@ import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
 import { auditActions } from "./audit";
 
+async function getSessionUserSnapshot(userId: string) {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      role: true,
+      status: true,
+    },
+  });
+}
+
 /**
  * NextAuth configuration
  * NOTE: With trustHost: true, DO NOT set NEXTAUTH_URL environment variable
@@ -125,9 +136,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token = { ...token, ...session };
       }
 
+      const tokenId = typeof token.id === "string" ? token.id : null;
+
+      if (!tokenId) {
+        return null;
+      }
+
+      const currentUser = await getSessionUserSnapshot(tokenId);
+
+      if (!currentUser || currentUser.status !== "ACTIVE") {
+        return null;
+      }
+
+      token.role = currentUser.role;
+
       return token;
     },
     async session({ session, token }) {
+      if (!session.user || !token?.id || !token.role) {
+        return session;
+      }
+
       if (token && session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as "STUDENT" | "LECTURER" | "ADMIN";

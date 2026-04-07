@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import {
   Users,
   Search,
@@ -96,7 +95,6 @@ interface Enrollment {
 
 export default function UsersClient() {
   const router = useRouter();
-  const { data: session } = useSession();
   const confirm = useConfirm();
   const [activeTab, setActiveTab] = useState<"STUDENT" | "LECTURER">("STUDENT");
   const [searchQuery, setSearchQuery] = useState("");
@@ -513,17 +511,18 @@ export default function UsersClient() {
   };
 
   const handleToggleStatus = async (user: User) => {
+    if (user.status === "DELETED") return;
+
     const newStatus = user.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
-    const action = newStatus === "SUSPENDED" ? "suspend" : "activate";
 
     const confirmed = await confirm({
-      title: newStatus === "SUSPENDED" ? "Suspend Account" : "Activate Account",
+      title: newStatus === "SUSPENDED" ? "Suspend Access" : "Restore Access",
       description:
         newStatus === "SUSPENDED"
-          ? `Suspending "${user.name || user.email}" will prevent them from logging in. You can reactivate them later.`
-          : `Reactivating "${user.name || user.email}" will allow them to log in again.`,
+          ? `"${user.name || user.email}" will be signed out and blocked until restored.`
+          : `"${user.name || user.email}" can log in again after restore.`,
       variant: newStatus === "SUSPENDED" ? "warning" : "default",
-      confirmText: newStatus === "SUSPENDED" ? "Suspend" : "Activate",
+      confirmText: newStatus === "SUSPENDED" ? "Suspend" : "Restore",
     });
 
     if (!confirmed) return;
@@ -539,59 +538,23 @@ export default function UsersClient() {
 
       if (!response.ok) throw new Error("Failed to update status");
 
-      toast.success(`Account ${action}d`, {
-        description: `"${user.name || user.email}" has been ${action}d`,
-      });
+      toast.success(
+        newStatus === "SUSPENDED" ? "Access suspended" : "Access restored",
+        {
+          description:
+            newStatus === "SUSPENDED"
+              ? `"${user.name || user.email}" is now suspended`
+              : `"${user.name || user.email}" is active again`,
+        },
+      );
       fetchUsers();
     } catch (error) {
       console.error("Error updating status:", error);
-      toast.error(`Failed to ${action} account`);
-    }
-  };
-
-  const handleDeleteUser = async (user: User) => {
-    // Don't allow deleting yourself
-    if (user.id === session?.user?.id) {
-      toast.error("Cannot delete your own account");
-      return;
-    }
-
-    const confirmed = await confirm({
-      title: "Permanently Delete User",
-      description: `This will permanently mark "${user.name || user.email}" as deleted. Their data will be preserved but they will never be able to log in again. This action cannot be undone.`,
-      variant: "danger",
-      confirmText: "Delete User",
-      requireTypedConfirmation: "DELETE",
-      details: [
-        `User: ${user.name || "No Name"}`,
-        `Email: ${user.email}`,
-        `Role: ${user.role}`,
-        `Enrollments: ${user._count?.courses || 0}`,
-        "All submissions and progress will be preserved",
-        "User will be unable to log in",
-      ],
-    });
-
-    if (!confirmed) return;
-
-    try {
-      const response = await fetch(`/api/admin/users/${user.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: "DELETED",
-        }),
-      });
-
-      if (!response.ok) throw new Error("Failed to delete user");
-
-      toast.success("User deleted", {
-        description: `"${user.name || user.email}" has been permanently deleted`,
-      });
-      fetchUsers();
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      toast.error("Failed to delete user");
+      toast.error(
+        newStatus === "SUSPENDED"
+          ? "Failed to suspend access"
+          : "Failed to restore access",
+      );
     }
   };
 
@@ -991,12 +954,12 @@ export default function UsersClient() {
                               {user.status === "ACTIVE" ? (
                                 <>
                                   <PowerOff className="h-4 w-4 mr-2" />
-                                  Suspend Account
+                                  Suspend Access
                                 </>
                               ) : user.status === "SUSPENDED" ? (
                                 <>
                                   <Power className="h-4 w-4 mr-2" />
-                                  Activate Account
+                                  Restore Access
                                 </>
                               ) : (
                                 <>
@@ -1005,15 +968,6 @@ export default function UsersClient() {
                                 </>
                               )}
                             </DropdownMenuItem>
-                            {user.status !== "DELETED" && (
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteUser(user)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Permanently
-                              </DropdownMenuItem>
-                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>

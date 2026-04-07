@@ -1,22 +1,16 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export async function proxy(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  // Public routes that don't require authentication
-  const isPublicRoute = pathname.startsWith("/auth/");
-
-  // Check for NextAuth session token in cookies
   const sessionToken =
     request.cookies.get("authjs.session-token")?.value ||
     request.cookies.get("__Secure-authjs.session-token")?.value;
-
-  const isLoggedIn = !!sessionToken;
+  const hasSessionCookie = !!sessionToken;
 
   // Root path - redirect to login or dashboard based on auth status
   if (pathname === "/") {
-    if (isLoggedIn) {
+    if (hasSessionCookie) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
     return NextResponse.redirect(new URL("/auth/login", request.url));
@@ -35,16 +29,11 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/profile");
 
   // Redirect to login if trying to access protected route while not authenticated
-  if (isProtectedRoute && !isLoggedIn) {
+  if (isProtectedRoute && !hasSessionCookie) {
     const callbackUrl = encodeURIComponent(pathname + request.nextUrl.search);
     return NextResponse.redirect(
       new URL(`/auth/login?callbackUrl=${callbackUrl}`, request.url),
     );
-  }
-
-  // Redirect to dashboard if trying to access auth pages while already logged in
-  if (isPublicRoute && isLoggedIn && pathname !== "/auth/first-login") {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return NextResponse.next();

@@ -118,6 +118,17 @@ export async function PUT(
       );
     }
 
+    if (
+      id === session.user.id &&
+      status &&
+      ["SUSPENDED", "DELETED"].includes(status)
+    ) {
+      return NextResponse.json(
+        { error: "Cannot change your own account to a non-active status" },
+        { status: 400 },
+      );
+    }
+
     // Check email uniqueness if changing
     if (email && email.toLowerCase() !== existingUser.email) {
       const emailExists = await prisma.user.findUnique({
@@ -160,23 +171,35 @@ export async function PUT(
       },
     });
 
-    // Audit log
+    const beforeState = {
+      name: existingUser.name,
+      email: existingUser.email,
+      role: existingUser.role,
+      status: existingUser.status,
+    };
+    const afterState = {
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+    };
+
     await auditActions.userUpdated(
       session.user.id,
       user.id,
-      {
-        name: existingUser.name,
-        email: existingUser.email,
-        role: existingUser.role,
-        status: existingUser.status,
-      },
-      {
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        status: user.status,
-      },
+      beforeState,
+      afterState,
     );
+
+    if (existingUser.status !== user.status) {
+      if (user.status === "SUSPENDED") {
+        await auditActions.userDisabled(session.user.id, user.id, user.email);
+      } else if (user.status === "ACTIVE") {
+        await auditActions.userEnabled(session.user.id, user.id, user.email);
+      } else if (user.status === "DELETED") {
+        await auditActions.userDeleted(session.user.id, user.id, user.email);
+      }
+    }
 
     return NextResponse.json({
       user,
@@ -191,7 +214,7 @@ export async function PUT(
   }
 }
 
-// DELETE /api/admin/users/[id] - Disable user (soft delete)
+// DELETE /api/admin/users/[id] - Mark user as deleted (admin-only backend action)
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -208,28 +231,52 @@ export async function DELETE(
     // Prevent self-disable
     if (id === session.user.id) {
       return NextResponse.json(
-        { error: "Cannot disable your own account" },
+        { error: "Cannot delete your own account" },
         { status: 400 },
       );
     }
 
+    const existingUser = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        email: true,
+        id: true,
+        status: true,
+      },
+    });
+
+    if (!existingUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     const user = await prisma.user.update({
       where: { id },
-      data: { status: "SUSPENDED" },
+      data: { status: "DELETED" },
       select: {
         id: true,
         email: true,
       },
     });
 
-    // Audit log
-    await auditActions.userDisabled(session.user.id, user.id, user.email);
+    await auditActions.userUpdated(
+      session.user.id,
+      user.id,
+      {
+        email: existingUser.email,
+        status: existingUser.status,
+      },
+      {
+        email: user.email,
+        status: "DELETED",
+      },
+    );
+    await auditActions.userDeleted(session.user.id, user.id, user.email);
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error disabling user:", error);
+    console.error("Error deleting user:", error);
     return NextResponse.json(
-      { error: "Failed to disable user" },
+      { error: "Failed to delete user" },
       { status: 500 },
     );
   }

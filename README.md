@@ -125,6 +125,7 @@ The system supports diverse lesson formats:
   - Create, edit, delete users (students, lecturers, admins)
   - Bulk CSV enrollment with validation
   - Local bulk student import with dry-run, reporting, and welcome emails
+  - Optional suspended-student reactivation during local bulk import
   - CSV-based programme assignment for up to 3 programmes per student
   - Download enrollment templates
   - Account status management (Active, Suspended, Deleted)

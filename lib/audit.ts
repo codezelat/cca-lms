@@ -426,7 +426,7 @@ export const auditActions = {
       action: "USER_UPDATED",
       entityType: "User",
       entityId: targetUserId,
-      metadata: { email, status: "DISABLED" },
+      metadata: { email, status: "SUSPENDED" },
     }),
 
   userEnabled: (userId: string, targetUserId: string, email: string) =>
@@ -436,5 +436,14 @@ export const auditActions = {
       entityType: "User",
       entityId: targetUserId,
       metadata: { email, status: "ACTIVE" },
+    }),
+
+  userDeleted: (userId: string, targetUserId: string, email: string) =>
+    createAuditLog({
+      userId,
+      action: "USER_DELETED",
+      entityType: "User",
+      entityId: targetUserId,
+      metadata: { email, status: "DELETED" },
     }),
 };

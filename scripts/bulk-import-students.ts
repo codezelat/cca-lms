@@ -52,6 +52,7 @@ interface CliOptions {
   listProgrammes: boolean;
   operator: string;
   outputDir?: string;
+  reactivateExisting: boolean;
   sendEmails: boolean;
   writeTemplatePath?: string;
 }
@@ -80,7 +81,11 @@ interface ProgrammeRecord {
 }
 
 interface PreparedRow {
-  action: "create_student" | "reuse_existing_student" | "none";
+  action:
+    | "create_student"
+    | "reactivate_existing_student"
+    | "reuse_existing_student"
+    | "none";
   email: string;
   error: string | null;
   existingUser: ExistingUser | null;
@@ -115,6 +120,8 @@ interface ResultRow {
     | "created_and_enrolled"
     | "dry_run"
     | "enrolled_existing_user"
+    | "reactivated_and_enrolled"
+    | "reactivated_existing_user"
     | "error";
   passwordMode: PreparedRow["passwordMode"];
   plannedAction: PreparedRow["action"];
@@ -139,6 +146,7 @@ interface ImportSummary {
   outputDir: string;
   preflightErrors: number;
   readyRows: number;
+  reactivatedUsers: number;
   reportFiles: {
     credentialsCsv?: string;
     resultsCsv: string;
@@ -204,6 +212,7 @@ Options:
   --csv <path>           CSV file to import
   --apply                Write to the database. Without this flag the script is dry-run only
   --skip-emails          Do not send welcome emails to newly created students
+  --reactivate-existing  Reactivate matching suspended students during apply
   --operator <name>      Name shown in welcome emails and audit metadata
   --output-dir <path>    Directory for result reports
   --list-programmes      Print current non-archived programmes with IDs
@@ -231,6 +240,7 @@ function parseArgs(argv: string[]): CliOptions {
     help: false,
     listProgrammes: false,
     operator: DEFAULT_OPERATOR,
+    reactivateExisting: false,
     sendEmails: true,
   };
 
@@ -261,6 +271,11 @@ function parseArgs(argv: string[]): CliOptions {
 
     if (arg === "--list-programmes") {
       options.listProgrammes = true;
+      continue;
+    }
+
+    if (arg === "--reactivate-existing") {
+      options.reactivateExisting = true;
       continue;
     }
 
@@ -572,7 +587,7 @@ function resolveProgramme(
   return { error: `Programme "${reference}" was not found.` };
 }
 
-async function prepareRows(csvRows: CsvRow[]) {
+async function prepareRows(csvRows: CsvRow[], options: CliOptions) {
   const { prisma } = await getSharedModules();
   const emailToLines = new Map<string, number[]>();
   for (const row of csvRows) {
@@ -664,7 +679,21 @@ async function prepareRows(csvRows: CsvRow[]) {
         );
       }
 
-      if (existingUser.status !== "ACTIVE") {
+      if (existingUser.status === "SUSPENDED") {
+        if (options.reactivateExisting) {
+          warnings.push(
+            "Suspended student will be restored during apply before programme assignment.",
+          );
+        } else {
+          errors.push(
+            'Existing account is "SUSPENDED". Restore access in Users or rerun with --reactivate-existing.',
+          );
+        }
+      } else if (existingUser.status === "DELETED") {
+        errors.push(
+          'Existing account is "DELETED". Restore it through an admin backend action before reusing this email.',
+        );
+      } else if (existingUser.status !== "ACTIVE") {
         errors.push(
           `Existing account is "${existingUser.status}", not ACTIVE.`,
         );
@@ -748,7 +777,9 @@ async function prepareRows(csvRows: CsvRow[]) {
         errors.length > 0
           ? "none"
           : existingUser
-            ? "reuse_existing_student"
+            ? existingUser.status === "SUSPENDED"
+              ? "reactivate_existing_student"
+              : "reuse_existing_student"
             : "create_student",
       email: row.email,
       error: errors.length > 0 ? errors.join(" ") : null,
@@ -893,6 +924,7 @@ async function runApply(
   } = await getSharedModules();
   let createdUsers = 0;
   let reusedUsers = 0;
+  let reactivatedUsers = 0;
   let enrollmentsCreated = 0;
   let emailsAttempted = 0;
   let emailsSucceeded = 0;
@@ -907,54 +939,97 @@ async function runApply(
     }
 
     try {
-      if (row.action === "reuse_existing_student" && row.existingUser) {
+      if (
+        (row.action === "reuse_existing_student" ||
+          row.action === "reactivate_existing_student") &&
+        row.existingUser
+      ) {
         reusedUsers += 1;
 
-        if (row.missingProgrammes.length === 0) {
-          result.outcome = "already_enrolled";
-          result.userId = row.existingUser.id;
-          continue;
-        }
-
         const createdEnrollments = await prisma.$transaction(
-          row.missingProgrammes.map((programme) =>
-            prisma.courseEnrollment.create({
-              data: {
-                courseId: programme.id,
-                status: "ACTIVE",
-                userId: row.existingUser?.id || "",
-              },
-              include: {
-                course: {
-                  select: {
-                    title: true,
-                  },
+          async (transaction) => {
+            if (row.action === "reactivate_existing_student") {
+              await transaction.user.update({
+                where: { id: row.existingUser?.id || "" },
+                data: {
+                  status: "ACTIVE",
                 },
-              },
-            }),
-          ),
+              });
+            }
+
+            if (row.missingProgrammes.length === 0) {
+              return [];
+            }
+
+            return Promise.all(
+              row.missingProgrammes.map((programme) =>
+                transaction.courseEnrollment.create({
+                  data: {
+                    courseId: programme.id,
+                    status: "ACTIVE",
+                    userId: row.existingUser?.id || "",
+                  },
+                  include: {
+                    course: {
+                      select: {
+                        title: true,
+                      },
+                    },
+                  },
+                }),
+              ),
+            );
+          },
         );
 
-        await createAuditLogs(
-          createdEnrollments.map((enrollment) => ({
-            action: "ENROLLMENT_CREATED" as const,
-            entityId: enrollment.id,
-            entityType: "CourseEnrollment",
+        if (row.action === "reactivate_existing_student") {
+          reactivatedUsers += 1;
+
+          await createAuditLog({
+            action: "USER_UPDATED",
+            entityId: row.existingUser.id,
+            entityType: "User",
             metadata: {
+              after: { status: "ACTIVE" },
+              before: { status: "SUSPENDED" },
               csvLine: row.lineNumber,
               importRunId: runId,
               operator: options.operator,
-              programmeTitle: enrollment.course.title,
               source: IMPORT_SOURCE,
               sourceFile: path.basename(absoluteCsvPath),
-              targetUserId: row.existingUser?.id,
             },
-          })),
-        );
+          });
+        }
+
+        if (createdEnrollments.length > 0) {
+          await createAuditLogs(
+            createdEnrollments.map((enrollment) => ({
+              action: "ENROLLMENT_CREATED" as const,
+              entityId: enrollment.id,
+              entityType: "CourseEnrollment",
+              metadata: {
+                csvLine: row.lineNumber,
+                importRunId: runId,
+                operator: options.operator,
+                programmeTitle: enrollment.course.title,
+                source: IMPORT_SOURCE,
+                sourceFile: path.basename(absoluteCsvPath),
+                targetUserId: row.existingUser?.id,
+              },
+            })),
+          );
+        }
 
         enrollmentsCreated += createdEnrollments.length;
         result.enrollmentsCreated = createdEnrollments.length;
-        result.outcome = "enrolled_existing_user";
+        result.outcome =
+          row.action === "reactivate_existing_student"
+            ? createdEnrollments.length > 0
+              ? "reactivated_and_enrolled"
+              : "reactivated_existing_user"
+            : createdEnrollments.length > 0
+              ? "enrolled_existing_user"
+              : "already_enrolled";
         result.userId = row.existingUser.id;
         continue;
       }
@@ -1094,6 +1169,7 @@ async function runApply(
     emailsFailed,
     emailsSucceeded,
     enrollmentsCreated,
+    reactivatedUsers,
     reusedUsers,
   };
 }
@@ -1274,7 +1350,7 @@ async function main() {
     path.join(".artifacts", "bulk-student-import", runId);
 
   const { absoluteCsvPath, rows } = await parseCsv(options.csvPath);
-  const preparedRows = await prepareRows(rows);
+  const preparedRows = await prepareRows(rows, options);
   const resultRows = buildInitialResults(preparedRows, options.sendEmails);
   const preflightErrors = resultRows.filter((row) => row.outcome === "error").length;
 
@@ -1290,6 +1366,7 @@ async function main() {
     emailsFailed: 0,
     emailsSucceeded: 0,
     enrollmentsCreated: 0,
+    reactivatedUsers: 0,
     reusedUsers: 0,
   };
 
@@ -1331,6 +1408,7 @@ async function main() {
     startedAt: startedAt.toISOString(),
     totalEnrollmentsCreated: applyMetrics.enrollmentsCreated,
     totalRows: resultRows.length,
+    reactivatedUsers: applyMetrics.reactivatedUsers,
     usersReused: applyMetrics.reusedUsers,
   });
 
@@ -1340,6 +1418,7 @@ async function main() {
   console.log(`Preflight errors: ${finalSummary.preflightErrors}`);
   console.log(`New users created: ${finalSummary.newUsersCreated}`);
   console.log(`Existing users reused: ${finalSummary.usersReused}`);
+  console.log(`Suspended users reactivated: ${finalSummary.reactivatedUsers}`);
   console.log(`Enrollments created: ${finalSummary.totalEnrollmentsCreated}`);
   console.log(`Rows already enrolled: ${finalSummary.rowsAlreadyEnrolled}`);
   console.log(`Email attempts: ${finalSummary.emailsAttempted}`);
