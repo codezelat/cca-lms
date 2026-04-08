@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/ui/pagination";
+import { ActivityLogUserFilter } from "@/components/activity-logs/activity-log-user-filter";
 import {
   Select,
   SelectContent,
@@ -58,7 +59,6 @@ interface Pagination {
 interface Filters {
   actionTypes: string[];
   entityTypes: string[];
-  users: { id: string; name: string | null; email: string | null }[];
 }
 
 export default function ActivityLogsPage() {
@@ -314,25 +314,13 @@ export default function ActivityLogsPage() {
                 <label className="text-xs font-mono text-terminal-text-muted mb-2 block">
                   User
                 </label>
-                <Select
-                  value={userId || "all"}
-                  onValueChange={(value) => {
-                    setUserId(value === "all" ? "" : value);
+                <ActivityLogUserFilter
+                  value={userId}
+                  onChange={(value) => {
+                    setUserId(value);
                     setPage(1);
                   }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="All Users" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Users</SelectItem>
-                    {filters?.users.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.name || user.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               </div>
 
               {/* Start Date */}
