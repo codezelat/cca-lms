@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/ui/pagination";
 import { ActivityLogUserFilter } from "@/components/activity-logs/activity-log-user-filter";
+import { buildActivityLogQueryParams } from "@/lib/activity-logs";
 import {
   Select,
   SelectContent,
@@ -99,15 +100,16 @@ export default function ActivityLogsPage() {
 
     try {
       setIsLoading(true);
-      const params = new URLSearchParams();
-      params.set("page", page.toString());
-      params.set("limit", "20");
-      if (debouncedSearch) params.set("search", debouncedSearch);
-      if (action) params.set("action", action);
-      if (entityType) params.set("entityType", entityType);
-      if (userId) params.set("userId", userId);
-      if (startDate) params.set("startDate", startDate);
-      if (endDate) params.set("endDate", endDate);
+      const params = buildActivityLogQueryParams({
+        page,
+        limit: 20,
+        search: debouncedSearch,
+        action,
+        entityType,
+        userId,
+        startDate,
+        endDate,
+      });
 
       const response = await fetch(`/api/admin/activity-logs?${params}`, {
         signal,
@@ -163,26 +165,15 @@ export default function ActivityLogsPage() {
   };
 
   const exportToCSV = () => {
-    const csv = [
-      ["Timestamp", "User", "Action", "Entity Type", "Entity ID", "IP Address"],
-      ...activities.map((a) => [
-        format(new Date(a.createdAt), "yyyy-MM-dd HH:mm:ss"),
-        a.user?.name || a.user?.email || "System",
-        a.action,
-        a.entityType || "",
-        a.entityId || "",
-        a.ipAddress || "",
-      ]),
-    ]
-      .map((row) => row.map((cell) => `"${cell}"`).join(","))
-      .join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `activity-logs-${format(new Date(), "yyyy-MM-dd")}.csv`;
-    a.click();
+    const params = buildActivityLogQueryParams({
+      search: debouncedSearch || search,
+      action,
+      entityType,
+      userId,
+      startDate,
+      endDate,
+    });
+    window.location.href = `/api/admin/activity-logs/export?${params}`;
   };
 
   return (

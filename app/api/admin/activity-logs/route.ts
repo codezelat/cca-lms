@@ -1,22 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import {
+  buildActivityLogWhere,
+  MAX_ACTIVITY_LOG_PAGE_LIMIT,
+  parseActivityLogFilters,
+  toPositiveInt,
+} from "@/lib/activity-logs";
 import { prisma } from "@/lib/prisma";
-import { AuditAction, type Prisma } from "@/generated/prisma";
-
-const toPositiveInt = (value: string | null, fallback: number) => {
-  const parsed = Number.parseInt(value || "", 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-};
-
-const parseDateParam = (value: string | null) => {
-  if (!value) return null;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
-
-const isAuditAction = (value: string): value is AuditAction => {
-  return Object.values(AuditAction).includes(value as AuditAction);
-};
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,89 +18,17 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const page = toPositiveInt(searchParams.get("page"), 1);
-    const limit = Math.min(toPositiveInt(searchParams.get("limit"), 20), 100);
-    const action = (searchParams.get("action") || "").trim();
-    const entityType = (searchParams.get("entityType") || "").trim();
-    const userId = (searchParams.get("userId") || "").trim();
-    const search = (searchParams.get("search") || "").trim();
-    const startDate = parseDateParam(searchParams.get("startDate"));
-    const endDate = parseDateParam(searchParams.get("endDate"));
-
-    if (searchParams.get("startDate") && !startDate) {
-      return NextResponse.json(
-        { error: "Invalid startDate parameter" },
-        { status: 400 },
-      );
-    }
-
-    if (searchParams.get("endDate") && !endDate) {
-      return NextResponse.json(
-        { error: "Invalid endDate parameter" },
-        { status: 400 },
-      );
+    const limit = Math.min(
+      toPositiveInt(searchParams.get("limit"), 20),
+      MAX_ACTIVITY_LOG_PAGE_LIMIT,
+    );
+    const parsedFilters = parseActivityLogFilters(searchParams);
+    if ("error" in parsedFilters) {
+      return NextResponse.json({ error: parsedFilters.error }, { status: 400 });
     }
 
     const skip = (page - 1) * limit;
-
-    const where: Prisma.AuditLogWhereInput = {};
-
-    if (action) {
-      if (!isAuditAction(action)) {
-        return NextResponse.json(
-          { error: "Invalid action parameter" },
-          { status: 400 },
-        );
-      }
-      where.action = action as AuditAction;
-    }
-
-    if (entityType) {
-      where.entityType = entityType;
-    }
-
-    if (userId) {
-      where.userId = userId;
-    }
-
-    if (search) {
-      const searchClauses: Prisma.AuditLogWhereInput[] = [
-        { entityType: { contains: search, mode: "insensitive" } },
-        { entityId: { contains: search, mode: "insensitive" } },
-        { ipAddress: { contains: search, mode: "insensitive" } },
-        {
-          user: {
-            is: {
-              OR: [
-                { name: { contains: search, mode: "insensitive" } },
-                { email: { contains: search, mode: "insensitive" } },
-              ],
-            },
-          },
-        },
-      ];
-
-      const matchingActions = Object.values(AuditAction).filter((value) =>
-        value.toLowerCase().includes(search.toLowerCase()),
-      );
-
-      if (matchingActions.length > 0) {
-        searchClauses.push({ action: { in: matchingActions } });
-      }
-
-      where.OR = searchClauses;
-    }
-
-    if (startDate || endDate) {
-      where.createdAt = {};
-      if (startDate) {
-        where.createdAt.gte = startDate;
-      }
-      if (endDate) {
-        const inclusiveEndDate = new Date(endDate);
-        inclusiveEndDate.setHours(23, 59, 59, 999);
-        where.createdAt.lte = inclusiveEndDate;
-      }
-    }
+    const where = buildActivityLogWhere(parsedFilters.filters);
 
     // Fetch activity logs with pagination
     const [activities, totalCount] = await Promise.all([
