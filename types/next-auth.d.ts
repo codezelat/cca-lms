@@ -1,5 +1,5 @@
 import { DefaultSession, DefaultUser } from "next-auth";
-import { UserRole } from "@/generated/prisma";
+import { AccountStatus, UserRole } from "@/generated/prisma";
 
 declare module "next-auth" {
   interface Session {
@@ -11,6 +11,7 @@ declare module "next-auth" {
 
   interface User extends DefaultUser {
     role: UserRole;
+    status?: AccountStatus;
   }
 }
 
@@ -18,5 +19,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     role: UserRole;
+    accountStatus?: AccountStatus;
+    userValidatedAt?: number;
   }
 }

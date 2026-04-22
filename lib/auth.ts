@@ -5,6 +5,8 @@ import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
 import { auditActions } from "./audit";
 
+const SESSION_REVALIDATION_INTERVAL_MS = 10 * 60 * 1000;
+
 async function getSessionUserSnapshot(userId: string) {
   return prisma.user.findUnique({
     where: { id: userId },
@@ -14,6 +16,14 @@ async function getSessionUserSnapshot(userId: string) {
       status: true,
     },
   });
+}
+
+function shouldRefreshSessionUser(tokenValidatedAt?: number) {
+  if (!tokenValidatedAt) {
+    return true;
+  }
+
+  return Date.now() - tokenValidatedAt >= SESSION_REVALIDATION_INTERVAL_MS;
 }
 
 /**
@@ -107,6 +117,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             email: user.email,
             name: user.name,
             role: user.role,
+            status: user.status,
             image: user.image,
           };
         } catch (error) {
@@ -129,6 +140,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.accountStatus =
+          user.status && user.status !== "ACTIVE" ? user.status : "ACTIVE";
+        token.userValidatedAt = Date.now();
+        return token;
       }
 
       // Handle session updates
@@ -142,6 +157,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return null;
       }
 
+      const tokenValidatedAt =
+        typeof token.userValidatedAt === "number"
+          ? token.userValidatedAt
+          : undefined;
+
+      if (!shouldRefreshSessionUser(tokenValidatedAt)) {
+        return token;
+      }
+
       const currentUser = await getSessionUserSnapshot(tokenId);
 
       if (!currentUser || currentUser.status !== "ACTIVE") {
@@ -149,6 +173,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
 
       token.role = currentUser.role;
+      token.accountStatus = currentUser.status;
+      token.userValidatedAt = Date.now();
 
       return token;
     },
@@ -163,7 +189,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return session;
     },
-    async signIn({ user, account }) {
+    async signIn({ user }) {
       // Check if user exists and is active
       if (user.email) {
         const existingUser = await prisma.user.findUnique({

@@ -42,7 +42,8 @@ Key capabilities:
 ```
 cca-lms/
 ├── app/                    # Next.js App Router
-│   ├── (public)/           # Public-facing pages (auth, landing)
+│   ├── (protected)/        # Authenticated pages with session-aware shell
+│   ├── auth/               # Public auth pages without the protected shell
 │   ├── api/                # REST API routes (~54 endpoints)
 │   │   ├── admin/          # Admin operations
 │   │   ├── lecturer/       # Lecturer operations
@@ -52,11 +53,8 @@ cca-lms/
 │   │   ├── cron/           # Scheduled jobs (backup, reminders)
 │   │   ├── audit/          # Audit visit tracking
 │   │   └── download/       # Secure file downloads
-│   ├── dashboard/          # Main dashboard
-│   ├── learn/              # Student learning interface
-│   ├── programmes/         # Programme management (admin/lecturer)
-│   ├── students/           # Student management
-│   └── analytics/          # Admin analytics
+│   ├── layout.tsx          # Global root layout (theme, scripts, footer)
+│   └── (protected)/layout.tsx # SessionProvider, navbar, protected UI shell
 ├── components/
 │   ├── ui/                 # Reusable Radix UI wrappers (button, dialog, input, etc.)
 │   └── [feature]/          # Feature-specific components (quizzes, assignments, etc.)

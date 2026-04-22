@@ -3,12 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { AuthProvider } from "@/components/auth-provider";
-import { ConfirmProvider } from "@/components/ui/confirm-dialog";
-import { FetchActivityProvider } from "@/components/ui/fetch-activity";
-import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import StudentVisitTracker from "@/components/audit/student-visit-tracker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -84,18 +79,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col scanline`}
       >
-        <AuthProvider>
-          <ThemeProvider>
-            <FetchActivityProvider>
-              <ConfirmProvider>
-                <StudentVisitTracker />
-                <Navbar />
-                <main className="flex-1">{children}</main>
-                <Footer />
-              </ConfirmProvider>
-            </FetchActivityProvider>
-          </ThemeProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          {children}
+          <Footer />
+        </ThemeProvider>
       </body>
     </html>
   );
