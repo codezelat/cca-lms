@@ -270,12 +270,7 @@ export default function AdminBackupsPage() {
   useEffect(() => {
     void fetchOverview();
 
-    const interval = window.setInterval(() => {
-      void fetchOverview({ background: true, suppressErrorToast: true });
-    }, 60000);
-
     return () => {
-      window.clearInterval(interval);
       clearFollowUpRefreshes();
     };
   }, [clearFollowUpRefreshes, fetchOverview]);
@@ -325,9 +320,9 @@ export default function AdminBackupsPage() {
   const nextScheduledRun = getNextDbBackupRun();
   const workflowRunBadge = getRunBadge(data?.workflow.latestRun || null);
   const normalizedArchiveSearch = archiveSearch.trim().toLowerCase();
-  const backups = data?.backups || [];
-  const workflowRuns = data?.workflow.recentRuns || [];
   const filteredBackups = useMemo(() => {
+    const backups = data?.backups || [];
+
     if (!normalizedArchiveSearch) {
       return backups;
     }
@@ -337,8 +332,10 @@ export default function AdminBackupsPage() {
         .toLowerCase()
         .includes(normalizedArchiveSearch),
     );
-  }, [backups, normalizedArchiveSearch]);
+  }, [data?.backups, normalizedArchiveSearch]);
   const filteredWorkflowRuns = useMemo(() => {
+    const workflowRuns = data?.workflow.recentRuns || [];
+
     if (workflowStatusFilter === "all") {
       return workflowRuns;
     }
@@ -346,7 +343,7 @@ export default function AdminBackupsPage() {
     return workflowRuns.filter(
       (run) => getWorkflowFilterValue(run) === workflowStatusFilter,
     );
-  }, [workflowRuns, workflowStatusFilter]);
+  }, [data?.workflow.recentRuns, workflowStatusFilter]);
 
   if (isLoading) {
     return (

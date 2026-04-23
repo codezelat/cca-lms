@@ -84,7 +84,6 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
 
   useEffect(() => {
     fetchDashboardData();
-    checkDatabaseStatus();
 
     // Update uptime every second
     const uptimeInterval = setInterval(() => {
@@ -120,15 +119,6 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
       setDatabaseStatus("disconnected");
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const checkDatabaseStatus = async () => {
-    try {
-      const response = await fetch("/api/admin/dashboard-stats");
-      setDatabaseStatus(response.ok ? "connected" : "disconnected");
-    } catch {
-      setDatabaseStatus("disconnected");
     }
   };
 
