@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
 import {
-  Download,
   FileSpreadsheet,
   Loader2,
   CheckCircle,
@@ -337,7 +336,7 @@ export function BulkSubmissionActions({
     } finally {
       setIsExporting(false);
     }
-  }, [submissions, assignmentTitle, dueDate, maxPoints]);
+  }, [submissions, assignmentTitle, assignmentId, dueDate, maxPoints]);
 
   // Cancel ongoing download
   const cancelDownload = useCallback(() => {

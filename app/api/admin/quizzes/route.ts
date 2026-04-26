@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createAuditLog } from "@/lib/audit";
+import type { QuestionType } from "@/generated/prisma";
+
+type QuizAnswerInput = {
+  answer: string;
+  isCorrect?: boolean;
+};
+
+type QuizQuestionInput = {
+  type: QuestionType;
+  question: string;
+  explanation?: string | null;
+  points?: number;
+  answers: QuizAnswerInput[];
+};
 
 // POST: Create quiz for a lesson
 export async function POST(request: NextRequest) {
@@ -63,14 +77,14 @@ export async function POST(request: NextRequest) {
         shuffleAnswers: shuffleAnswers || false,
         showResults: showResults !== false,
         questions: {
-          create: questions.map((q: any, index: number) => ({
+          create: (questions as QuizQuestionInput[]).map((q, index) => ({
             type: q.type,
             question: q.question,
             explanation: q.explanation,
             points: q.points || 1,
             order: index,
             answers: {
-              create: q.answers.map((a: any, aIndex: number) => ({
+              create: q.answers.map((a, aIndex) => ({
                 answer: a.answer,
                 isCorrect: a.isCorrect || false,
                 order: aIndex,

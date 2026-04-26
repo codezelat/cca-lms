@@ -10,10 +10,8 @@ import {
   BarChart3,
   Settings,
   Home,
-  FileText,
   LogOut,
   GraduationCap,
-  FolderOpen,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { ThemeSelector } from "./theme-selector";

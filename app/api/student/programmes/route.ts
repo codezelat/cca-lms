@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@/generated/prisma";
 
 export async function GET(request: NextRequest) {
   try {
@@ -36,10 +37,9 @@ export async function GET(request: NextRequest) {
     const enrollmentMap = new Map(enrollments.map((e) => [e.courseId, e]));
 
     // Build where clause
-    // @ts-ignore - Prisma type inference issue with dynamic OR clause
-    const where = {
+    const where: Prisma.CourseWhereInput = {
       status: "PUBLISHED",
-    } as any;
+    };
 
     if (search) {
       where.OR = [

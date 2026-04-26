@@ -14,7 +14,6 @@ import {
   Eye,
   EyeOff,
   Users,
-  GraduationCap,
   FileText,
 } from "lucide-react";
 import {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -74,6 +74,13 @@ interface AttemptResult {
   }>;
 }
 
+interface AttemptResponsePayload {
+  questionId: string;
+  answer: string | null;
+  isCorrect: boolean | null;
+  points: number | null;
+}
+
 export function QuizPlayer({ quizId, onComplete, onCancel }: QuizPlayerProps) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -85,32 +92,7 @@ export function QuizPlayer({ quizId, onComplete, onCancel }: QuizPlayerProps) {
   const [result, setResult] = useState<AttemptResult | null>(null);
   const confirm = useConfirm();
 
-  useEffect(() => {
-    fetchQuiz();
-  }, [quizId]);
-
-  useEffect(() => {
-    if (quiz?.timeLimit && timeRemaining === null) {
-      setTimeRemaining(quiz.timeLimit * 60); // Convert to seconds
-    }
-  }, [quiz]);
-
-  useEffect(() => {
-    if (timeRemaining !== null && timeRemaining > 0 && !showResults) {
-      const timer = setInterval(() => {
-        setTimeRemaining((prev) => {
-          if (prev === null || prev <= 1) {
-            handleSubmit();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-  }, [timeRemaining, showResults]);
-
-  const fetchQuiz = async () => {
+  const fetchQuiz = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(
@@ -125,7 +107,7 @@ export function QuizPlayer({ quizId, onComplete, onCancel }: QuizPlayerProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [quizId]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -134,10 +116,13 @@ export function QuizPlayer({ quizId, onComplete, onCancel }: QuizPlayerProps) {
   };
 
   const setResponse = (questionId: string, answer: string) => {
-    setResponses({ ...responses, [questionId]: answer });
+    setResponses((previousResponses) => ({
+      ...previousResponses,
+      [questionId]: answer,
+    }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!quiz) return;
 
     // Check if all questions are answered
@@ -188,7 +173,7 @@ export function QuizPlayer({ quizId, onComplete, onCancel }: QuizPlayerProps) {
         maxScore: data.attempt.maxScore || 0,
         percentage: data.attempt.percentage || 0,
         passed: (data.attempt.percentage || 0) >= quiz.passingScore,
-        responses: data.responses.map((r: any) => ({
+        responses: (data.responses as AttemptResponsePayload[]).map((r) => ({
           questionId: r.questionId,
           questionText:
             quiz.questions.find((q) => q.id === r.questionId)?.text || "",
@@ -210,7 +195,32 @@ export function QuizPlayer({ quizId, onComplete, onCancel }: QuizPlayerProps) {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [confirm, onComplete, quiz, responses]);
+
+  useEffect(() => {
+    fetchQuiz();
+  }, [fetchQuiz]);
+
+  useEffect(() => {
+    if (quiz?.timeLimit && timeRemaining === null) {
+      setTimeRemaining(quiz.timeLimit * 60); // Convert to seconds
+    }
+  }, [quiz, timeRemaining]);
+
+  useEffect(() => {
+    if (timeRemaining !== null && timeRemaining > 0 && !showResults) {
+      const timer = setInterval(() => {
+        setTimeRemaining((prev) => {
+          if (prev === null || prev <= 1) {
+            handleSubmit();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [handleSubmit, showResults, timeRemaining]);
 
   if (loading) {
     return (

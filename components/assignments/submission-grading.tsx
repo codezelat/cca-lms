@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,21 +23,43 @@ interface SubmissionGradingProps {
   onGraded?: () => void;
 }
 
+interface SubmissionAttachment {
+  id: string;
+  fileKey: string;
+  fileName: string;
+  fileSize: number;
+  createdAt: string;
+}
+
+interface GradingSubmission {
+  submittedAt: string;
+  grade: number | null;
+  feedback: string | null;
+  gradedAt: string | null;
+  notes: string | null;
+  user?: {
+    name: string | null;
+  } | null;
+  assignment: {
+    title: string;
+    dueDate: string;
+    maxPoints: number;
+    instructions: string | null;
+  };
+  attachments?: SubmissionAttachment[];
+}
+
 export function SubmissionGrading({
   submissionId,
   onGraded,
 }: SubmissionGradingProps) {
-  const [submission, setSubmission] = useState<any>(null);
+  const [submission, setSubmission] = useState<GradingSubmission | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGrading, setIsGrading] = useState(false);
   const [grade, setGrade] = useState("");
   const [feedback, setFeedback] = useState("");
 
-  useEffect(() => {
-    fetchSubmission();
-  }, [submissionId]);
-
-  const fetchSubmission = async () => {
+  const fetchSubmission = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/admin/submissions/${submissionId}`);
@@ -58,7 +80,11 @@ export function SubmissionGrading({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [submissionId]);
+
+  useEffect(() => {
+    fetchSubmission();
+  }, [fetchSubmission]);
 
   const downloadFile = async (attachment: { id: string; fileKey: string }) => {
     // Open via our proxy endpoint to show our domain URL
@@ -67,6 +93,8 @@ export function SubmissionGrading({
   };
 
   const handleGrade = async () => {
+    if (!submission) return;
+
     const gradeNum = Number(grade);
 
     if (isNaN(gradeNum) || gradeNum < 0) {
@@ -204,7 +232,7 @@ export function SubmissionGrading({
         <div>
           <Label className="mb-3 block">Submitted Files</Label>
           <div className="space-y-2">
-            {submission.attachments?.map((attachment: any) => (
+            {submission.attachments?.map((attachment) => (
               <div
                 key={attachment.id}
                 className="flex flex-col gap-3 p-3 bg-terminal-darker border border-terminal-border rounded-md sm:flex-row sm:items-center sm:justify-between"

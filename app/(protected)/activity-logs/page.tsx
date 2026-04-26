@@ -8,8 +8,6 @@ import {
   Search,
   Filter,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
   Terminal,
   RefreshCw,
   Download,

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createAuditLog } from "@/lib/audit";
-import { lessonSchema } from "@/lib/validations";
 import { recalculateCourseProgress } from "@/lib/progress";
 
 // POST /api/admin/lessons - Create new lesson
@@ -49,7 +48,7 @@ export async function POST(request: NextRequest) {
 
     // Check ownership if lecturer
     if (session.user.role === "LECTURER") {
-      const module = await prisma.module.findUnique({
+      const courseModule = await prisma.module.findUnique({
         where: { id: moduleId },
         include: {
           course: {
@@ -62,7 +61,7 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      if (!module || module.course.lecturers.length === 0) {
+      if (!courseModule || courseModule.course.lecturers.length === 0) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
     }

@@ -50,39 +50,37 @@ export default function ResetPasswordPage() {
   const resetTurnstileWidgetIdRef = useRef<string | null>(null);
   const requestTurnstileWidgetIdRef = useRef<string | null>(null);
 
-  // Turnstile callbacks for reset password
-  const handleResetTurnstileSuccess = (token: string) => {
-    setResetTurnstileToken(token);
-  };
-
-  const handleResetTurnstileError = () => {
-    setResetTurnstileToken(null);
-  };
-
-  const handleResetTurnstileExpired = () => {
-    setResetTurnstileToken(null);
-  };
-
-  // Turnstile callbacks for request reset
-  const handleRequestTurnstileSuccess = (token: string) => {
-    setRequestTurnstileToken(token);
-  };
-
-  const handleRequestTurnstileError = () => {
-    setRequestTurnstileToken(null);
-  };
-
-  const handleRequestTurnstileExpired = () => {
-    setRequestTurnstileToken(null);
-  };
-
   // Expose callbacks to window for Turnstile
   useEffect(() => {
+    const handleResetTurnstileSuccess = (token: string) => {
+      setResetTurnstileToken(token);
+    };
+
+    const handleResetTurnstileError = () => {
+      setResetTurnstileToken(null);
+    };
+
+    const handleResetTurnstileExpired = () => {
+      setResetTurnstileToken(null);
+    };
+
+    const handleRequestTurnstileSuccess = (token: string) => {
+      setRequestTurnstileToken(token);
+    };
+
+    const handleRequestTurnstileError = () => {
+      setRequestTurnstileToken(null);
+    };
+
+    const handleRequestTurnstileExpired = () => {
+      setRequestTurnstileToken(null);
+    };
+
     const initTurnstile = () => {
-      if ((window as any).turnstile) {
+      if (window.turnstile) {
         // Initialize reset password widget
         if (resetTurnstileRef.current) {
-          resetTurnstileWidgetIdRef.current = (window as any).turnstile.render(
+          resetTurnstileWidgetIdRef.current = window.turnstile.render(
             resetTurnstileRef.current,
             {
               sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
@@ -96,9 +94,7 @@ export default function ResetPasswordPage() {
 
         // Initialize request reset widget
         if (requestTurnstileRef.current) {
-          requestTurnstileWidgetIdRef.current = (
-            window as any
-          ).turnstile.render(requestTurnstileRef.current, {
+          requestTurnstileWidgetIdRef.current = window.turnstile.render(requestTurnstileRef.current, {
             sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
             callback: handleRequestTurnstileSuccess,
             "error-callback": handleRequestTurnstileError,
@@ -110,12 +106,12 @@ export default function ResetPasswordPage() {
     };
 
     // Check if Turnstile is already loaded
-    if ((window as any).turnstile) {
+    if (window.turnstile) {
       initTurnstile();
     } else {
       // Wait for Turnstile to load
       const checkTurnstile = setInterval(() => {
-        if ((window as any).turnstile) {
+        if (window.turnstile) {
           clearInterval(checkTurnstile);
           initTurnstile();
         }
@@ -128,53 +124,20 @@ export default function ResetPasswordPage() {
     }
 
     return () => {
-      if (resetTurnstileWidgetIdRef.current && (window as any).turnstile) {
-        (window as any).turnstile.remove(resetTurnstileWidgetIdRef.current);
+      if (resetTurnstileWidgetIdRef.current && window.turnstile) {
+        window.turnstile.remove(resetTurnstileWidgetIdRef.current);
       }
-      if (requestTurnstileWidgetIdRef.current && (window as any).turnstile) {
-        (window as any).turnstile.remove(requestTurnstileWidgetIdRef.current);
+      if (requestTurnstileWidgetIdRef.current && window.turnstile) {
+        window.turnstile.remove(requestTurnstileWidgetIdRef.current);
       }
     };
   }, []);
 
   // Function to reset CAPTCHA widgets
-  const resetRequestCaptcha = () => {
-    if (requestTurnstileWidgetIdRef.current && (window as any).turnstile) {
-      (window as any).turnstile.reset(requestTurnstileWidgetIdRef.current);
-      setRequestTurnstileToken(null);
-    }
-  };
-
   const resetResetCaptcha = () => {
-    if (resetTurnstileWidgetIdRef.current && (window as any).turnstile) {
-      (window as any).turnstile.reset(resetTurnstileWidgetIdRef.current);
+    if (resetTurnstileWidgetIdRef.current && window.turnstile) {
+      window.turnstile.reset(resetTurnstileWidgetIdRef.current);
       setResetTurnstileToken(null);
-    }
-  };
-
-  const handleRequestReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("/api/auth/request-reset", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, turnstileToken: requestTurnstileToken }),
-      });
-
-      if (response.ok) {
-        setIsSuccess(true);
-      } else {
-        // Still show success to not reveal if email exists
-        setIsSuccess(true);
-      }
-    } catch (error) {
-      console.error("Reset request error:", error);
-      // Still show success to not reveal if email exists
-      setIsSuccess(true);
-    } finally {
-      setIsLoading(false);
     }
   };
 

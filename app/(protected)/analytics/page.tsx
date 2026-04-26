@@ -121,6 +121,17 @@ interface Programme {
   status: string;
 }
 
+interface ChartTooltipPayload {
+  dataKey: string;
+  value: number;
+}
+
+interface ChartTooltipProps {
+  active?: boolean;
+  payload?: ChartTooltipPayload[];
+  label?: string | number | Date;
+}
+
 export default function AnalyticsPage() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [programmes, setProgrammes] = useState<Programme[]>([]);
@@ -195,25 +206,22 @@ export default function AnalyticsPage() {
   };
 
   // Custom tooltip component for charts
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: ChartTooltipProps) => {
     if (active && payload && payload.length) {
       const dataKey = payload[0].dataKey;
       const value = payload[0].value;
       let labelText = "";
-      let valueColor = "text-chart-1";
       if (dataKey === "enrollments") {
         labelText = "enrollments";
-        valueColor = "text-chart-1";
       } else if (dataKey === "logins") {
         labelText = "active users";
-        valueColor = "text-chart-3";
       } else {
         labelText = dataKey;
       }
       return (
         <div className="bg-card border border-border rounded-lg p-4 shadow-xl">
           <p className="font-mono text-xs text-muted-foreground mb-1">
-            {format(new Date(label), "MMM dd, yyyy")}
+            {format(new Date(label ?? ""), "MMM dd, yyyy")}
           </p>
           <p className="font-mono text-base font-semibold flex items-baseline gap-2">
             <span

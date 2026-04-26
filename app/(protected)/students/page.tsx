@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { Users, Search, Mail, BookOpen, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 
 interface Student {
@@ -44,6 +43,24 @@ export default function StudentsPage() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
+  const fetchStudents = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `/api/lecturer/students?page=${currentPage}&limit=10`,
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setStudents(data.students);
+        setPagination(data.pagination);
+      }
+    } catch (error) {
+      console.error("Error fetching students:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage]);
+
   useEffect(() => {
     // Don't do anything while status is loading
     if (status === "loading") {
@@ -63,25 +80,7 @@ export default function StudentsPage() {
       }
       fetchStudents();
     }
-  }, [status, session, currentPage]);
-
-  const fetchStudents = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(
-        `/api/lecturer/students?page=${currentPage}&limit=10`,
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setStudents(data.students);
-        setPagination(data.pagination);
-      }
-    } catch (error) {
-      console.error("Error fetching students:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [status, session, fetchStudents]);
 
   const filteredStudents = students.filter(
     (student) =>

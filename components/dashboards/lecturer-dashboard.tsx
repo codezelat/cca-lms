@@ -7,7 +7,6 @@ import {
   Terminal,
   FileText,
   AlertCircle,
-  CheckCircle,
 } from "lucide-react";
 import {
   Card,

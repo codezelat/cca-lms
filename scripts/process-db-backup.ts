@@ -98,7 +98,7 @@ async function loadBackupFiles(backupDir: string) {
         sizeBytes: buffer.length,
         sha256: sha256(buffer),
       });
-    } catch (error) {
+    } catch {
       if (requiredFiles.includes(fileName)) {
         throw new Error(`Required dump file is missing: ${fileName}`);
       }

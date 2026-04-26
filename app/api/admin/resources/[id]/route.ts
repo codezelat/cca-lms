@@ -10,6 +10,7 @@ import {
   FILE_VALIDATIONS,
 } from "@/lib/r2";
 import { createAuditLog } from "@/lib/audit";
+import type { AssetVisibility, Prisma, ResourceType } from "@/generated/prisma";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -121,7 +122,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const file = formData.get("file") as File | null;
     const title = formData.get("title") as string | null;
     const description = formData.get("description") as string | null;
-    const type = formData.get("type") as string | null;
+    const type = formData.get("type") as ResourceType | null;
     const externalUrl = formData.get("externalUrl") as string | null;
     const rawEmbedCode = formData.get("embedCode") as string | null;
     const rawTextContent = formData.get("textContent") as string | null;
@@ -130,14 +131,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const embedCode = rawEmbedCode ? sanitizeHtml(rawEmbedCode) : null;
     const textContent = rawTextContent ? sanitizeHtml(rawTextContent) : null;
 
-    const visibility = formData.get("visibility") as string | null;
+    const visibility = formData.get("visibility") as AssetVisibility | null;
     const downloadable = formData.get("downloadable");
     const tags = formData.get("tags")
       ? JSON.parse(formData.get("tags") as string)
       : null;
     const createNewVersion = formData.get("createNewVersion") === "true";
 
-    const updateData: any = {};
+    const updateData: Prisma.LessonResourceUpdateInput = {};
 
     if (title !== null) updateData.title = title;
     if (description !== null) updateData.description = description;

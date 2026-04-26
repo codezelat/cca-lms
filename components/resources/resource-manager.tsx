@@ -1,13 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   Download,
@@ -82,11 +79,7 @@ export function ResourceManager({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const confirm = useConfirm();
 
-  useEffect(() => {
-    fetchResources();
-  }, [lessonId]);
-
-  const fetchResources = async () => {
+  const fetchResources = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`/api/admin/resources?lessonId=${lessonId}`);
@@ -100,7 +93,11 @@ export function ResourceManager({
     } finally {
       setLoading(false);
     }
-  };
+  }, [lessonId]);
+
+  useEffect(() => {
+    fetchResources();
+  }, [fetchResources]);
 
   const handleDelete = async (resourceId: string) => {
     const resource = resources.find((r) => r.id === resourceId);
@@ -262,7 +259,7 @@ export function ResourceManager({
       if (!response.ok) throw new Error("Failed to reorder");
 
       toast.success("Order updated");
-    } catch (error) {
+    } catch {
       toast.error("Failed to update order");
       fetchResources(); // Revert on error
     } finally {

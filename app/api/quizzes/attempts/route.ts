@@ -3,6 +3,12 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createAuditLog } from "@/lib/audit";
 
+type QuizSubmissionResponse = {
+  questionId: string;
+  answer?: string;
+  answerId?: string;
+};
+
 // POST: Start or submit quiz attempt
 export async function POST(request: NextRequest) {
   try {
@@ -123,8 +129,8 @@ export async function POST(request: NextRequest) {
       let totalScore = 0;
       let maxScore = 0;
 
-      const gradedResponses = await Promise.all(
-        responses.map(async (response: any) => {
+      await Promise.all(
+        (responses as QuizSubmissionResponse[]).map(async (response) => {
           const question = quiz.questions.find(
             (q) => q.id === response.questionId,
           );

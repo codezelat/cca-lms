@@ -76,6 +76,7 @@ interface Lesson {
   title: string;
   description: string | null;
   content: string | null;
+  videoUrl: string | null;
   type: string;
   duration: number;
   order: number;
@@ -379,15 +380,15 @@ export default function ProgrammeContentClient({
       return;
     }
 
-    const module = programme.modules.find(
+    const courseModule = programme.modules.find(
       (programmeModule) => programmeModule.id === moduleId,
     );
 
-    if (!module?.lessons) {
+    if (!courseModule?.lessons) {
       return;
     }
 
-    const previousLessons = module.lessons;
+    const previousLessons = courseModule.lessons;
     updateModuleLessons(moduleId, nextLessons);
     setReorderingLessonModuleId(moduleId);
 
@@ -452,10 +453,10 @@ export default function ProgrammeContentClient({
     lessonId: string,
     direction: "up" | "down",
   ) => {
-    const module = programme?.modules.find(
+    const courseModule = programme?.modules.find(
       (programmeModule) => programmeModule.id === moduleId,
     );
-    const lessons = module?.lessons ?? [];
+    const lessons = courseModule?.lessons ?? [];
     const nextLessons = moveItemByDirection(lessons, lessonId, direction);
 
     if (!nextLessons) {
@@ -533,14 +534,14 @@ export default function ProgrammeContentClient({
     moduleId: string,
     lessonId: string,
   ) => {
-    const module = programme?.modules.find(
+    const courseModule = programme?.modules.find(
       (programmeModule) => programmeModule.id === moduleId,
     );
 
     if (
       reorderingLessonModuleId ||
-      !module?.lessons ||
-      module.lessons.length < 2
+      !courseModule?.lessons ||
+      courseModule.lessons.length < 2
     ) {
       event.preventDefault();
       return;
@@ -587,10 +588,10 @@ export default function ProgrammeContentClient({
       return;
     }
 
-    const module = programme?.modules.find(
+    const courseModule = programme?.modules.find(
       (programmeModule) => programmeModule.id === moduleId,
     );
-    const lessons = module?.lessons ?? [];
+    const lessons = courseModule?.lessons ?? [];
     const nextLessons = moveItemByTarget(
       lessons,
       draggedLesson.lessonId,
@@ -860,7 +861,7 @@ export default function ProgrammeContentClient({
       title: lesson.title,
       description: lesson.description || "",
 
-      videoUrl: (lesson as any).videoUrl || "",
+      videoUrl: lesson.videoUrl || "",
       type: lesson.type,
       duration: lesson.duration,
     });
@@ -1864,7 +1865,7 @@ export default function ProgrammeContentClient({
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-900">
                   <HelpCircle className="h-4 w-4 inline mr-1" />
-                  After creating, use "Manage Quiz" to add questions and
+                  After creating, use &quot;Manage Quiz&quot; to add questions and
                   answers.
                 </p>
               </div>
@@ -1874,7 +1875,7 @@ export default function ProgrammeContentClient({
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <p className="text-sm text-green-900">
                   <Upload className="h-4 w-4 inline mr-1" />
-                  Use "Manage Documents" to upload PDFs, docs, slides, images,
+                  Use &quot;Manage Documents&quot; to upload PDFs, docs, slides, images,
                   or link to articles.
                 </p>
               </div>
@@ -1884,7 +1885,7 @@ export default function ProgrammeContentClient({
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                 <p className="text-sm text-purple-900">
                   <Upload className="h-4 w-4 inline mr-1" />
-                  Use "Manage Resources" to attach assignment files, rubrics, or
+                  Use &quot;Manage Resources&quot; to attach assignment files, rubrics, or
                   reference materials.
                 </p>
               </div>

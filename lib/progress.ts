@@ -12,7 +12,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import type { EnrollmentStatus, Prisma } from "@/generated/prisma";
+import type { EnrollmentStatus } from "@/generated/prisma";
 
 export function calculateEnrollmentProgress(
   completedLessons: number,

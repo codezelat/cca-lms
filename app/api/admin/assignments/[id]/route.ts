@@ -246,7 +246,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get B2 files to delete if force deleting
-    let filesToDelete: { fileKey: string; fileId: string }[] = [];
+    const filesToDelete: { fileKey: string; fileId: string }[] = [];
 
     if (forceDelete && assignment._count.assignmentSubmissions > 0) {
       const assignmentWithFiles = await prisma.assignment.findUnique({

@@ -125,6 +125,8 @@ export default function UsersClient() {
   const [createTurnstileToken, setCreateTurnstileToken] = useState<
     string | null
   >(null);
+  const [createTurnstileRenderNonce, setCreateTurnstileRenderNonce] =
+    useState(0);
   const createTurnstileRef = useRef<HTMLDivElement>(null);
   const createTurnstileWidgetIdRef = useRef<string | null>(null);
   // Track retries to avoid infinite loops on transient errors
@@ -134,84 +136,82 @@ export default function UsersClient() {
   const isDevelopment =
     (process.env.NODE_ENV || "production") === "development";
 
-  // Helper to render/reset the Turnstile widget safely
-  const renderCreateTurnstile = () => {
-    try {
-      // Remove existing widget if present to ensure a clean render
-      if (createTurnstileWidgetIdRef.current && (window as any).turnstile) {
-        try {
-          (window as any).turnstile.remove(createTurnstileWidgetIdRef.current);
-        } catch (e) {
-          // ignore remove errors
-        }
-        createTurnstileWidgetIdRef.current = null;
-      }
-
-      if ((window as any).turnstile && createTurnstileRef.current) {
-        createTurnstileWidgetIdRef.current = (window as any).turnstile.render(
-          createTurnstileRef.current,
-          {
-            sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
-            callback: handleCreateTurnstileSuccess,
-            "error-callback": handleCreateTurnstileError,
-            "expired-callback": handleCreateTurnstileExpired,
-            theme: "dark",
-          },
-        );
-        // reset retry counter on success
-        createTurnstileRetriesRef.current = 0;
-      }
-    } catch (err) {
-      // swallow and let error-callback handle retries
-      console.warn("Error rendering Turnstile:", err);
-    }
-  };
-
-  // Turnstile callbacks for create form
-  const handleCreateTurnstileSuccess = (token: string) => {
-    setCreateTurnstileToken(token);
-  };
-
-  const handleCreateTurnstileError = () => {
-    setCreateTurnstileToken(null);
-
-    // Try to recover from transient Turnstile errors by resetting and
-    // re-rendering the widget up to 3 times. If it still fails, inform the user.
-    const retries = createTurnstileRetriesRef.current || 0;
-    if (retries < 3) {
-      createTurnstileRetriesRef.current = retries + 1;
-      // attempt reset if possible
-      if (createTurnstileWidgetIdRef.current && (window as any).turnstile) {
-        try {
-          (window as any).turnstile.reset(createTurnstileWidgetIdRef.current);
-        } catch (e) {
-          // ignore
-        }
-      }
-
-      // small delay before attempting to render again
-      setTimeout(() => {
-        renderCreateTurnstile();
-      }, 500);
-    } else {
-      // persistent failure - show helpful message and allow manual retry
-      createTurnstileRetriesRef.current = 0;
-      toast.error(
-        "CAPTCHA failed to load, please try again or contact support.",
-      );
-    }
-  };
-
-  const handleCreateTurnstileExpired = () => {
-    setCreateTurnstileToken(null);
-  };
-
   // Expose create callbacks to window for Turnstile
   useEffect(() => {
     if (!showCreateDialog) return;
 
     // Skip Turnstile in development mode
     if (isDevelopment) return;
+
+    const handleCreateTurnstileSuccess = (token: string) => {
+      setCreateTurnstileToken(token);
+    };
+
+    const handleCreateTurnstileExpired = () => {
+      setCreateTurnstileToken(null);
+    };
+
+    const renderCreateTurnstile = () => {
+      try {
+        // Remove existing widget if present to ensure a clean render
+        if (createTurnstileWidgetIdRef.current && window.turnstile) {
+          try {
+            window.turnstile.remove(createTurnstileWidgetIdRef.current);
+          } catch {
+            // ignore remove errors
+          }
+          createTurnstileWidgetIdRef.current = null;
+        }
+
+        if (window.turnstile && createTurnstileRef.current) {
+          createTurnstileWidgetIdRef.current = window.turnstile.render(
+            createTurnstileRef.current,
+            {
+              sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+              callback: handleCreateTurnstileSuccess,
+              "error-callback": handleCreateTurnstileError,
+              "expired-callback": handleCreateTurnstileExpired,
+              theme: "dark",
+            },
+          );
+          // reset retry counter on success
+          createTurnstileRetriesRef.current = 0;
+        }
+      } catch (err) {
+        // swallow and let error-callback handle retries
+        console.warn("Error rendering Turnstile:", err);
+      }
+    };
+
+    const handleCreateTurnstileError = () => {
+      setCreateTurnstileToken(null);
+
+      // Try to recover from transient Turnstile errors by resetting and
+      // re-rendering the widget up to 3 times. If it still fails, inform the user.
+      const retries = createTurnstileRetriesRef.current || 0;
+      if (retries < 3) {
+        createTurnstileRetriesRef.current = retries + 1;
+        // attempt reset if possible
+        if (createTurnstileWidgetIdRef.current && window.turnstile) {
+          try {
+            window.turnstile.reset(createTurnstileWidgetIdRef.current);
+          } catch {
+            // ignore
+          }
+        }
+
+        // small delay before attempting to render again
+        setTimeout(() => {
+          renderCreateTurnstile();
+        }, 500);
+      } else {
+        // persistent failure - show helpful message and allow manual retry
+        createTurnstileRetriesRef.current = 0;
+        toast.error(
+          "CAPTCHA failed to load, please try again or contact support.",
+        );
+      }
+    };
 
     // small helper to attach a MutationObserver to diagnose DOM changes
     let observer: MutationObserver | null = null;
@@ -226,7 +226,7 @@ export default function UsersClient() {
             subtree: true,
           });
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
     };
@@ -244,12 +244,12 @@ export default function UsersClient() {
       }
 
       // If Turnstile is already loaded, render safely
-      if ((window as any).turnstile) {
+      if (window.turnstile) {
         renderCreateTurnstile();
       } else {
         // Wait for Turnstile to load
         const checkTurnstile = setInterval(() => {
-          if ((window as any).turnstile) {
+          if (window.turnstile) {
             clearInterval(checkTurnstile);
             renderCreateTurnstile();
           }
@@ -266,20 +266,25 @@ export default function UsersClient() {
       if (observer) {
         observer.disconnect();
       }
-      if (createTurnstileWidgetIdRef.current && (window as any).turnstile) {
+      if (createTurnstileWidgetIdRef.current && window.turnstile) {
         try {
-          (window as any).turnstile.remove(createTurnstileWidgetIdRef.current);
-        } catch (e) {
+          window.turnstile.remove(createTurnstileWidgetIdRef.current);
+        } catch {
           // ignore
         }
       }
     };
-  }, [showCreateDialog, createTurnstileToken]);
+  }, [
+    createTurnstileRenderNonce,
+    createTurnstileToken,
+    isDevelopment,
+    showCreateDialog,
+  ]);
 
   // Function to reset create CAPTCHA widget
   const resetCreateCaptcha = () => {
-    if (createTurnstileWidgetIdRef.current && (window as any).turnstile) {
-      (window as any).turnstile.reset(createTurnstileWidgetIdRef.current);
+    if (createTurnstileWidgetIdRef.current && window.turnstile) {
+      window.turnstile.reset(createTurnstileWidgetIdRef.current);
       setCreateTurnstileToken(null);
     }
   };
@@ -1174,7 +1179,7 @@ export default function UsersClient() {
                         onClick={() => {
                           // Manual retry to re-render the widget
                           createTurnstileRetriesRef.current = 0;
-                          renderCreateTurnstile();
+                          setCreateTurnstileRenderNonce((nonce) => nonce + 1);
                         }}
                       >
                         Retry CAPTCHA

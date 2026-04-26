@@ -2,8 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createAuditLog } from "@/lib/audit";
+import type { Prisma, QuestionType } from "@/generated/prisma";
 
 type RouteParams = { params: Promise<{ id: string }> };
+type QuizAnswerInput = {
+  answer: string;
+  isCorrect?: boolean;
+};
+
+type QuizQuestionInput = {
+  type: QuestionType;
+  question: string;
+  explanation?: string | null;
+  points?: number;
+  answers: QuizAnswerInput[];
+};
 
 // GET: Get single quiz with questions
 // ADMIN: full access, LECTURER: must own course, STUDENT: must be enrolled
@@ -134,7 +147,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     } = body;
 
     // Update quiz metadata
-    const updateData: any = {};
+    const updateData: Prisma.QuizUpdateInput = {};
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
     if (timeLimit !== undefined) updateData.timeLimit = timeLimit;
@@ -155,14 +168,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
       // Create new questions
       updateData.questions = {
-        create: questions.map((q: any, index: number) => ({
+        create: (questions as QuizQuestionInput[]).map((q, index) => ({
           type: q.type,
           question: q.question,
           explanation: q.explanation,
           points: q.points || 1,
           order: index,
           answers: {
-            create: q.answers.map((a: any, aIndex: number) => ({
+            create: q.answers.map((a, aIndex) => ({
               answer: a.answer,
               isCorrect: a.isCorrect || false,
               order: aIndex,

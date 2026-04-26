@@ -147,7 +147,7 @@ async function main() {
     },
   });
 
-  const lesson1_2 = await seedPrisma.lesson.create({
+  await seedPrisma.lesson.create({
     data: {
       title: "HTML Elements and Attributes",
       description: "Working with common HTML elements",
@@ -174,7 +174,7 @@ async function main() {
     },
   });
 
-  const lesson2_2 = await seedPrisma.lesson.create({
+  await seedPrisma.lesson.create({
     data: {
       title: "CSS Flexbox",
       description: "Mastering flexbox layout",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
   CardContent,
@@ -88,13 +87,7 @@ export function QuizBuilder({
     questions: [],
   });
 
-  useEffect(() => {
-    if (existingQuizId) {
-      fetchQuiz();
-    }
-  }, [existingQuizId]);
-
-  const fetchQuiz = async () => {
+  const fetchQuiz = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(
@@ -109,7 +102,13 @@ export function QuizBuilder({
     } finally {
       setLoading(false);
     }
-  };
+  }, [existingQuizId]);
+
+  useEffect(() => {
+    if (existingQuizId) {
+      fetchQuiz();
+    }
+  }, [existingQuizId, fetchQuiz]);
 
   const addQuestion = () => {
     const newQuestion: Question = {

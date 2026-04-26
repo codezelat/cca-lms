@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     const order = (lastModule?.order ?? 0) + 1;
 
-    const module = await prisma.module.create({
+    const courseModule = await prisma.module.create({
       data: {
         title,
         description: description || null,
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(
-      { module, message: "Module created successfully" },
+      { module: courseModule, message: "Module created successfully" },
       { status: 201 },
     );
   } catch (error) {

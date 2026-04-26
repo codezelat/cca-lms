@@ -23,9 +23,37 @@ interface StudentSubmissionProps {
   assignmentId: string;
 }
 
+interface AssignmentDetails {
+  title: string;
+  description: string | null;
+  dueDate: string;
+  maxPoints: number;
+  instructions: string | null;
+  allowedFileTypes: string[];
+  maxFileSize: number;
+  maxFiles: number;
+}
+
+interface SubmissionAttachment {
+  id: string;
+  fileKey: string;
+  fileName: string;
+  fileSize: number;
+}
+
+interface StudentAssignmentSubmission {
+  submittedAt: string;
+  notes: string | null;
+  grade: number | null;
+  feedback: string | null;
+  gradedAt: string | null;
+  attachments?: SubmissionAttachment[];
+}
+
 export function StudentSubmission({ assignmentId }: StudentSubmissionProps) {
-  const [assignment, setAssignment] = useState<any>(null);
-  const [submission, setSubmission] = useState<any>(null);
+  const [assignment, setAssignment] = useState<AssignmentDetails | null>(null);
+  const [submission, setSubmission] =
+    useState<StudentAssignmentSubmission | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
@@ -34,7 +62,7 @@ export function StudentSubmission({ assignmentId }: StudentSubmissionProps) {
   const [serverCanSubmit, setServerCanSubmit] = useState(true);
   const [serverIsOverdue, setServerIsOverdue] = useState(false);
 
-  const fetchAssignmentAndSubmission = async () => {
+  const fetchAssignmentAndSubmission = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/student/assignments/${assignmentId}`);
@@ -60,11 +88,11 @@ export function StudentSubmission({ assignmentId }: StudentSubmissionProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [assignmentId]);
 
   useEffect(() => {
     fetchAssignmentAndSubmission();
-  }, [assignmentId]);
+  }, [fetchAssignmentAndSubmission]);
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -310,7 +338,7 @@ export function StudentSubmission({ assignmentId }: StudentSubmissionProps) {
           <div className="mb-6">
             <Label>Submitted Files</Label>
             <div className="mt-2 space-y-2">
-              {submission.attachments?.map((attachment: any) => (
+              {submission.attachments?.map((attachment) => (
                 <div
                   key={attachment.id}
                   className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-terminal-darker border border-terminal-border rounded-md gap-3"
@@ -370,9 +398,11 @@ export function StudentSubmission({ assignmentId }: StudentSubmissionProps) {
                   </p>
                 </div>
               )}
-              <p className="text-sm text-terminal-text-muted mt-3">
-                Graded on {new Date(submission.gradedAt).toLocaleString()}
-              </p>
+              {submission.gradedAt && (
+                <p className="text-sm text-terminal-text-muted mt-3">
+                  Graded on {new Date(submission.gradedAt).toLocaleString()}
+                </p>
+              )}
             </div>
           ) : (
             <div className="p-4 bg-terminal-darker border border-terminal-border rounded-md text-center">

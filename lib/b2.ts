@@ -236,7 +236,7 @@ export async function uploadToB2(
           } else {
             errorMessage = `Upload failed for "${fileName}": ${message}`;
           }
-        } catch (parseError) {
+        } catch {
           // If JSON parsing fails, use status text
           errorMessage = `Upload failed for "${fileName}": ${response.statusText}`;
         }

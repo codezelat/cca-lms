@@ -22,7 +22,7 @@ export async function GET(
 
     const { id } = await params;
 
-    const module = await prisma.module.findUnique({
+    const courseModule = await prisma.module.findUnique({
       where: { id },
       include: {
         course: {
@@ -50,13 +50,13 @@ export async function GET(
       },
     });
 
-    if (!module) {
+    if (!courseModule) {
       return NextResponse.json({ error: "Module not found" }, { status: 404 });
     }
 
     // Lecturers can only access modules for their own courses
     if (session.user.role === "LECTURER") {
-      const isAssigned = module.course.lecturers.some(
+      const isAssigned = courseModule.course.lecturers.some(
         (l) => l.lecturerId === session.user.id,
       );
       if (!isAssigned) {
@@ -64,7 +64,7 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({ module });
+    return NextResponse.json({ module: courseModule });
   } catch (error) {
     console.error("Error fetching module:", error);
     return NextResponse.json(
@@ -95,7 +95,7 @@ export async function PUT(
 
     // Check ownership if lecturer
     if (session.user.role === "LECTURER") {
-      const module = await prisma.module.findUnique({
+      const courseModule = await prisma.module.findUnique({
         where: { id },
         include: {
           course: {
@@ -108,12 +108,12 @@ export async function PUT(
         },
       });
 
-      if (!module || module.course.lecturers.length === 0) {
+      if (!courseModule || courseModule.course.lecturers.length === 0) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
     }
 
-    const module = await prisma.module.update({
+    const courseModule = await prisma.module.update({
       where: { id },
       data: {
         ...(title !== undefined && { title }),
@@ -130,7 +130,7 @@ export async function PUT(
     });
 
     return NextResponse.json({
-      module,
+      module: courseModule,
       message: "Module updated successfully",
     });
   } catch (error) {
@@ -157,7 +157,7 @@ export async function DELETE(
     const { id } = await params;
 
     // Check if module has lessons
-    const module = await prisma.module.findUnique({
+    const courseModule = await prisma.module.findUnique({
       where: { id },
       select: {
         courseId: true,
@@ -169,31 +169,31 @@ export async function DELETE(
       },
     });
 
-    if (!module) {
+    if (!courseModule) {
       return NextResponse.json({ error: "Module not found" }, { status: 404 });
     }
 
-    const courseId = module.courseId;
+    const courseId = courseModule.courseId;
 
     // Check for force delete query param
     const { searchParams } = new URL(request.url);
     const forceDelete = searchParams.get("force") === "true";
 
-    if (module._count.lessons > 0 && !forceDelete) {
+    if (courseModule._count.lessons > 0 && !forceDelete) {
       return NextResponse.json(
         {
-          error: `Module has ${module._count.lessons} lesson(s). Use force=true to delete all content including submissions and files.`,
-          lessonsCount: module._count.lessons,
+          error: `Module has ${courseModule._count.lessons} lesson(s). Use force=true to delete all content including submissions and files.`,
+          lessonsCount: courseModule._count.lessons,
         },
         { status: 400 },
       );
     }
 
     // If force delete, get all files to delete (R2 for resources, B2 for submissions)
-    let r2FileKeys: string[] = [];
-    let b2FileKeys: string[] = [];
+    const r2FileKeys: string[] = [];
+    const b2FileKeys: string[] = [];
 
-    if (forceDelete && module._count.lessons > 0) {
+    if (forceDelete && courseModule._count.lessons > 0) {
       const moduleWithFiles = await prisma.module.findUnique({
         where: { id },
         include: {

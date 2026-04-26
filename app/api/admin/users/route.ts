@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { auditActions } from "@/lib/audit";
 import { sendUserCreatedEmail } from "@/lib/resend";
 import { generateSecurePassword } from "@/lib/security";
+import type { AccountStatus, Prisma, UserRole } from "@/generated/prisma";
 
 // GET /api/admin/users - List all users with filters
 export async function GET(request: Request) {
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
     const skip = (page - 1) * limit;
 
     // Build where clause
-    const where: any = {};
+    const where: Prisma.UserWhereInput = {};
 
     if (search) {
       where.OR = [
@@ -36,11 +37,11 @@ export async function GET(request: Request) {
     }
 
     if (role) {
-      where.role = role;
+      where.role = role as UserRole;
     }
 
     if (status) {
-      where.status = status;
+      where.status = status as AccountStatus;
     }
 
     // Fetch users and total count

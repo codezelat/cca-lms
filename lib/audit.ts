@@ -291,8 +291,8 @@ export const auditActions = {
   programmeUpdated: (
     userId: string,
     programmeId: string,
-    before: any,
-    after: any,
+    before: unknown,
+    after: unknown,
   ) =>
     createAuditLog({
       userId,
@@ -409,8 +409,8 @@ export const auditActions = {
   userUpdated: (
     userId: string,
     targetUserId: string,
-    before: any,
-    after: any,
+    before: unknown,
+    after: unknown,
   ) =>
     createAuditLog({
       userId,

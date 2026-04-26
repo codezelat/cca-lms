@@ -36,46 +36,42 @@ export default function FirstLoginPage() {
   const isDevelopment =
     (process.env.NODE_ENV || "production") === "development";
 
-  // Turnstile callbacks
-  const handleTurnstileSuccess = (token: string) => {
-    setTurnstileToken(token);
-  };
-
-  const handleTurnstileError = () => {
-    setTurnstileToken(null);
-  };
-
-  const handleTurnstileExpired = () => {
-    setTurnstileToken(null);
-  };
-
   // Expose callbacks to window for Turnstile (skip in development)
   useEffect(() => {
     // Skip Turnstile in development mode
     if (isDevelopment) return;
 
+    const handleTurnstileSuccess = (token: string) => {
+      setTurnstileToken(token);
+    };
+
+    const handleTurnstileError = () => {
+      setTurnstileToken(null);
+    };
+
+    const handleTurnstileExpired = () => {
+      setTurnstileToken(null);
+    };
+
     const initTurnstile = () => {
-      if ((window as any).turnstile && turnstileRef.current) {
-        turnstileWidgetIdRef.current = (window as any).turnstile.render(
-          turnstileRef.current,
-          {
-            sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
-            callback: handleTurnstileSuccess,
-            "error-callback": handleTurnstileError,
-            "expired-callback": handleTurnstileExpired,
-            theme: "dark",
-          },
-        );
+      if (window.turnstile && turnstileRef.current) {
+        turnstileWidgetIdRef.current = window.turnstile.render(turnstileRef.current, {
+          sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+          callback: handleTurnstileSuccess,
+          "error-callback": handleTurnstileError,
+          "expired-callback": handleTurnstileExpired,
+          theme: "dark",
+        });
       }
     };
 
     // Check if Turnstile is already loaded
-    if ((window as any).turnstile) {
+    if (window.turnstile) {
       initTurnstile();
     } else {
       // Wait for Turnstile to load
       const checkTurnstile = setInterval(() => {
-        if ((window as any).turnstile) {
+        if (window.turnstile) {
           clearInterval(checkTurnstile);
           initTurnstile();
         }
@@ -88,16 +84,16 @@ export default function FirstLoginPage() {
     }
 
     return () => {
-      if (turnstileWidgetIdRef.current && (window as any).turnstile) {
-        (window as any).turnstile.remove(turnstileWidgetIdRef.current);
+      if (turnstileWidgetIdRef.current && window.turnstile) {
+        window.turnstile.remove(turnstileWidgetIdRef.current);
       }
     };
-  }, []);
+  }, [isDevelopment]);
 
   // Function to reset CAPTCHA widget
   const resetCaptcha = () => {
-    if (turnstileWidgetIdRef.current && (window as any).turnstile) {
-      (window as any).turnstile.reset(turnstileWidgetIdRef.current);
+    if (turnstileWidgetIdRef.current && window.turnstile) {
+      window.turnstile.reset(turnstileWidgetIdRef.current);
       setTurnstileToken(null);
     }
   };
@@ -145,7 +141,7 @@ export default function FirstLoginPage() {
         setError(data.error || "Failed to change password");
         resetCaptcha(); // Reset CAPTCHA on error since token is consumed
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred");
       resetCaptcha(); // Reset CAPTCHA on error since token is consumed
     } finally {

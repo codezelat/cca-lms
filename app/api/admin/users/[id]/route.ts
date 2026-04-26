@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { auditActions } from "@/lib/audit";
 import { generateSecurePassword } from "@/lib/security";
+import type { Prisma } from "@/generated/prisma";
 
 // GET /api/admin/users/[id] - Get single user
 export async function GET(
@@ -144,7 +145,7 @@ export async function PUT(
     }
 
     // Build update data
-    const updateData: any = {};
+    const updateData: Prisma.UserUpdateInput = {};
     if (name) updateData.name = name.trim();
     if (email) updateData.email = email.toLowerCase();
     if (role) updateData.role = role;

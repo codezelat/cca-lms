@@ -448,39 +448,6 @@ export default function ProgrammesClient() {
     }
   };
 
-  const handleRemoveEnrollment = async (
-    programmeId: string,
-    userId: string,
-    userName?: string,
-  ) => {
-    const confirmed = await confirm({
-      title: "Remove User from Programme",
-      description: `Are you sure you want to remove ${userName || "this user"} from the programme? Their progress will be lost.`,
-      variant: "warning",
-      confirmText: "Remove",
-    });
-
-    if (!confirmed) return;
-
-    try {
-      const response = await fetch(
-        `/api/admin/programmes/${programmeId}/enrollments?userId=${userId}`,
-        { method: "DELETE" },
-      );
-
-      if (!response.ok) throw new Error("Failed to remove enrollment");
-
-      toast.success("User removed", {
-        description: `${userName || "User"} has been removed from the programme`,
-      });
-      fetchEnrollments(programmeId);
-      fetchProgrammes();
-    } catch (error) {
-      console.error("Error removing enrollment:", error);
-      toast.error("Failed to remove user from programme");
-    }
-  };
-
   const handleOpenAddUsers = () => {
     setShowAddUsersDialog(true);
     setSelectedUsers([]);
