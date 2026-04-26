@@ -739,37 +739,37 @@ export default function UsersClient() {
   };
 
   return (
-    <div className="min-h-screen bg-terminal-dark">
+    <div className="min-h-screen overflow-x-hidden bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Users className="h-6 w-6 text-terminal-green" />
-              <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
+        <div className="flex flex-col gap-4 mb-8 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-2 mb-2">
+              <Users className="h-5 w-5 shrink-0 text-terminal-green sm:h-6 sm:w-6" />
+              <h1 className="min-w-0 break-words font-mono text-xl font-bold text-terminal-green terminal-glow sm:text-3xl">
                 $ users --manage
               </h1>
             </div>
-            <p className="font-mono text-sm text-terminal-text-muted">
+            <p className="break-words font-mono text-sm text-terminal-text-muted">
               Create and manage student and lecturer accounts
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
             <Button
-              className="gap-2 border-terminal-green/40 text-terminal-green hover:bg-terminal-green/10"
+              className="w-full gap-2 border-terminal-green/40 text-terminal-green hover:bg-terminal-green/10 sm:w-auto"
               variant="outline"
               onClick={() => router.push("/bulk-enroll")}
             >
               <Upload className="h-4 w-4" />
               Bulk Enroll
             </Button>
-            <Button className="gap-2" onClick={openCreateDialog}>
+            <Button className="w-full gap-2 sm:w-auto" onClick={openCreateDialog}>
               <Plus className="h-4 w-4" />
               Add {activeTab === "STUDENT" ? "Student" : "Lecturer"}
             </Button>
           </div>
         </div>
 
-        <div className="flex gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-6">
           <Button
             variant={activeTab === "STUDENT" ? "default" : "outline"}
             onClick={() => {
@@ -794,8 +794,8 @@ export default function UsersClient() {
           </Button>
         </div>
 
-        <div className="flex gap-4 mb-8">
-          <div className="flex-1 relative">
+        <div className="flex flex-col gap-3 mb-8 sm:flex-row sm:items-center sm:gap-4">
+          <div className="relative min-w-0 flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-terminal-text-muted" />
             <Input
               type="text"
@@ -815,7 +815,7 @@ export default function UsersClient() {
               setPage(1);
             }}
           >
-            <SelectTrigger className="w-45">
+            <SelectTrigger className="w-full sm:w-44">
               <Filter className="h-4 w-4 mr-2" />
               <SelectValue />
             </SelectTrigger>
@@ -865,15 +865,15 @@ export default function UsersClient() {
                   {users.map((user) => (
                     <div
                       key={user.id}
-                      className="flex items-center justify-between p-4 rounded-lg border border-terminal-green/20 bg-terminal-darker/50 hover:bg-terminal-green/5 hover:border-terminal-green/40 transition-all group"
+                      className="flex flex-col gap-4 p-4 rounded-lg border border-terminal-green/20 bg-terminal-darker/50 hover:bg-terminal-green/5 hover:border-terminal-green/40 transition-all group sm:flex-row sm:items-center sm:justify-between"
                     >
-                      <div className="flex items-center gap-4 flex-1">
-                        <div className="h-12 w-12 rounded-full border-2 border-terminal-green bg-terminal-green/10 flex items-center justify-center font-mono font-bold text-terminal-green">
+                      <div className="flex min-w-0 items-start gap-3 sm:items-center sm:gap-4 sm:flex-1">
+                        <div className="h-12 w-12 shrink-0 rounded-full border-2 border-terminal-green bg-terminal-green/10 flex items-center justify-center font-mono font-bold text-terminal-green">
                           {getInitials(user.name)}
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-mono font-semibold text-terminal-text">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <h3 className="min-w-0 break-words font-mono font-semibold text-terminal-text">
                               {user.name || "No Name"}
                             </h3>
                             <Badge
@@ -893,9 +893,9 @@ export default function UsersClient() {
                                   : "Suspended"}
                             </Badge>
                           </div>
-                          <div className="flex items-center gap-4 text-xs font-mono text-terminal-text-muted">
-                            <span className="flex items-center gap-1">
-                              <Mail className="h-3 w-3" />
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-mono text-terminal-text-muted">
+                            <span className="flex min-w-0 items-center gap-1 break-all">
+                              <Mail className="h-3 w-3 shrink-0" />
                               {user.email}
                             </span>
                             <span>Joined {formatDate(user.createdAt)}</span>
@@ -903,7 +903,7 @@ export default function UsersClient() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-6">
+                      <div className="flex w-full items-center justify-between gap-4 sm:w-auto sm:justify-end sm:gap-6">
                         <div className="text-center">
                           <p className="text-xs font-mono text-terminal-text-muted mb-1">
                             {activeTab === "STUDENT"
@@ -920,7 +920,8 @@ export default function UsersClient() {
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"
+                              aria-label={`Open actions for ${user.name || user.email}`}
                             >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
@@ -1485,12 +1486,12 @@ export default function UsersClient() {
                     {userEnrollments.map((enrollment) => (
                       <div
                         key={enrollment.id}
-                        className="flex items-center justify-between p-3 rounded-lg border border-terminal-green/20 bg-terminal-darker/50"
+                        className="flex flex-col gap-3 p-3 rounded-lg border border-terminal-green/20 bg-terminal-darker/50 sm:flex-row sm:items-center sm:justify-between"
                       >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <BookOpen className="h-4 w-4 text-terminal-green" />
-                            <span className="font-mono text-sm font-semibold">
+                        <div className="min-w-0 sm:flex-1">
+                          <div className="mb-1 flex flex-wrap items-center gap-2">
+                            <BookOpen className="h-4 w-4 shrink-0 text-terminal-green" />
+                            <span className="min-w-0 break-words font-mono text-sm font-semibold">
                               {enrollment.course.title}
                             </span>
                             <Badge
@@ -1504,7 +1505,7 @@ export default function UsersClient() {
                               {enrollment.course.status}
                             </Badge>
                           </div>
-                          <div className="flex items-center gap-3 text-xs font-mono text-terminal-text-muted">
+                          <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-terminal-text-muted">
                             <span>
                               Enrolled {formatDate(enrollment.enrolledAt)}
                             </span>
@@ -1525,7 +1526,7 @@ export default function UsersClient() {
                               enrollment.course.title,
                             )
                           }
-                          className="text-destructive hover:text-destructive"
+                          className="w-full text-destructive hover:text-destructive sm:w-auto"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -1535,13 +1536,14 @@ export default function UsersClient() {
                 </div>
               )}
 
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <Button
                   onClick={() => {
                     setShowViewDialog(false);
                     handleEditUser(viewingUser);
                   }}
                   variant="outline"
+                  className="w-full sm:w-auto"
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Edit User
@@ -1551,7 +1553,7 @@ export default function UsersClient() {
                     setShowViewDialog(false);
                     handleAssignProgrammes(viewingUser);
                   }}
-                  className="flex-1"
+                  className="w-full sm:flex-1"
                 >
                   <GraduationCap className="h-4 w-4 mr-2" />
                   Assign Programmes
@@ -1559,6 +1561,7 @@ export default function UsersClient() {
                 <Button
                   variant="outline"
                   onClick={() => setShowViewDialog(false)}
+                  className="w-full sm:w-auto"
                 >
                   Close
                 </Button>
@@ -1616,18 +1619,18 @@ export default function UsersClient() {
                     {userEnrollments.map((enrollment) => (
                       <div
                         key={enrollment.id}
-                        className="flex items-center justify-between p-2 rounded border border-terminal-green/20 bg-terminal-green/5 text-xs"
+                        className="flex flex-col gap-2 p-2 rounded border border-terminal-green/20 bg-terminal-green/5 text-xs sm:flex-row sm:items-center sm:justify-between"
                       >
-                        <div className="flex items-center gap-2">
-                          <CheckCircle2 className="h-3 w-3 text-terminal-green" />
-                          <span className="font-mono">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
+                          <CheckCircle2 className="h-3 w-3 shrink-0 text-terminal-green" />
+                          <span className="min-w-0 break-words font-mono">
                             {enrollment.course.title}
                           </span>
                           <Badge variant="outline" className="text-[10px]">
                             {enrollment.course.status}
                           </Badge>
                         </div>
-                        <span className="font-mono text-terminal-text-muted">
+                        <span className="shrink-0 font-mono text-terminal-text-muted">
                           {Math.round(enrollment.progress)}%
                         </span>
                       </div>
@@ -1692,10 +1695,10 @@ export default function UsersClient() {
                           }
                           className="mt-1"
                         />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <BookOpen className="h-4 w-4 text-terminal-green" />
-                            <span className="font-mono text-sm font-semibold">
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex flex-wrap items-center gap-2">
+                            <BookOpen className="h-4 w-4 shrink-0 text-terminal-green" />
+                            <span className="min-w-0 break-words font-mono text-sm font-semibold">
                               {programme.title}
                             </span>
                             <Badge
@@ -1718,7 +1721,7 @@ export default function UsersClient() {
                             )}
                           </div>
                           {programme.description && (
-                            <p className="text-xs text-terminal-text-muted font-mono line-clamp-2">
+                            <p className="break-words text-xs text-terminal-text-muted font-mono line-clamp-2">
                               {programme.description}
                             </p>
                           )}

@@ -217,25 +217,29 @@ export default function StudentAuditDetail({ studentId }: { studentId: string })
     data;
 
   return (
-    <div className="min-h-screen bg-terminal-dark">
+    <div className="min-h-screen overflow-x-hidden bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Terminal className="h-6 w-6 text-terminal-green" />
-                <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <div className="mb-2 flex min-w-0 items-start gap-2">
+                <Terminal className="mt-0.5 h-5 w-5 shrink-0 text-terminal-green sm:h-6 sm:w-6" />
+                <h1 className="min-w-0 break-words font-mono text-xl font-bold text-terminal-green terminal-glow sm:text-3xl">
                   $ audit-student --{student.name || student.email}
                 </h1>
               </div>
-              <p className="font-mono text-sm text-terminal-text-muted">
+              <p className="break-words font-mono text-sm text-terminal-text-muted">
                 Detailed audit trail for student learning and access signals
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <Link href="/audit-students">
-                <Button variant="outline" size="sm" className="gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2 sm:w-auto"
+                >
                   <ArrowLeft className="h-4 w-4" />
                   Back
                 </Button>
@@ -243,7 +247,7 @@ export default function StudentAuditDetail({ studentId }: { studentId: string })
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-2"
+                className="w-full gap-2 sm:w-auto"
                 onClick={fetchDetail}
               >
                 <RefreshCw className="h-4 w-4" />
@@ -267,10 +271,10 @@ export default function StudentAuditDetail({ studentId }: { studentId: string })
           <CardContent>
             <div className="grid gap-4 md:grid-cols-3">
               <div>
-                <div className="text-terminal-text font-semibold">
+                <div className="break-words text-terminal-text font-semibold">
                   {student.name || "Unnamed Student"}
                 </div>
-                <div className="text-terminal-text-muted text-sm">
+                <div className="break-all text-terminal-text-muted text-sm">
                   {student.email}
                 </div>
               </div>
@@ -362,7 +366,7 @@ export default function StudentAuditDetail({ studentId }: { studentId: string })
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <Activity className="h-6 w-6 text-yellow-400" />
-                <div className="text-3xl font-bold font-mono text-yellow-400">
+                <div className="break-words text-right font-mono text-2xl font-bold text-yellow-400 sm:text-3xl">
                   {formatRelative(summary.lastAuditAt)}
                 </div>
               </div>
@@ -428,7 +432,7 @@ export default function StudentAuditDetail({ studentId }: { studentId: string })
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm font-mono">
+                <table className="min-w-[900px] w-full text-sm font-mono">
                   <thead>
                     <tr className="text-left text-terminal-text-muted border-b border-terminal-green/20">
                       <th className="py-3 pr-4">Programme</th>
@@ -446,7 +450,7 @@ export default function StudentAuditDetail({ studentId }: { studentId: string })
                         className="border-b border-terminal-green/10 hover:bg-terminal-green/5 transition-all"
                       >
                         <td className="py-4 pr-4">
-                          <div className="text-terminal-text font-semibold">
+                          <div className="break-words text-terminal-text font-semibold">
                             {enrollment.courseTitle}
                           </div>
                           <div className="text-terminal-text-muted text-xs">
@@ -511,7 +515,7 @@ export default function StudentAuditDetail({ studentId }: { studentId: string })
                     >
                       <div className="mt-1 h-2 w-2 rounded-full bg-terminal-green animate-pulse shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-mono text-terminal-text">
+                        <p className="break-words text-sm font-mono text-terminal-text">
                           {formatAction(activity.action)}
                           {activity.entityType && (
                             <span className="text-terminal-green">
@@ -520,7 +524,7 @@ export default function StudentAuditDetail({ studentId }: { studentId: string })
                             </span>
                           )}
                         </p>
-                        <p className="text-xs font-mono text-terminal-text-muted mt-1 flex items-center gap-1">
+                        <p className="mt-1 flex items-center gap-1 text-xs font-mono text-terminal-text-muted">
                           <Clock className="h-3 w-3" />
                           {formatRelative(activity.createdAt)}
                         </p>
@@ -562,10 +566,10 @@ export default function StudentAuditDetail({ studentId }: { studentId: string })
                         key={completion.id}
                         className="p-3 rounded-md border border-terminal-green/10 bg-terminal-darker/30"
                       >
-                        <div className="text-sm font-mono text-terminal-text">
+                        <div className="break-words text-sm font-mono text-terminal-text">
                           {completion.lessonTitle || "Lesson completed"}
                         </div>
-                        <div className="text-xs font-mono text-terminal-text-muted mt-1">
+                        <div className="mt-1 break-words text-xs font-mono text-terminal-text-muted">
                           {completion.courseTitle || "Programme"}
                         </div>
                         <div className="text-xs font-mono text-terminal-text-muted mt-2 flex items-center gap-1">
@@ -600,12 +604,12 @@ export default function StudentAuditDetail({ studentId }: { studentId: string })
                         key={submission.id}
                         className="p-3 rounded-md border border-terminal-green/10 bg-terminal-darker/30"
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <div className="text-sm font-mono text-terminal-text">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0">
+                            <div className="break-words text-sm font-mono text-terminal-text">
                               {submission.title}
                             </div>
-                            <div className="text-xs font-mono text-terminal-text-muted">
+                            <div className="break-words text-xs font-mono text-terminal-text-muted">
                               {submission.courseTitle || "Programme"}
                             </div>
                           </div>

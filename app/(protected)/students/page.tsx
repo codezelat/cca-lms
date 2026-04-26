@@ -98,17 +98,17 @@ export default function StudentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-terminal-dark">
+    <div className="min-h-screen overflow-x-hidden bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <Users className="h-6 w-6 text-terminal-green" />
-            <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
+          <div className="mb-2 flex min-w-0 items-center gap-2">
+            <Users className="h-5 w-5 shrink-0 text-terminal-green sm:h-6 sm:w-6" />
+            <h1 className="min-w-0 break-words font-mono text-xl font-bold text-terminal-green terminal-glow sm:text-3xl">
               $ students --active
             </h1>
           </div>
-          <p className="font-mono text-sm text-terminal-text-muted">
+          <p className="break-words font-mono text-sm text-terminal-text-muted">
             Students enrolled in your programmes
           </p>
         </div>
@@ -203,17 +203,17 @@ export default function StudentsPage() {
                     key={student.id}
                     className="p-4 rounded-lg border border-terminal-green/20 bg-terminal-darker/50 hover:bg-terminal-green/5 transition-all"
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h3 className="font-mono font-semibold text-terminal-text mb-1">
+                    <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <h3 className="break-words font-mono font-semibold text-terminal-text mb-1">
                           {student.name}
                         </h3>
-                        <div className="flex items-center gap-2 text-sm text-terminal-text-muted">
-                          <Mail className="h-3 w-3" />
-                          <span className="font-mono">{student.email}</span>
+                        <div className="flex min-w-0 items-center gap-2 text-sm text-terminal-text-muted">
+                          <Mail className="h-3 w-3 shrink-0" />
+                          <span className="break-all font-mono">{student.email}</span>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-left sm:text-right">
                         <div className="font-mono text-2xl font-bold text-terminal-green mb-1">
                           {student.averageProgress}%
                         </div>
@@ -223,7 +223,7 @@ export default function StudentsPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4 mb-3">
+                    <div className="mb-3 grid grid-cols-1 gap-3 min-[420px]:grid-cols-3 sm:gap-4">
                       <div className="text-center p-2 rounded bg-terminal-dark/50">
                         <div className="font-mono text-lg font-bold text-terminal-green">
                           {student.enrolledCoursesCount}
@@ -266,7 +266,7 @@ export default function StudentsPage() {
                             <Badge
                               key={idx}
                               variant="outline"
-                              className="font-mono text-xs"
+                              className="max-w-full break-words font-mono text-xs"
                             >
                               {course.courseTitle} - {course.progress}%
                             </Badge>

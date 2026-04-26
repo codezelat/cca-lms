@@ -554,8 +554,8 @@ export function BulkSubmissionActions({
       {downloadProgress && (
         <Card className="p-4 bg-terminal-darker">
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-2">
                 {downloadProgress.phase === "complete" ? (
                   <CheckCircle className="h-5 w-5 text-green-500" />
                 ) : downloadProgress.phase === "error" ? (
@@ -563,7 +563,7 @@ export function BulkSubmissionActions({
                 ) : (
                   <Loader2 className="h-5 w-5 animate-spin text-terminal-accent" />
                 )}
-                <span className="font-medium">
+                <span className="break-words font-medium">
                   {downloadProgress.phase === "preparing" &&
                     "Preparing download..."}
                   {downloadProgress.phase === "downloading" &&

@@ -182,13 +182,13 @@ export default function BulkEnrollClient() {
   const duplicateCount = preview.filter((p) => p.status === "duplicate").length;
 
   return (
-    <div className="min-h-screen bg-terminal-dark">
+    <div className="min-h-screen overflow-x-hidden bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow mb-2">
+          <h1 className="break-words font-mono text-xl font-bold text-terminal-green terminal-glow mb-2 sm:text-3xl">
             $ bulk-enroll
           </h1>
-          <p className="font-mono text-sm text-terminal-text-muted">
+          <p className="break-words font-mono text-sm text-terminal-text-muted">
             Bulk enroll students or lecturers to programmes via CSV upload
           </p>
         </div>
@@ -196,9 +196,9 @@ export default function BulkEnrollClient() {
         {error && (
           <Card className="mb-6 border-red-500 bg-red-500/10">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-red-400">
-                <AlertCircle className="h-5 w-5" />
-                <p className="font-mono text-sm">{error}</p>
+              <div className="flex min-w-0 items-start gap-2 text-red-400">
+                <AlertCircle className="h-5 w-5 shrink-0" />
+                <p className="break-words font-mono text-sm">{error}</p>
               </div>
             </CardContent>
           </Card>
@@ -215,14 +215,14 @@ export default function BulkEnrollClient() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
               <Select
                 value={userType}
                 onValueChange={(value) =>
                   setUserType(value as "STUDENT" | "LECTURER")
                 }
               >
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-full sm:w-[200px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -234,7 +234,7 @@ export default function BulkEnrollClient() {
               <Button
                 onClick={handleDownloadTemplate}
                 disabled={isDownloading}
-                className="font-mono"
+                className="w-full font-mono sm:w-auto"
               >
                 {isDownloading ? (
                   <>
@@ -314,10 +314,10 @@ export default function BulkEnrollClient() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
               <label
                 htmlFor="file-upload"
-                className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-terminal-green text-terminal-dark font-mono text-sm rounded hover:bg-terminal-green/90 transition-colors"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-terminal-green px-4 py-2 font-mono text-sm text-terminal-dark transition-colors hover:bg-terminal-green/90"
               >
                 <Upload className="h-4 w-4" />
                 {file ? "Change File" : "Choose CSV File"}
@@ -330,7 +330,7 @@ export default function BulkEnrollClient() {
                 className="hidden"
               />
               {file && (
-                <span className="font-mono text-sm text-terminal-text-muted">
+                <span className="break-all font-mono text-sm text-terminal-text-muted">
                   {file.name}
                 </span>
               )}
@@ -357,7 +357,7 @@ export default function BulkEnrollClient() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                 <Badge variant="outline" className="font-mono">
                   <CheckCircle2 className="mr-1 h-3 w-3 text-green-500" />
                   {validCount} Valid
@@ -376,9 +376,9 @@ export default function BulkEnrollClient() {
                 )}
               </div>
 
-              <div className="border border-terminal-border rounded-md overflow-hidden">
-                <div className="max-h-96 overflow-y-auto">
-                  <table className="w-full text-sm font-mono">
+              <div className="overflow-hidden rounded-md border border-terminal-border">
+                <div className="max-h-96 overflow-auto">
+                  <table className="min-w-[760px] w-full text-sm font-mono">
                     <thead className="bg-terminal-darker sticky top-0">
                       <tr>
                         <th className="text-left p-2 border-b border-terminal-border">
@@ -442,15 +442,15 @@ export default function BulkEnrollClient() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <p className="font-mono text-sm text-terminal-text-muted">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="break-words font-mono text-sm text-terminal-text-muted">
                   {validCount} enrollment(s) will be created
                   {duplicateCount > 0 && `, ${duplicateCount} will be skipped`}
                 </p>
                 <Button
                   onClick={handleSubmitEnrollments}
                   disabled={validCount === 0 || isProcessing}
-                  className="font-mono"
+                  className="w-full font-mono sm:w-auto"
                 >
                   {isProcessing ? (
                     <>
@@ -481,9 +481,9 @@ export default function BulkEnrollClient() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="border border-terminal-border rounded-md overflow-hidden">
-                <div className="max-h-64 overflow-y-auto">
-                  <table className="w-full text-sm font-mono">
+              <div className="overflow-hidden rounded-md border border-terminal-border">
+                <div className="max-h-64 overflow-auto">
+                  <table className="min-w-[560px] w-full text-sm font-mono">
                     <thead className="bg-terminal-darker sticky top-0">
                       <tr>
                         <th className="text-left p-2 border-b border-terminal-border">
@@ -497,10 +497,10 @@ export default function BulkEnrollClient() {
                     <tbody>
                       {programmes.map((prog) => (
                         <tr key={prog.id}>
-                          <td className="p-2 border-b border-terminal-border text-terminal-green">
+                          <td className="break-all p-2 border-b border-terminal-border text-terminal-green">
                             {prog.id}
                           </td>
-                          <td className="p-2 border-b border-terminal-border">
+                          <td className="break-words p-2 border-b border-terminal-border">
                             {prog.title}
                           </td>
                         </tr>

@@ -291,21 +291,23 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-terminal-dark">
+    <div className="min-h-screen overflow-x-hidden bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <Terminal className="h-6 w-6 text-terminal-green" />
-            <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
-              $ admin-dashboard
-            </h1>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex min-w-0 items-center gap-2">
+              <Terminal className="h-5 w-5 shrink-0 text-terminal-green sm:h-6 sm:w-6" />
+              <h1 className="min-w-0 break-words font-mono text-xl font-bold text-terminal-green terminal-glow sm:text-3xl">
+                $ admin-dashboard
+              </h1>
+            </div>
             <Button
               onClick={fetchDashboardData}
               variant="outline"
               size="sm"
               disabled={isLoading}
-              className="ml-auto"
+              className="w-full sm:ml-auto sm:w-auto"
             >
               <RefreshCw
                 className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
@@ -319,7 +321,7 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4 mb-8">
           {statCards.map((stat, index) => {
             const Icon = stat.icon;
             return (
@@ -437,18 +439,18 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
                       variant="outline"
                       className="w-full justify-start gap-3 h-auto py-4 hover:bg-terminal-green/10 hover:border-terminal-green transition-all group"
                     >
-                      <div className="flex items-center gap-3 flex-1">
-                        <Icon className="h-5 w-5 text-terminal-green group-hover:scale-110 transition-transform" />
-                        <div className="text-left">
-                          <div className="font-mono font-semibold text-terminal-text">
+                      <div className="flex min-w-0 items-center gap-3 flex-1">
+                        <Icon className="h-5 w-5 shrink-0 text-terminal-green group-hover:scale-110 transition-transform" />
+                        <div className="min-w-0 text-left">
+                          <div className="break-words font-mono font-semibold text-terminal-text">
                             {action.label}
                           </div>
-                          <div className="font-mono text-xs text-terminal-text-muted">
+                          <div className="break-words font-mono text-xs text-terminal-text-muted">
                             {action.description}
                           </div>
                         </div>
                       </div>
-                      <ArrowRight className="h-4 w-4 text-terminal-text-muted group-hover:text-terminal-green group-hover:translate-x-1 transition-all" />
+                      <ArrowRight className="h-4 w-4 shrink-0 text-terminal-text-muted group-hover:text-terminal-green group-hover:translate-x-1 transition-all" />
                     </Button>
                   </Link>
                 );
@@ -472,8 +474,8 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
             <div className="grid gap-4 md:grid-cols-2">
               {/* Status Indicators */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 rounded-md bg-terminal-darker/80 border border-terminal-green/20">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-md bg-terminal-darker/80 border border-terminal-green/20">
+                  <div className="flex min-w-0 items-center gap-2">
                     {databaseStatus === "connected" ? (
                       <CheckCircle2 className="h-5 w-5 text-terminal-green animate-pulse" />
                     ) : databaseStatus === "disconnected" ? (
@@ -481,7 +483,7 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
                     ) : (
                       <Loader2 className="h-5 w-5 text-yellow-400 animate-spin" />
                     )}
-                    <span className="font-mono text-sm text-terminal-text">
+                    <span className="font-mono text-sm text-terminal-text break-words">
                       Database
                     </span>
                   </div>
@@ -490,8 +492,8 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between p-3 rounded-md bg-terminal-darker/80 border border-terminal-green/20">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-md bg-terminal-darker/80 border border-terminal-green/20">
+                  <div className="flex min-w-0 items-center gap-2">
                     <CheckCircle2 className="h-5 w-5 text-terminal-green animate-pulse" />
                     <span className="font-mono text-sm text-terminal-text">
                       API Service
@@ -502,8 +504,8 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between p-3 rounded-md bg-terminal-darker/80 border border-terminal-green/20">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-md bg-terminal-darker/80 border border-terminal-green/20">
+                  <div className="flex min-w-0 items-center gap-2">
                     <Clock className="h-5 w-5 text-blue-400" />
                     <span className="font-mono text-sm text-terminal-text">
                       Session Uptime
@@ -566,7 +568,7 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
                 </div>
 
                 <div className="p-3 rounded-md bg-terminal-darker/80 border border-terminal-green/20">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-mono text-xs text-terminal-text-muted">
                       System Time
                     </span>
@@ -579,7 +581,7 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
             </div>
 
             {/* Terminal Output */}
-            <div className="mt-4 rounded-md bg-terminal-darker/80 border border-terminal-green/20 p-4 font-mono text-xs space-y-1">
+            <div className="mt-4 rounded-md bg-terminal-darker/80 border border-terminal-green/20 p-4 font-mono text-xs space-y-1 break-words">
               <p className="text-terminal-text-muted">
                 <span className="text-terminal-green">$</span> system --status
               </p>

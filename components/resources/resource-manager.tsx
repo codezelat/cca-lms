@@ -323,7 +323,7 @@ export function ResourceManager({
               onDragEnd={handleDragEnd}
             >
               <CardContent className="p-4">
-                <div className="flex items-start gap-4">
+                <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
                   {/* Drag Handle */}
                   {canEdit && (
                     <div className="shrink-0 mt-1 cursor-grab active:cursor-grabbing">
@@ -338,9 +338,9 @@ export function ResourceManager({
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-terminal-text truncate">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="break-words font-semibold text-terminal-text sm:truncate">
                           {resource.title}
                         </h4>
                         {resource.description && (
@@ -348,7 +348,7 @@ export function ResourceManager({
                             {resource.description}
                           </p>
                         )}
-                        <div className="flex items-center gap-4 mt-2 text-xs text-terminal-text-muted">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-terminal-text-muted">
                           <span className="font-mono uppercase">
                             {resource.type.replace("_", " ")}
                           </span>
@@ -372,7 +372,7 @@ export function ResourceManager({
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex flex-wrap items-center gap-1 shrink-0">
                         {resource.type === "FILE" && resource.downloadable && (
                           <Button
                             variant="ghost"

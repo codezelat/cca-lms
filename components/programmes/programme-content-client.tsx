@@ -1036,7 +1036,7 @@ export default function ProgrammeContentClient({
   }
 
   return (
-    <div className="min-h-screen bg-terminal-dark">
+    <div className="min-h-screen overflow-x-hidden bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -1049,11 +1049,11 @@ export default function ProgrammeContentClient({
             Back to Programmes
           </Button>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <BookOpen className="h-6 w-6 text-terminal-green" />
-                <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex min-w-0 flex-wrap items-center gap-3 mb-2">
+                <BookOpen className="h-5 w-5 shrink-0 text-terminal-green sm:h-6 sm:w-6" />
+                <h1 className="min-w-0 break-words font-mono text-xl font-bold text-terminal-green terminal-glow sm:text-3xl">
                   {programme.title}
                 </h1>
                 <Badge
@@ -1064,16 +1064,16 @@ export default function ProgrammeContentClient({
                   {programme.status}
                 </Badge>
               </div>
-              <p className="font-mono text-sm text-terminal-text-muted">
+              <p className="break-words font-mono text-sm text-terminal-text-muted">
                 {programme.description || "No description"}
               </p>
-              <div className="flex gap-4 mt-2 text-xs font-mono text-terminal-text-muted">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs font-mono text-terminal-text-muted">
                 <span>{programme._count.modules} modules</span>
                 <span>{programme._count.enrollments} students enrolled</span>
               </div>
             </div>
             <Button
-              className="gap-2"
+              className="w-full gap-2 sm:w-auto"
               onClick={openCreateModuleDialog}
               disabled={isModuleReordering}
             >
@@ -1126,8 +1126,8 @@ export default function ProgrammeContentClient({
                   onDragOver={(event) => handleModuleDragOver(event, module.id)}
                   onDrop={(event) => handleModuleDrop(event, module.id)}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 flex-1">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="flex min-w-0 items-start gap-3 flex-1">
                       <div
                         draggable={
                           !isModuleReordering && programme.modules.length > 1
@@ -1167,17 +1167,17 @@ export default function ProgrammeContentClient({
                           <ChevronRight className="h-5 w-5" />
                         )}
                       </Button>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-xs text-terminal-text-muted">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <span className="shrink-0 font-mono text-xs text-terminal-text-muted">
                             Module {index + 1}
                           </span>
-                          <h3 className="font-mono font-semibold text-terminal-text">
+                          <h3 className="min-w-0 break-words font-mono font-semibold text-terminal-text">
                             {module.title}
                           </h3>
                         </div>
                         {module.description && (
-                          <p className="text-xs text-terminal-text-muted">
+                          <p className="break-words text-xs text-terminal-text-muted">
                             {module.description}
                           </p>
                         )}
@@ -1186,7 +1186,7 @@ export default function ProgrammeContentClient({
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                       <div className="flex items-center rounded-md border border-terminal-green/20 bg-terminal-dark/60 p-1">
                         <Button
                           size="icon"
@@ -1305,7 +1305,7 @@ export default function ProgrammeContentClient({
                               handleLessonDrop(event, module.id, lesson.id)
                             }
                             className={cn(
-                              "flex items-center gap-3 rounded-lg border border-terminal-green/20 bg-terminal-darker/30 p-3 transition-colors group",
+                              "flex flex-col gap-3 rounded-lg border border-terminal-green/20 bg-terminal-darker/30 p-3 transition-colors group sm:flex-row sm:items-center",
                               Boolean(reorderingLessonModuleId) && "opacity-80",
                               lessonDropTarget?.moduleId === module.id &&
                                 lessonDropTarget.lessonId === lesson.id &&
@@ -1352,8 +1352,8 @@ export default function ProgrammeContentClient({
                                 {lessonIndex + 1}
                               </span>
                             </div>
-                            <div className="flex-1">
-                              <h4 className="font-mono text-sm font-medium">
+                            <div className="min-w-0 flex-1">
+                              <h4 className="break-words font-mono text-sm font-medium">
                                 {lesson.title}
                               </h4>
                               {lesson.description && (
@@ -1362,7 +1362,7 @@ export default function ProgrammeContentClient({
                                 </p>
                               )}
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                               {lesson.duration > 0 && (
                                 <div className="flex items-center gap-1 text-xs text-terminal-text-muted">
                                   <Clock className="h-3 w-3" />
@@ -1411,7 +1411,7 @@ export default function ProgrammeContentClient({
                                   <ArrowDown className="h-3.5 w-3.5" />
                                 </Button>
                               </div>
-                              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button

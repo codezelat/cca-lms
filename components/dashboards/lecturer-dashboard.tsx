@@ -113,12 +113,12 @@ export default function LecturerDashboard() {
     },
   ];
   return (
-    <div className="min-h-screen bg-terminal-dark">
+    <div className="min-h-screen overflow-x-hidden bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <Terminal className="h-6 w-6 text-terminal-green" />
-            <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
+          <div className="flex min-w-0 items-center gap-2 mb-2">
+            <Terminal className="h-5 w-5 shrink-0 text-terminal-green sm:h-6 sm:w-6" />
+            <h1 className="min-w-0 break-words font-mono text-xl font-bold text-terminal-green terminal-glow sm:text-3xl">
               $ lecturer-dashboard
             </h1>
           </div>
@@ -128,7 +128,7 @@ export default function LecturerDashboard() {
         </div>
 
         {/* Stats */}
-        <div className="grid gap-6 md:grid-cols-4 mb-8">
+        <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4 mb-8">
           {statsDisplay.map((stat, index) => {
             const Icon = stat.icon;
             return (
@@ -159,8 +159,8 @@ export default function LecturerDashboard() {
         {/* My Programmes */}
         <Card className="mb-8">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <CardTitle className="flex items-center gap-2">
                   <BookOpen className="h-5 w-5" />
                   My Programmes
@@ -169,8 +169,8 @@ export default function LecturerDashboard() {
                   Programmes you&apos;re teaching
                 </CardDescription>
               </div>
-              <Link href="/programmes">
-                <Button size="sm">View All</Button>
+              <Link href="/programmes" className="w-full sm:w-auto">
+                <Button size="sm" className="w-full sm:w-auto">View All</Button>
               </Link>
             </div>
           </CardHeader>
@@ -183,11 +183,11 @@ export default function LecturerDashboard() {
               myProgrammes.slice(0, 5).map((programme) => (
                 <div
                   key={programme.id}
-                  className="flex items-center justify-between p-4 rounded-lg border border-terminal-green/20 bg-terminal-darker/50 hover:bg-terminal-green/5 transition-all"
+                  className="flex flex-col gap-4 p-4 rounded-lg border border-terminal-green/20 bg-terminal-darker/50 hover:bg-terminal-green/5 transition-all sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-mono font-semibold text-terminal-text">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <h3 className="min-w-0 break-words font-mono font-semibold text-terminal-text">
                         {programme.title}
                       </h3>
                       <Badge
@@ -200,14 +200,14 @@ export default function LecturerDashboard() {
                         {programme.status.toLowerCase()}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-4 text-sm font-mono text-terminal-text-muted">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-mono text-terminal-text-muted">
                       <span>{programme.enrollmentCount} students</span>
                       <span>•</span>
                       <span>{programme.moduleCount} modules</span>
                     </div>
                   </div>
-                  <Link href={`/programmes/${programme.id}`}>
-                    <Button variant="outline" size="sm">
+                  <Link href={`/programmes/${programme.id}`} className="w-full sm:w-auto">
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto">
                       Manage
                     </Button>
                   </Link>
@@ -231,17 +231,17 @@ export default function LecturerDashboard() {
               {recentEnrollments.map((enrollment) => (
                 <div
                   key={enrollment.id}
-                  className="flex items-center justify-between p-4 rounded-lg border border-terminal-green/20 bg-terminal-darker/50"
+                  className="flex flex-col gap-3 p-4 rounded-lg border border-terminal-green/20 bg-terminal-darker/50 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div>
-                    <h3 className="font-mono font-semibold text-terminal-text">
+                  <div className="min-w-0">
+                    <h3 className="break-words font-mono font-semibold text-terminal-text">
                       {enrollment.studentName}
                     </h3>
-                    <div className="text-sm font-mono text-terminal-text-muted">
+                    <div className="break-words text-sm font-mono text-terminal-text-muted">
                       Enrolled in {enrollment.courseTitle}
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-left sm:text-right">
                     <div className="font-mono text-sm text-terminal-green">
                       {enrollment.progress}% complete
                     </div>

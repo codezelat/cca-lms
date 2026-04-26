@@ -80,28 +80,33 @@ export function DateRangePicker({
             id="date"
             variant="outline"
             className={cn(
-              "w-full justify-start text-left font-mono",
+              "w-full min-w-0 justify-start text-left font-mono",
               !value && "text-terminal-text-muted",
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {value?.from ? (
-              value.to ? (
-                <>
-                  {format(value.from, "LLL dd, y")} -{" "}
-                  {format(value.to, "LLL dd, y")}
-                </>
+            <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+            <span className="min-w-0 truncate">
+              {value?.from ? (
+                value.to ? (
+                  <>
+                    {format(value.from, "LLL dd, y")} -{" "}
+                    {format(value.to, "LLL dd, y")}
+                  </>
+                ) : (
+                  format(value.from, "LLL dd, y")
+                )
               ) : (
-                format(value.from, "LLL dd, y")
-              )
-            ) : (
-              <span>Pick a date range</span>
-            )}
+                <span>Pick a date range</span>
+              )}
+            </span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <div className="flex">
-            <div className="border-r border-terminal-green/20 p-3 space-y-1">
+        <PopoverContent
+          className="max-w-[calc(100vw-2rem)] overflow-x-auto p-0"
+          align="start"
+        >
+          <div className="flex min-w-max flex-col sm:flex-row">
+            <div className="space-y-1 border-b border-terminal-green/20 p-3 sm:border-b-0 sm:border-r">
               <div className="text-xs font-semibold text-terminal-green mb-2">
                 Presets
               </div>

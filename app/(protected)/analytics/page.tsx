@@ -307,17 +307,17 @@ export default function AnalyticsPage() {
   if (!analytics) return null;
 
   return (
-    <div className="min-h-screen bg-terminal-dark">
+    <div className="min-h-screen overflow-x-hidden bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <BarChart3 className="h-6 w-6 text-terminal-green" />
-            <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
+          <div className="flex min-w-0 items-center gap-2 mb-2">
+            <BarChart3 className="h-5 w-5 shrink-0 text-terminal-green sm:h-6 sm:w-6" />
+            <h1 className="min-w-0 break-words font-mono text-xl font-bold text-terminal-green terminal-glow sm:text-3xl">
               $ analytics --report=comprehensive
             </h1>
           </div>
-          <p className="font-mono text-sm text-terminal-text-muted">
+          <p className="break-words font-mono text-sm text-terminal-text-muted">
             Real-time performance metrics and insights
           </p>
         </div>
@@ -361,14 +361,14 @@ export default function AnalyticsPage() {
               </div>
             </div>
             {(dateRange || selectedProgramme !== "all") && (
-              <div className="mt-4 flex items-center gap-2">
-                <Badge variant="outline" className="font-mono text-xs">
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className="max-w-full break-words font-mono text-xs">
                   {dateRange?.from && dateRange?.to
                     ? `${format(dateRange.from, "MMM dd, yyyy")} - ${format(dateRange.to, "MMM dd, yyyy")}`
                     : "Last 30 days"}
                 </Badge>
                 {selectedProgramme !== "all" && (
-                  <Badge variant="outline" className="font-mono text-xs">
+                  <Badge variant="outline" className="max-w-full break-words font-mono text-xs">
                     {programmes.find((p) => p.id === selectedProgramme)?.title}
                   </Badge>
                 )}
@@ -379,7 +379,7 @@ export default function AnalyticsPage() {
                     setDateRange(undefined);
                     setSelectedProgramme("all");
                   }}
-                  className="ml-auto text-xs"
+                  className="w-full text-xs sm:ml-auto sm:w-auto"
                 >
                   Clear Filters
                 </Button>
@@ -436,7 +436,7 @@ export default function AnalyticsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-end justify-between">
+                <div className="flex flex-wrap items-end justify-between gap-2">
                   <div className="text-3xl font-bold font-mono text-terminal-green">
                     {analytics.overview.activeEnrollments}
                   </div>
@@ -543,7 +543,7 @@ export default function AnalyticsPage() {
                 <div className="text-2xl font-bold font-mono text-terminal-green mb-2">
                   {analytics.engagement.totalSubmissions}
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs text-terminal-text-muted font-mono">
                     {analytics.engagement.gradedSubmissions} graded
                   </p>
@@ -579,10 +579,10 @@ export default function AnalyticsPage() {
                     (programme, index) => (
                       <div
                         key={programme.id}
-                        className="flex items-center justify-between p-3 rounded-md border border-terminal-green/20 bg-terminal-darker/50"
+                        className="flex items-center justify-between gap-3 p-3 rounded-md border border-terminal-green/20 bg-terminal-darker/50"
                       >
-                        <div className="flex items-center gap-3 flex-1">
-                          <div className="flex items-center justify-center h-8 w-8 rounded-full border border-terminal-green bg-terminal-green/10 font-mono font-bold text-terminal-green text-sm">
+                        <div className="flex min-w-0 items-center gap-3 flex-1">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-terminal-green bg-terminal-green/10 font-mono font-bold text-terminal-green text-sm">
                             {index + 1}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -594,7 +594,7 @@ export default function AnalyticsPage() {
                             </p>
                           </div>
                         </div>
-                        <Badge variant="success" className="font-mono">
+                        <Badge variant="success" className="shrink-0 font-mono">
                           {programme.enrollments}
                         </Badge>
                       </div>
@@ -628,8 +628,8 @@ export default function AnalyticsPage() {
                         key={programme.id}
                         className="p-3 rounded-md border border-terminal-green/20 bg-terminal-darker/50"
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="font-mono font-semibold text-terminal-text text-sm truncate flex-1">
+                          <div className="mb-2 flex min-w-0 flex-wrap items-center justify-between gap-3">
+                          <p className="min-w-0 flex-1 truncate font-mono font-semibold text-terminal-text text-sm">
                             {programme.title}
                           </p>
                           <Badge
@@ -641,7 +641,7 @@ export default function AnalyticsPage() {
                         </div>
                         <div className="space-y-2">
                           <div>
-                            <div className="flex items-center justify-between text-xs font-mono text-terminal-text-muted mb-1">
+                            <div className="mb-1 flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-terminal-text-muted">
                               <span>
                                 Progress: {programme.averageProgress.toFixed(1)}
                                 %
@@ -677,7 +677,7 @@ export default function AnalyticsPage() {
           <div className="grid gap-6 md:grid-cols-4">
             <Card>
               <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="text-2xl font-bold font-mono text-terminal-green">
                       {analytics.content.totalModules}
@@ -693,7 +693,7 @@ export default function AnalyticsPage() {
 
             <Card>
               <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="text-2xl font-bold font-mono text-terminal-green">
                       {analytics.content.totalLessons}
@@ -709,7 +709,7 @@ export default function AnalyticsPage() {
 
             <Card>
               <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="text-2xl font-bold font-mono text-terminal-green">
                       {analytics.content.totalResources}
@@ -733,7 +733,7 @@ export default function AnalyticsPage() {
                     {analytics.content.lessonTypeDistribution.map((item) => (
                       <div
                         key={item.type}
-                        className="flex items-center justify-between text-xs font-mono"
+                        className="flex items-center justify-between gap-3 text-xs font-mono"
                       >
                         <span className="text-terminal-text-muted">
                           {item.type}
@@ -992,15 +992,15 @@ export default function AnalyticsPage() {
                   (completion) => (
                     <div
                       key={completion.id}
-                      className="flex items-center justify-between p-3 rounded-md border border-terminal-green/20 bg-terminal-darker/50"
+                      className="flex flex-col gap-3 p-3 rounded-md border border-terminal-green/20 bg-terminal-darker/50 sm:flex-row sm:items-center sm:justify-between"
                     >
-                      <div className="flex items-center gap-3">
-                        <CheckCircle2 className="h-5 w-5 text-terminal-green" />
-                        <div>
-                          <p className="font-mono font-semibold text-terminal-text text-sm">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-terminal-green" />
+                        <div className="min-w-0">
+                          <p className="break-words font-mono font-semibold text-terminal-text text-sm">
                             {completion.studentName}
                           </p>
-                          <p className="font-mono text-xs text-terminal-text-muted">
+                          <p className="break-words font-mono text-xs text-terminal-text-muted">
                             {completion.programmeTitle}
                           </p>
                         </div>

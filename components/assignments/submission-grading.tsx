@@ -142,23 +142,25 @@ export function SubmissionGrading({
   return (
     <div className="space-y-6">
       <Card className="p-6">
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold">
+        <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h2 className="break-words text-xl font-bold sm:text-2xl">
               {submission.assignment.title}
             </h2>
-            <div className="flex items-center gap-4 mt-2 text-sm text-terminal-text-muted">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                <span>{submission.user?.name || "Unknown Student"}</span>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm text-terminal-text-muted">
+              <div className="flex min-w-0 items-center gap-2">
+                <User className="h-4 w-4 shrink-0" />
+                <span className="break-words">
+                  {submission.user?.name || "Unknown Student"}
+                </span>
               </div>
               <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
+                <Clock className="h-4 w-4 shrink-0" />
                 <span>Submitted {submittedDate.toLocaleString()}</span>
               </div>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Badge variant={hasGrade ? "default" : "outline"}>
               {hasGrade ? "Graded" : "Pending"}
             </Badge>
@@ -205,12 +207,12 @@ export function SubmissionGrading({
             {submission.attachments?.map((attachment: any) => (
               <div
                 key={attachment.id}
-                className="flex items-center justify-between p-3 bg-terminal-darker border border-terminal-border rounded-md"
+                className="flex flex-col gap-3 p-3 bg-terminal-darker border border-terminal-border rounded-md sm:flex-row sm:items-center sm:justify-between"
               >
-                <div className="flex items-center gap-3">
-                  <FileText className="h-5 w-5 text-terminal-accent" />
-                  <div>
-                    <p className="font-medium">{attachment.fileName}</p>
+                <div className="flex min-w-0 items-center gap-3">
+                  <FileText className="h-5 w-5 shrink-0 text-terminal-accent" />
+                  <div className="min-w-0">
+                    <p className="break-all font-medium">{attachment.fileName}</p>
                     <p className="text-sm text-terminal-text-muted">
                       {(attachment.fileSize / 1024).toFixed(1)} KB •{" "}
                       {new Date(attachment.createdAt).toLocaleString()}
@@ -221,6 +223,7 @@ export function SubmissionGrading({
                   size="sm"
                   variant="outline"
                   onClick={() => downloadFile(attachment)}
+                  className="w-full sm:w-auto"
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Download
@@ -290,7 +293,7 @@ export function SubmissionGrading({
 
         {hasGrade && submission.gradedAt && (
           <div className="mt-6 p-4 bg-terminal-accent/10 border border-terminal-accent rounded-md">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
               <span className="text-sm text-terminal-text-muted">
                 Previously Graded
               </span>

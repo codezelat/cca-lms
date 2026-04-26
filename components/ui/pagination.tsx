@@ -63,15 +63,15 @@ export function Pagination({
 
   return (
     <div
-      className={`flex flex-col sm:flex-row items-center justify-between gap-4 ${className}`}
+      className={`flex min-w-0 flex-col items-center justify-between gap-4 sm:flex-row ${className}`}
     >
       {/* Results info */}
-      <div className="text-sm font-mono text-terminal-text-muted order-2 sm:order-1">
+      <div className="order-2 text-center font-mono text-sm text-terminal-text-muted sm:order-1 sm:text-left">
         Showing {startItem} to {endItem} of {totalCount} results
       </div>
 
       {/* Pagination controls */}
-      <div className="flex items-center gap-2 order-1 sm:order-2">
+      <div className="order-1 flex max-w-full flex-wrap items-center justify-center gap-2 sm:order-2">
         {/* Previous button */}
         <Button
           variant="outline"
@@ -85,7 +85,7 @@ export function Pagination({
         </Button>
 
         {/* Page numbers */}
-        <div className="flex items-center gap-1">
+        <div className="flex max-w-full flex-wrap items-center justify-center gap-1">
           {pageNumbers.map((page, index) => (
             <div key={index}>
               {page === "..." ? (
@@ -125,7 +125,7 @@ export function Pagination({
 
       {/* Page jump (optional) */}
       {showPageJump && totalPages > 5 && (
-        <div className="flex items-center gap-2 order-3 sm:order-3">
+        <div className="order-3 flex flex-wrap items-center justify-center gap-2 sm:order-3">
           <span className="text-sm font-mono text-terminal-text-muted">
             Go to:
           </span>

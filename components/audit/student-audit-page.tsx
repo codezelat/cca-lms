@@ -254,17 +254,17 @@ export default function StudentAuditPage() {
     }`;
 
   return (
-    <div className="min-h-screen bg-terminal-dark">
+    <div className="min-h-screen overflow-x-hidden bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <Terminal className="h-6 w-6 text-terminal-green" />
-            <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
+          <div className="flex min-w-0 items-center gap-2 mb-2">
+            <Terminal className="h-5 w-5 shrink-0 text-terminal-green sm:h-6 sm:w-6" />
+            <h1 className="min-w-0 break-words font-mono text-xl font-bold text-terminal-green terminal-glow sm:text-3xl">
               $ audit-students
             </h1>
           </div>
-          <p className="font-mono text-sm text-terminal-text-muted">
+          <p className="break-words font-mono text-sm text-terminal-text-muted">
             Full audit of student logins, progress, and activity signals
           </p>
         </div>
@@ -279,7 +279,7 @@ export default function StudentAuditPage() {
 
         {/* Summary */}
         {summary && (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+          <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4 mb-8">
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -494,7 +494,7 @@ export default function StudentAuditPage() {
                   onClick={clearFilters}
                   variant="outline"
                   size="sm"
-                  className="gap-2"
+                  className="w-full gap-2 sm:w-auto"
                 >
                   Clear All Filters
                 </Button>
@@ -522,7 +522,7 @@ export default function StudentAuditPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm font-mono">
+                <table className="min-w-[920px] w-full text-sm font-mono">
                   <thead>
                     <tr className="text-left text-terminal-text-muted border-b border-terminal-green/20">
                       <th className="py-3 pr-4">Student</th>
@@ -541,10 +541,10 @@ export default function StudentAuditPage() {
                         className="border-b border-terminal-green/10 hover:bg-terminal-green/5 transition-all"
                       >
                         <td className="py-4 pr-4">
-                          <div className="text-terminal-text font-semibold">
+                          <div className="break-words text-terminal-text font-semibold">
                             {student.name || "Unnamed Student"}
                           </div>
-                          <div className="text-terminal-text-muted text-xs">
+                          <div className="break-all text-terminal-text-muted text-xs">
                             {student.email}
                           </div>
                           <div className="text-terminal-text-muted text-xs mt-1">

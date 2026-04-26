@@ -205,29 +205,29 @@ export function AssignmentAnalytics({
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4">Grade Distribution</h3>
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="success">Excellent</Badge>
                 <span className="text-sm text-terminal-text-muted">≥ 90%</span>
               </div>
               <span className="font-medium">{gradeDistribution.excellent}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="info">Good</Badge>
                 <span className="text-sm text-terminal-text-muted">70-89%</span>
               </div>
               <span className="font-medium">{gradeDistribution.good}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="warning">Average</Badge>
                 <span className="text-sm text-terminal-text-muted">50-69%</span>
               </div>
               <span className="font-medium">{gradeDistribution.average}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="danger">Needs Improvement</Badge>
                 <span className="text-sm text-terminal-text-muted">
                   &lt; 50%
@@ -242,8 +242,8 @@ export function AssignmentAnalytics({
       {/* Students Not Submitted */}
       {notSubmittedStudents.length > 0 && (
         <Card className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h3 className="break-words text-lg font-semibold">
               Students Not Submitted ({notSubmittedStudents.length})
             </h3>
             <Button
@@ -258,6 +258,7 @@ export function AssignmentAnalytics({
                   description: "Email addresses copied to clipboard",
                 });
               }}
+              className="w-full sm:w-auto"
             >
               <Download className="h-4 w-4 mr-2" />
               Copy Emails
@@ -267,11 +268,11 @@ export function AssignmentAnalytics({
             {notSubmittedStudents.map((student: Student) => (
               <div
                 key={student.id}
-                className="flex items-center justify-between p-3 bg-terminal-darker rounded-md"
+                className="flex flex-col gap-2 p-3 bg-terminal-darker rounded-md sm:flex-row sm:items-center sm:justify-between"
               >
-                <div>
-                  <p className="font-medium">{student.name}</p>
-                  <p className="text-sm text-terminal-text-muted">
+                <div className="min-w-0">
+                  <p className="break-words font-medium">{student.name}</p>
+                  <p className="break-all text-sm text-terminal-text-muted">
                     {student.email}
                   </p>
                 </div>

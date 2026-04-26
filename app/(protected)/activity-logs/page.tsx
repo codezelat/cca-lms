@@ -177,30 +177,30 @@ export default function ActivityLogsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-terminal-dark">
+    <div className="min-h-screen overflow-x-hidden bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Terminal className="h-6 w-6 text-terminal-green" />
-                <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-2 mb-2">
+                <Terminal className="h-5 w-5 shrink-0 text-terminal-green sm:h-6 sm:w-6" />
+                <h1 className="min-w-0 break-words font-mono text-xl font-bold text-terminal-green terminal-glow sm:text-3xl">
                   $ activity-logs
                 </h1>
               </div>
-              <p className="font-mono text-sm text-terminal-text-muted">
+              <p className="break-words font-mono text-sm text-terminal-text-muted">
                 System activity and audit trail
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
               <Button
                 onClick={() => {
                   void fetchActivityLogs();
                 }}
                 variant="outline"
                 size="sm"
-                className="gap-2"
+                className="w-full gap-2 sm:w-auto"
               >
                 <RefreshCw className="h-4 w-4" />
                 Refresh
@@ -209,7 +209,7 @@ export default function ActivityLogsPage() {
                 onClick={exportToCSV}
                 variant="outline"
                 size="sm"
-                className="gap-2"
+                className="w-full gap-2 sm:w-auto"
                 disabled={activities.length === 0}
               >
                 <Download className="h-4 w-4" />
@@ -404,7 +404,7 @@ export default function ActivityLogsPage() {
                 className="hover:bg-terminal-green/5 transition-all"
               >
                 <CardContent className="pt-6">
-                  <div className="flex items-start gap-4">
+                  <div className="flex min-w-0 items-start gap-3 sm:gap-4">
                     {/* Status Indicator */}
                     <div
                       className={`mt-1 h-3 w-3 rounded-full ${
@@ -422,33 +422,33 @@ export default function ActivityLogsPage() {
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4 mb-2">
-                        <div>
+                      <div className="flex flex-col gap-3 mb-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                        <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <Badge variant={getActionBadge(activity.action)}>
                               {formatAction(activity.action)}
                             </Badge>
                             {activity.entityType && (
-                              <span className="text-sm font-mono text-terminal-green">
+                              <span className="break-words text-sm font-mono text-terminal-green">
                                 {activity.entityType}
                               </span>
                             )}
                           </div>
-                          <p className="text-sm font-mono text-terminal-text mt-2">
+                          <p className="break-words text-sm font-mono text-terminal-text mt-2">
                             <span className="font-semibold">
                               {activity.user?.name ||
                                 activity.user?.email ||
                                 "System"}
                             </span>
                             {activity.user?.role && (
-                              <span className="text-terminal-text-muted ml-2">
+                              <span className="text-terminal-text-muted ml-0 sm:ml-2">
                                 ({activity.user.role})
                               </span>
                             )}
                           </p>
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-xs font-mono text-terminal-text-muted flex items-center gap-1 justify-end">
+                        <div className="shrink-0 text-left sm:text-right">
+                          <p className="text-xs font-mono text-terminal-text-muted flex items-center gap-1 sm:justify-end">
                             <Clock className="h-3 w-3" />
                             {formatDistanceToNow(new Date(activity.createdAt), {
                               addSuffix: true,
@@ -466,19 +466,19 @@ export default function ActivityLogsPage() {
                       {/* Additional Info */}
                       <div className="grid gap-2 mt-3 text-xs font-mono text-terminal-text-muted">
                         {activity.entityId && (
-                          <div className="flex items-center gap-2">
+                          <div className="flex min-w-0 flex-wrap items-center gap-2">
                             <span className="text-terminal-text">
                               Entity ID:
                             </span>
-                            <code className="px-2 py-1 rounded bg-terminal-darker border border-terminal-green/20">
+                            <code className="min-w-0 break-all px-2 py-1 rounded bg-terminal-darker border border-terminal-green/20">
                               {activity.entityId}
                             </code>
                           </div>
                         )}
                         {activity.ipAddress && (
-                          <div className="flex items-center gap-2">
+                          <div className="flex min-w-0 flex-wrap items-center gap-2">
                             <span className="text-terminal-text">IP:</span>
-                            <code className="px-2 py-1 rounded bg-terminal-darker border border-terminal-green/20">
+                            <code className="min-w-0 break-all px-2 py-1 rounded bg-terminal-darker border border-terminal-green/20">
                               {activity.ipAddress}
                             </code>
                           </div>

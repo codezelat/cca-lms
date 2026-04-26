@@ -386,20 +386,20 @@ export default function AdminBackupsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-terminal-dark">
+    <div className="min-h-screen overflow-x-hidden bg-terminal-dark">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <Database className="h-6 w-6 text-terminal-green" />
-              <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
+          <div className="min-w-0 space-y-3">
+            <div className="flex min-w-0 flex-wrap items-center gap-3">
+              <Database className="h-5 w-5 shrink-0 text-terminal-green sm:h-6 sm:w-6" />
+              <h1 className="min-w-0 break-words font-mono text-xl font-bold text-terminal-green terminal-glow sm:text-3xl">
                 Database Backups
               </h1>
               <Badge variant={getHealthBadgeVariant(data.health.status)}>
                 {data.health.status}
               </Badge>
             </div>
-            <p className="font-mono text-sm text-terminal-text-muted">
+            <p className="break-words font-mono text-sm text-terminal-text-muted">
               {data.health.message}
             </p>
             <div className="flex flex-wrap gap-3 font-mono text-xs text-terminal-text-muted">
@@ -409,12 +409,13 @@ export default function AdminBackupsPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             <Button
               variant="outline"
               size="sm"
               onClick={() => void fetchOverview({ background: true })}
               disabled={isRefreshing}
+              className="w-full sm:w-auto"
             >
               <RefreshCw
                 className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
@@ -425,6 +426,7 @@ export default function AdminBackupsPage() {
               size="sm"
               onClick={handleRunBackup}
               disabled={!data.config.workflowConfigured || isRunningBackup}
+              className="w-full sm:w-auto"
             >
               {isRunningBackup ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -522,7 +524,7 @@ export default function AdminBackupsPage() {
                   </div>
                 </div>
               </div>
-              <div className="space-y-2 font-mono text-xs text-terminal-text-muted">
+              <div className="space-y-2 break-all font-mono text-xs text-terminal-text-muted">
                 <div>Bucket: {data.config.bucketName || "Not configured"}</div>
                 <div>Prefix: {data.config.prefix}</div>
               </div>
@@ -547,7 +549,7 @@ export default function AdminBackupsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <Badge variant={workflowRunBadge.variant}>
                   {workflowRunBadge.label}
                 </Badge>
@@ -581,7 +583,7 @@ export default function AdminBackupsPage() {
 
               <div className="space-y-2 font-mono text-xs text-terminal-text-muted">
                 <div>{data.config.scheduleDescription}</div>
-                <div className="truncate">
+                <div className="break-all sm:truncate">
                   {data.config.workflowRepository || "Workflow not configured"}
                 </div>
               </div>
@@ -719,12 +721,12 @@ export default function AdminBackupsPage() {
                           key={run.id}
                           className="rounded-md border border-terminal-green/15 bg-terminal-darker/40 p-3"
                         >
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="min-w-0">
                               <div className="font-mono text-sm font-semibold text-terminal-text">
                                 Run #{run.runNumber}
                               </div>
-                              <div className="mt-1 font-mono text-xs text-terminal-text-muted">
+                              <div className="mt-1 break-all font-mono text-xs text-terminal-text-muted">
                                 {run.event} on {run.branch}
                               </div>
                             </div>

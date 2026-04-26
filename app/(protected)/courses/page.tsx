@@ -88,18 +88,18 @@ export default function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <div className="min-h-screen bg-terminal-dark">
+    <div className="min-h-screen overflow-x-hidden bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-terminal-green" />
-              <h1 className="font-mono text-xl sm:text-3xl font-bold text-terminal-green terminal-glow">
+          <div className="min-w-0">
+            <div className="mb-2 flex min-w-0 items-center gap-2">
+              <BookOpen className="h-5 w-5 shrink-0 text-terminal-green sm:h-6 sm:w-6" />
+              <h1 className="min-w-0 break-words font-mono text-xl font-bold text-terminal-green terminal-glow sm:text-3xl">
                 $ courses --list
               </h1>
             </div>
-            <p className="font-mono text-sm text-terminal-text-muted">
+            <p className="break-words font-mono text-sm text-terminal-text-muted">
               Manage and monitor all learning programmes
             </p>
           </div>
@@ -111,7 +111,7 @@ export default function CoursesPage() {
 
         {/* Search and Filter Bar */}
         <div className="flex gap-3 mb-6 sm:mb-8">
-          <div className="flex-1 relative">
+          <div className="relative min-w-0 flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-terminal-text-muted" />
             <Input
               type="text"
@@ -149,14 +149,16 @@ export default function CoursesPage() {
                   </Badge>
                   <Badge variant="success">Active</Badge>
                 </div>
-                <CardTitle className="line-clamp-1">{course.title}</CardTitle>
+                <CardTitle className="break-words sm:line-clamp-1">
+                  {course.title}
+                </CardTitle>
                 <CardDescription className="line-clamp-2">
                   {course.description}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="p-2 rounded-md border border-terminal-green/20 bg-terminal-darker/50">
+                  <div className="min-w-0 rounded-md border border-terminal-green/20 bg-terminal-darker/50 p-2">
                     <Users className="h-4 w-4 mx-auto mb-1 text-terminal-green" />
                     <p className="text-xs font-mono text-terminal-text-muted">
                       {course.students}
@@ -165,7 +167,7 @@ export default function CoursesPage() {
                       Students
                     </p>
                   </div>
-                  <div className="p-2 rounded-md border border-terminal-green/20 bg-terminal-darker/50">
+                  <div className="min-w-0 rounded-md border border-terminal-green/20 bg-terminal-darker/50 p-2">
                     <BookOpen className="h-4 w-4 mx-auto mb-1 text-terminal-green" />
                     <p className="text-xs font-mono text-terminal-text-muted">
                       {course.modules}
@@ -174,9 +176,9 @@ export default function CoursesPage() {
                       Modules
                     </p>
                   </div>
-                  <div className="p-2 rounded-md border border-terminal-green/20 bg-terminal-darker/50">
+                  <div className="min-w-0 rounded-md border border-terminal-green/20 bg-terminal-darker/50 p-2">
                     <Clock className="h-4 w-4 mx-auto mb-1 text-terminal-green" />
-                    <p className="text-xs font-mono text-terminal-text-muted">
+                    <p className="break-words text-xs font-mono text-terminal-text-muted">
                       {course.duration}
                     </p>
                     <p className="text-[10px] font-mono text-terminal-text-muted">
@@ -202,7 +204,7 @@ export default function CoursesPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row">
                   <Button variant="outline" className="flex-1" size="sm">
                     View Details
                   </Button>

@@ -59,17 +59,17 @@ export default function LecturerProgrammesClient() {
   }
 
   return (
-    <div className="min-h-screen bg-terminal-dark">
+    <div className="min-h-screen overflow-x-hidden bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <Terminal className="h-6 w-6 text-terminal-green" />
-            <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
+          <div className="flex min-w-0 items-center gap-2 mb-2">
+            <Terminal className="h-5 w-5 shrink-0 text-terminal-green sm:h-6 sm:w-6" />
+            <h1 className="min-w-0 break-words font-mono text-xl font-bold text-terminal-green terminal-glow sm:text-3xl">
               $ programmes --list
             </h1>
           </div>
-          <p className="font-mono text-sm text-terminal-text-muted">
+          <p className="break-words font-mono text-sm text-terminal-text-muted">
             Manage your assigned programmes
           </p>
         </div>
@@ -154,11 +154,11 @@ export default function LecturerProgrammesClient() {
                 {filteredProgrammes.map((programme) => (
                   <div
                     key={programme.id}
-                    className="p-6 rounded-lg border border-terminal-green/20 bg-terminal-darker/50 hover:bg-terminal-green/5 transition-all"
+                    className="min-w-0 p-4 rounded-lg border border-terminal-green/20 bg-terminal-darker/50 hover:bg-terminal-green/5 transition-all sm:p-6"
                   >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="font-mono font-semibold text-terminal-text mb-2">
+                    <div className="flex min-w-0 items-start justify-between gap-3 mb-4">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="break-words font-mono font-semibold text-terminal-text mb-2">
                           {programme.title}
                         </h3>
                         <Badge
@@ -177,7 +177,7 @@ export default function LecturerProgrammesClient() {
                       {programme.description}
                     </p>
 
-                    <div className="grid grid-cols-3 gap-2 mb-4">
+                    <div className="grid grid-cols-1 gap-2 mb-4 min-[420px]:grid-cols-3">
                       <div className="text-center p-2 rounded bg-terminal-dark/50">
                         <div className="font-mono text-lg font-bold text-terminal-green">
                           {programme.enrollmentCount}
@@ -207,7 +207,7 @@ export default function LecturerProgrammesClient() {
                     <div className="flex gap-2">
                       <Link
                         href={`/programmes/${programme.id}`}
-                        className="flex-1"
+                        className="min-w-0 flex-1"
                       >
                         <Button size="sm" className="w-full">
                           Manage Content

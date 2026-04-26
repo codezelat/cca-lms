@@ -241,11 +241,11 @@ export function FileUpload({ lessonId, onSuccess, onCancel }: FileUploadProps) {
               </p>
             </div>
           ) : (
-            <div className="border rounded-lg p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <FileIcon className="h-8 w-8 text-primary" />
-                <div>
-                  <p className="font-medium text-sm">{file.name}</p>
+            <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-center gap-3">
+                <FileIcon className="h-8 w-8 shrink-0 text-primary" />
+                <div className="min-w-0">
+                  <p className="break-all text-sm font-medium">{file.name}</p>
                   <p className="text-xs text-gray-500">
                     {formatFileSize(file.size)}
                   </p>
@@ -257,6 +257,7 @@ export function FileUpload({ lessonId, onSuccess, onCancel }: FileUploadProps) {
                 size="sm"
                 onClick={removeFile}
                 disabled={uploading}
+                className="w-full sm:w-auto"
               >
                 <X className="h-4 w-4" />
               </Button>

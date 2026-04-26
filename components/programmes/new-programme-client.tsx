@@ -109,7 +109,7 @@ export default function NewProgrammeClient() {
   };
 
   return (
-    <div className="min-h-screen bg-terminal-dark">
+    <div className="min-h-screen overflow-x-hidden bg-terminal-dark">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -121,13 +121,13 @@ export default function NewProgrammeClient() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Programmes
           </Button>
-          <div className="flex items-center gap-2 mb-2">
-            <BookOpen className="h-6 w-6 text-terminal-green" />
-            <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
+          <div className="mb-2 flex min-w-0 items-center gap-2">
+            <BookOpen className="h-5 w-5 shrink-0 text-terminal-green sm:h-6 sm:w-6" />
+            <h1 className="min-w-0 break-words font-mono text-xl font-bold text-terminal-green terminal-glow sm:text-3xl">
               $ programmes --create
             </h1>
           </div>
-          <p className="font-mono text-sm text-terminal-text-muted">
+          <p className="break-words font-mono text-sm text-terminal-text-muted">
             Create a new learning programme
           </p>
         </div>
@@ -136,9 +136,9 @@ export default function NewProgrammeClient() {
         {success && (
           <Card className="mb-6 border-terminal-green bg-terminal-green/10">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-3 text-terminal-green">
-                <CheckCircle2 className="h-5 w-5" />
-                <span className="font-mono">
+              <div className="flex min-w-0 items-start gap-3 text-terminal-green">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+                <span className="break-words font-mono">
                   Programme created successfully! Redirecting...
                 </span>
               </div>
@@ -151,10 +151,10 @@ export default function NewProgrammeClient() {
           <Card className="mb-6 border-destructive bg-destructive/10">
             <CardContent className="pt-6">
               <div className="flex items-start gap-3 text-destructive">
-                <AlertCircle className="h-5 w-5 mt-0.5" />
-                <div>
+                <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />
+                <div className="min-w-0">
                   <h3 className="font-mono font-semibold mb-1">Error</h3>
-                  <p className="text-sm">{error}</p>
+                  <p className="break-words text-sm">{error}</p>
                 </div>
               </div>
             </CardContent>
@@ -237,11 +237,11 @@ export default function NewProgrammeClient() {
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-3 pt-4 border-t">
+              <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center">
                 <Button
                   type="submit"
                   disabled={isLoading || success}
-                  className="min-w-[120px]"
+                  className="w-full sm:min-w-[120px] sm:w-auto"
                 >
                   {isLoading ? (
                     <>
@@ -262,6 +262,7 @@ export default function NewProgrammeClient() {
                   variant="outline"
                   onClick={() => router.push("/programmes")}
                   disabled={isLoading || success}
+                  className="w-full sm:w-auto"
                 >
                   Cancel
                 </Button>

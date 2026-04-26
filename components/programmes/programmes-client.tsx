@@ -679,22 +679,22 @@ export default function ProgrammesClient() {
   };
 
   return (
-    <div className="min-h-screen bg-terminal-dark">
+    <div className="min-h-screen overflow-x-hidden bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <BookOpen className="h-6 w-6 text-terminal-green" />
-              <h1 className="font-mono text-3xl font-bold text-terminal-green terminal-glow">
+        <div className="flex flex-col gap-4 mb-8 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-2 mb-2">
+              <BookOpen className="h-5 w-5 shrink-0 text-terminal-green sm:h-6 sm:w-6" />
+              <h1 className="min-w-0 break-words font-mono text-xl font-bold text-terminal-green terminal-glow sm:text-3xl">
                 $ programmes --list
               </h1>
             </div>
-            <p className="font-mono text-sm text-terminal-text-muted">
+            <p className="break-words font-mono text-sm text-terminal-text-muted">
               Manage all learning programmes
             </p>
           </div>
           <Button
-            className="gap-2"
+            className="w-full gap-2 sm:w-auto"
             onClick={() => router.push("/programmes/new")}
           >
             <Plus className="h-4 w-4" />
@@ -702,8 +702,8 @@ export default function ProgrammesClient() {
           </Button>
         </div>
 
-        <div className="flex gap-4 mb-8">
-          <div className="flex-1 relative">
+        <div className="flex flex-col gap-3 mb-8 sm:flex-row sm:items-center sm:gap-4">
+          <div className="relative min-w-0 flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-terminal-text-muted" />
             <Input
               type="text"
@@ -723,7 +723,7 @@ export default function ProgrammesClient() {
               setPage(1);
             }}
           >
-            <SelectTrigger className="w-45">
+            <SelectTrigger className="w-full sm:w-44">
               <Filter className="h-4 w-4 mr-2" />
               <SelectValue />
             </SelectTrigger>
@@ -770,15 +770,15 @@ export default function ProgrammesClient() {
                   {programmes.map((programme) => (
                     <div
                       key={programme.id}
-                      className="flex items-center justify-between p-4 rounded-lg border border-terminal-green/20 bg-terminal-darker/50 hover:bg-terminal-green/5 hover:border-terminal-green/40 transition-all group"
+                      className="flex flex-col gap-4 p-4 rounded-lg border border-terminal-green/20 bg-terminal-darker/50 hover:bg-terminal-green/5 hover:border-terminal-green/40 transition-all group sm:flex-row sm:items-center sm:justify-between"
                     >
-                      <div className="flex items-center gap-4 flex-1">
-                        <div className="h-12 w-12 rounded-lg border-2 border-terminal-green bg-terminal-green/10 flex items-center justify-center">
+                      <div className="flex min-w-0 items-start gap-3 sm:items-center sm:gap-4 sm:flex-1">
+                        <div className="h-12 w-12 shrink-0 rounded-lg border-2 border-terminal-green bg-terminal-green/10 flex items-center justify-center">
                           <BookOpen className="h-6 w-6 text-terminal-green" />
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-mono font-semibold text-terminal-text">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <h3 className="min-w-0 break-words font-mono font-semibold text-terminal-text">
                               {programme.title}
                             </h3>
                             <Badge
@@ -791,7 +791,7 @@ export default function ProgrammesClient() {
                           <p className="text-xs font-mono text-terminal-text-muted line-clamp-1">
                             {programme.description || "No description"}
                           </p>
-                          <div className="flex items-center gap-4 text-xs font-mono text-terminal-text-muted mt-1">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-mono text-terminal-text-muted mt-1">
                             <span>
                               Created {formatDate(programme.createdAt)}
                             </span>
@@ -799,7 +799,7 @@ export default function ProgrammesClient() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-6">
+                      <div className="flex w-full items-center justify-between gap-4 sm:w-auto sm:justify-end sm:gap-6">
                         <div className="text-center">
                           <p className="text-xs font-mono text-terminal-text-muted mb-1">
                             Students
@@ -822,7 +822,8 @@ export default function ProgrammesClient() {
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"
+                              aria-label={`Open actions for ${programme.title}`}
                             >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
@@ -1034,17 +1035,17 @@ export default function ProgrammesClient() {
                     {viewingProgramme.modules.map((module) => (
                       <div
                         key={module.id}
-                        className="flex items-center justify-between p-2 rounded border border-terminal-green/20 bg-terminal-darker/50"
+                        className="flex flex-col gap-2 p-2 rounded border border-terminal-green/20 bg-terminal-darker/50 sm:flex-row sm:items-center sm:justify-between"
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs text-terminal-text-muted">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span className="shrink-0 font-mono text-xs text-terminal-text-muted">
                             #{module.order}
                           </span>
-                          <span className="font-mono text-sm">
+                          <span className="min-w-0 break-words font-mono text-sm">
                             {module.title}
                           </span>
                         </div>
-                        <span className="font-mono text-xs text-terminal-text-muted">
+                        <span className="shrink-0 font-mono text-xs text-terminal-text-muted">
                           {module._count.lessons} lessons
                         </span>
                       </div>
@@ -1053,13 +1054,13 @@ export default function ProgrammesClient() {
                 </div>
               )}
 
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <Button
                   onClick={() => {
                     setShowViewDialog(false);
                     handleEditProgramme(viewingProgramme);
                   }}
-                  className="flex-1"
+                  className="w-full sm:flex-1"
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Programme
@@ -1069,7 +1070,7 @@ export default function ProgrammesClient() {
                     router.push(`/programmes/${viewingProgramme.id}`)
                   }
                   variant="outline"
-                  className="flex-1"
+                  className="w-full sm:flex-1"
                 >
                   <FolderTree className="h-4 w-4 mr-2" />
                   Manage Content
@@ -1077,6 +1078,7 @@ export default function ProgrammesClient() {
                 <Button
                   variant="outline"
                   onClick={() => setShowViewDialog(false)}
+                  className="w-full sm:w-auto"
                 >
                   Close
                 </Button>
@@ -1239,45 +1241,45 @@ export default function ProgrammesClient() {
 
           <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
             {/* Filters */}
-            <div className="flex gap-2">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-terminal-text-muted" />
-                <Input
-                  type="text"
-                  placeholder="$ search by name or email..."
-                  value={enrollmentSearch}
-                  onChange={(e) => setEnrollmentSearch(e.target.value)}
-                  className="pl-10 font-mono"
-                />
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <div className="relative min-w-0 flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-terminal-text-muted" />
+                  <Input
+                    type="text"
+                    placeholder="$ search by name or email..."
+                    value={enrollmentSearch}
+                    onChange={(e) => setEnrollmentSearch(e.target.value)}
+                    className="pl-10 font-mono"
+                  />
+                </div>
+                <Select
+                  value={enrollmentRoleFilter}
+                  onValueChange={(value: "all" | "STUDENT" | "LECTURER") => {
+                    setEnrollmentRoleFilter(value);
+                    setSelectedToRemove([]);
+                    if (enrollmentsProgramme) {
+                      fetchEnrollments(
+                        enrollmentsProgramme.id,
+                        value === "all" ? undefined : value,
+                      );
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full sm:w-48">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Users</SelectItem>
+                    <SelectItem value="STUDENT">Students Only</SelectItem>
+                    <SelectItem value="LECTURER">Lecturers Only</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Select
-                value={enrollmentRoleFilter}
-                onValueChange={(value: "all" | "STUDENT" | "LECTURER") => {
-                  setEnrollmentRoleFilter(value);
-                  setSelectedToRemove([]);
-                  if (enrollmentsProgramme) {
-                    fetchEnrollments(
-                      enrollmentsProgramme.id,
-                      value === "all" ? undefined : value,
-                    );
-                  }
-                }}
-              >
-                <SelectTrigger className="w-45">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Users</SelectItem>
-                  <SelectItem value="STUDENT">Students Only</SelectItem>
-                  <SelectItem value="LECTURER">Lecturers Only</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
 
             {/* Bulk Actions */}
             {enrollments.length > 0 && (
-              <div className="flex items-center gap-2 p-3 rounded-lg border border-terminal-green/20 bg-terminal-darker/50">
+              <div className="flex flex-col gap-3 p-3 rounded-lg border border-terminal-green/20 bg-terminal-darker/50 sm:flex-row sm:items-center">
                 <Checkbox
                   checked={
                     selectedToRemove.length > 0 &&
@@ -1301,7 +1303,7 @@ export default function ProgrammesClient() {
                     }
                   }}
                 />
-                <span className="font-mono text-sm text-terminal-text-muted flex-1">
+                <span className="min-w-0 break-words font-mono text-sm text-terminal-text-muted sm:flex-1">
                   {selectedToRemove.length > 0
                     ? `${selectedToRemove.length} selected`
                     : "Select users to remove"}
@@ -1312,7 +1314,7 @@ export default function ProgrammesClient() {
                     variant="danger"
                     onClick={handleBulkRemove}
                     disabled={isRemovingBulk}
-                    className="gap-2"
+                    className="w-full gap-2 sm:w-auto"
                   >
                     {isRemovingBulk ? (
                       <>
@@ -1330,7 +1332,7 @@ export default function ProgrammesClient() {
                 <Button
                   onClick={handleOpenAddUsers}
                   size="sm"
-                  className="gap-2"
+                  className="w-full gap-2 sm:w-auto"
                 >
                   <UserPlus className="h-4 w-4" />
                   Add Users
@@ -1370,9 +1372,9 @@ export default function ProgrammesClient() {
                   .map((enrollment) => (
                     <div
                       key={enrollment.id}
-                      className="flex items-center justify-between p-4 rounded-lg border border-terminal-green/20 bg-terminal-darker/50 hover:bg-terminal-green/5 transition-colors"
+                      className="flex flex-col gap-3 p-4 rounded-lg border border-terminal-green/20 bg-terminal-darker/50 hover:bg-terminal-green/5 transition-colors sm:flex-row sm:items-center sm:justify-between"
                     >
-                      <div className="flex items-center gap-4 flex-1">
+                      <div className="flex min-w-0 items-start gap-4 sm:flex-1">
                         <Checkbox
                           checked={selectedToRemove.includes(
                             enrollment.user.id,
@@ -1381,12 +1383,12 @@ export default function ProgrammesClient() {
                             toggleRemoveSelection(enrollment.user.id)
                           }
                         />
-                        <div className="h-10 w-10 rounded-full border-2 border-terminal-green bg-terminal-green/10 flex items-center justify-center font-mono font-bold text-terminal-green text-sm">
+                        <div className="h-10 w-10 shrink-0 rounded-full border-2 border-terminal-green bg-terminal-green/10 flex items-center justify-center font-mono font-bold text-terminal-green text-sm">
                           {enrollment.user.name?.[0]?.toUpperCase() || "?"}
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-mono font-semibold text-sm text-terminal-text">
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex flex-wrap items-center gap-2">
+                            <span className="break-words font-mono font-semibold text-sm text-terminal-text">
                               {enrollment.user.name || "No Name"}
                             </span>
                             <Badge
@@ -1410,10 +1412,12 @@ export default function ProgrammesClient() {
                               {enrollment.user.status}
                             </Badge>
                           </div>
-                          <div className="flex items-center gap-3 text-xs font-mono text-terminal-text-muted">
-                            <span className="flex items-center gap-1">
-                              <Mail className="h-3 w-3" />
-                              {enrollment.user.email}
+                          <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-terminal-text-muted">
+                            <span className="flex min-w-0 items-center gap-1">
+                              <Mail className="h-3 w-3 shrink-0" />
+                              <span className="break-all">
+                                {enrollment.user.email}
+                              </span>
                             </span>
                             <span>
                               Enrolled {formatDate(enrollment.enrolledAt)}
@@ -1433,8 +1437,8 @@ export default function ProgrammesClient() {
 
             {/* Summary */}
             {enrollments.length > 0 && (
-              <div className="flex items-center justify-between pt-4 border-t font-mono text-sm">
-                <div className="flex gap-4">
+              <div className="flex flex-col gap-3 border-t pt-4 font-mono text-sm sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap gap-4">
                   <span className="text-terminal-text-muted">
                     Total:{" "}
                     <span className="text-terminal-green font-bold">
@@ -1463,6 +1467,7 @@ export default function ProgrammesClient() {
                 <Button
                   variant="outline"
                   onClick={() => setShowEnrollmentsDialog(false)}
+                  className="w-full sm:w-auto"
                 >
                   Close
                 </Button>

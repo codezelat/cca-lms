@@ -88,18 +88,18 @@ export default function ResourcesPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <div className="min-h-screen bg-terminal-dark">
+    <div className="min-h-screen overflow-x-hidden bg-terminal-dark">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-terminal-green" />
-              <h1 className="font-mono text-xl sm:text-3xl font-bold text-terminal-green terminal-glow">
+          <div className="min-w-0">
+            <div className="mb-2 flex min-w-0 items-center gap-2">
+              <FileText className="h-5 w-5 shrink-0 text-terminal-green sm:h-6 sm:w-6" />
+              <h1 className="min-w-0 break-words font-mono text-xl font-bold text-terminal-green terminal-glow sm:text-3xl">
                 $ resources --list
               </h1>
             </div>
-            <p className="font-mono text-sm text-terminal-text-muted">
+            <p className="break-words font-mono text-sm text-terminal-text-muted">
               Course materials and learning resources
             </p>
           </div>
@@ -111,7 +111,7 @@ export default function ResourcesPage() {
 
         {/* Search and Filter Bar */}
         <div className="flex gap-3 mb-6 sm:mb-8">
-          <div className="flex-1 relative">
+          <div className="relative min-w-0 flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-terminal-text-muted" />
             <Input
               type="text"
@@ -136,7 +136,7 @@ export default function ResourcesPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-mono text-terminal-green mb-2">
+                  <div className="break-words text-3xl font-bold font-mono text-terminal-green mb-2">
                 2.8 GB
               </div>
               <div className="h-2 rounded-full bg-terminal-darker border border-terminal-green/20 overflow-hidden">
@@ -206,7 +206,7 @@ export default function ResourcesPage() {
                         <FileIcon className="h-5 w-5 sm:h-6 sm:w-6 text-terminal-green" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-mono font-semibold text-terminal-text mb-1 truncate">
+                        <h3 className="mb-1 break-words font-mono font-semibold text-terminal-text sm:truncate">
                           {resource.name}
                         </h3>
                         <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-terminal-text-muted">
@@ -226,7 +226,7 @@ export default function ResourcesPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 self-end sm:self-auto">
+                    <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
                       <Badge
                         variant={
                           resource.type === "pdf"
