@@ -11,7 +11,7 @@ import Link from "next/link";
 interface Programme {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   status: string;
   thumbnail: string | null;
   enrollmentCount: number;
@@ -47,7 +47,9 @@ export default function LecturerProgrammesClient() {
   const filteredProgrammes = programmes.filter(
     (programme) =>
       programme.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      programme.description.toLowerCase().includes(searchQuery.toLowerCase()),
+      (programme.description ?? "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()),
   );
 
   if (loading) {
