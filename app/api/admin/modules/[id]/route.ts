@@ -246,23 +246,34 @@ export async function DELETE(
       where: { id },
     });
 
-    // Clean up R2 and B2 files in parallel
-    await Promise.allSettled([
-      ...r2FileKeys.map(async (fileKey) => {
-        try {
-          await deleteFromR2(fileKey);
-        } catch (error) {
-          console.error(`Failed to delete R2 file ${fileKey}:`, error);
-        }
-      }),
-      ...b2FileKeys.map(async (fileKey) => {
-        try {
-          await deleteFromB2(fileKey);
-        } catch (error) {
-          console.error(`Failed to delete B2 file ${fileKey}:`, error);
-        }
-      }),
-    ]);
+    // Clean up R2 and B2 files with bounded parallelism
+    const DELETE_CONCURRENCY = 10;
+    const deleteJobs = [
+      ...r2FileKeys.map(
+        (fileKey) => async () => {
+          try {
+            await deleteFromR2(fileKey);
+          } catch (error) {
+            console.error(`Failed to delete R2 file ${fileKey}:`, error);
+          }
+        },
+      ),
+      ...b2FileKeys.map(
+        (fileKey) => async () => {
+          try {
+            await deleteFromB2(fileKey);
+          } catch (error) {
+            console.error(`Failed to delete B2 file ${fileKey}:`, error);
+          }
+        },
+      ),
+    ];
+
+    for (let i = 0; i < deleteJobs.length; i += DELETE_CONCURRENCY) {
+      await Promise.allSettled(
+        deleteJobs.slice(i, i + DELETE_CONCURRENCY).map((job) => job()),
+      );
+    }
 
     await recalculateCourseProgress(courseId).catch((error) => {
       console.error(
