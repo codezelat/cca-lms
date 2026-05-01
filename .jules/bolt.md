@@ -5,3 +5,5 @@
 ## 2026-02-02 - Eliminate Dashboard Waterfall
 **Learning:** Found another waterfall in `app/api/admin/dashboard-stats/route.ts` where `enrollmentsByProgramme` was awaited after other stats.
 **Action:** Always check `Promise.all` blocks to ensure *all* independent queries are included, not just "most" of them.
+
+- Optimized `app/api/admin/modules/[id]/route.ts` to use `Promise.allSettled` instead of sequential loops for R2 and B2 file deletion, reducing wait times based on benchmark.

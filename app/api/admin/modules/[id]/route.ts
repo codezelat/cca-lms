@@ -246,23 +246,23 @@ export async function DELETE(
       where: { id },
     });
 
-    // Clean up R2 files (resources)
-    for (const fileKey of r2FileKeys) {
-      try {
-        await deleteFromR2(fileKey);
-      } catch (error) {
-        console.error(`Failed to delete R2 file ${fileKey}:`, error);
-      }
-    }
-
-    // Clean up B2 files (submissions)
-    for (const fileKey of b2FileKeys) {
-      try {
-        await deleteFromB2(fileKey);
-      } catch (error) {
-        console.error(`Failed to delete B2 file ${fileKey}:`, error);
-      }
-    }
+    // Clean up R2 and B2 files in parallel
+    await Promise.allSettled([
+      ...r2FileKeys.map(async (fileKey) => {
+        try {
+          await deleteFromR2(fileKey);
+        } catch (error) {
+          console.error(`Failed to delete R2 file ${fileKey}:`, error);
+        }
+      }),
+      ...b2FileKeys.map(async (fileKey) => {
+        try {
+          await deleteFromB2(fileKey);
+        } catch (error) {
+          console.error(`Failed to delete B2 file ${fileKey}:`, error);
+        }
+      }),
+    ]);
 
     await recalculateCourseProgress(courseId).catch((error) => {
       console.error(
