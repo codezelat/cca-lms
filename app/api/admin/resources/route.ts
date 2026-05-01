@@ -3,12 +3,13 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sanitizeHtml } from "@/lib/sanitize";
 import {
-  uploadToR2,
   getSignedUrl,
+  uploadToR2,
   validateFile,
   FILE_VALIDATIONS,
 } from "@/lib/r2";
 import { createAuditLog } from "@/lib/audit";
+import { LESSON_RESOURCE_MAX_SIZE_MB } from "@/lib/resource-upload";
 
 // POST: Upload resource to lesson
 export async function POST(request: NextRequest) {
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
       const validation = validateFile(
         file,
         FILE_VALIDATIONS.document.allowedTypes,
-        FILE_VALIDATIONS.document.maxSizeMB,
+        LESSON_RESOURCE_MAX_SIZE_MB,
       );
       if (!validation.valid) {
         return NextResponse.json({ error: validation.error }, { status: 400 });

@@ -16,11 +16,37 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Upload, X, FileIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  LESSON_RESOURCE_MAX_SIZE_BYTES,
+  LESSON_RESOURCE_MAX_SIZE_MB,
+} from "@/lib/resource-upload";
 
 interface FileUploadProps {
   lessonId: string;
   onSuccess?: (resource: Record<string, unknown>) => void;
   onCancel?: () => void;
+}
+
+async function getUploadErrorMessage(response: Response): Promise<string> {
+  const contentType = response.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    const payload = (await response.json().catch(() => null)) as {
+      error?: unknown;
+    } | null;
+
+    if (typeof payload?.error === "string" && payload.error.trim()) {
+      return payload.error;
+    }
+  }
+
+  const text = (await response.text()).trim();
+
+  if (response.status === 413 || text.includes("FUNCTION_PAYLOAD_TOO_LARGE")) {
+    return `This file is too large for the current upload path. Please keep lesson resource files under ${LESSON_RESOURCE_MAX_SIZE_MB}MB.`;
+  }
+
+  return text || "Upload failed";
 }
 
 export function FileUpload({ lessonId, onSuccess, onCancel }: FileUploadProps) {
@@ -57,7 +83,7 @@ export function FileUpload({ lessonId, onSuccess, onCancel }: FileUploadProps) {
       if (error.code === "file-too-large") {
         toast.error("File Too Large", {
           description:
-            "The file you selected exceeds the 5MB limit. Please choose a smaller file.",
+            `The file you selected exceeds the ${LESSON_RESOURCE_MAX_SIZE_MB}MB limit. Please choose a smaller file.`,
           duration: 5000,
         });
       } else if (error.code === "file-invalid-type") {
@@ -81,7 +107,7 @@ export function FileUpload({ lessonId, onSuccess, onCancel }: FileUploadProps) {
     onDrop,
     onDropRejected,
     multiple: false,
-    maxSize: 5 * 1024 * 1024, // 5MB
+    maxSize: LESSON_RESOURCE_MAX_SIZE_BYTES,
     accept: {
       "application/pdf": [".pdf"],
       "application/msword": [".doc"],
@@ -177,8 +203,7 @@ export function FileUpload({ lessonId, onSuccess, onCancel }: FileUploadProps) {
       setUploadProgress(100);
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Upload failed");
+        throw new Error(await getUploadErrorMessage(response));
       }
 
       const resource = await response.json();
@@ -237,7 +262,8 @@ export function FileUpload({ lessonId, onSuccess, onCancel }: FileUploadProps) {
                   : "Drag & drop a file here, or click to select"}
               </p>
               <p className="text-xs text-gray-500 mt-2">
-                Allowed: PDF, Word, Excel, PowerPoint, CSV (Max: 5MB)
+                Allowed: PDF, Word, Excel, PowerPoint, CSV (Max:{" "}
+                {LESSON_RESOURCE_MAX_SIZE_MB}MB)
               </p>
             </div>
           ) : (

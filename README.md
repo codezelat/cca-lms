@@ -168,7 +168,7 @@ The system supports diverse lesson formats:
   - Grade text-based submissions
   - Generate progress reports
 - Resource Library
-  - Upload files (20MB limit)
+  - Upload files (4MB limit)
   - Create rich text notes
   - Add external links
   - Embed videos/iframes
@@ -323,7 +323,7 @@ Comprehensive assignment management for file-based submissions:
 
 1. **FILE Upload** (Cloudflare R2)
    - **Supported Formats**: PDF, DOCX, XLSX, PPT, images, videos, archives
-   - **File Size Limit**: 20MB per file
+   - **File Size Limit**: 4MB per file
    - **Drag & Drop**: Modern upload interface with progress bars
    - **Signed URLs**: Secure downloads with 1-hour expiry
    - **Version Control**: Complete upload history
@@ -396,7 +396,7 @@ Comprehensive assignment management for file-based submissions:
 #### **File Security**
 
 - **Type Validation**: MIME type checking
-- **Size Limits**: 20MB hard cap
+- **Size Limits**: 4MB hard cap for lesson resource uploads
 - **Virus Scanning**: Cloudflare security features
 - **Signed URLs**: Expiring download links (1 hour)
 - **Access Control**: File access tied to enrollment
@@ -733,7 +733,7 @@ User drags file to dropzone
     ↓
 Client-side validation
     │
-    ├─ Check file size (< 20MB)
+    ├─ Check file size (< 4MB)
     ├─ Check file type (MIME)
     └─ Generate preview
     │

@@ -3,14 +3,15 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sanitizeHtml } from "@/lib/sanitize";
 import {
-  uploadToR2,
-  getSignedUrl,
   deleteFromR2,
+  getSignedUrl,
+  uploadToR2,
   validateFile,
   FILE_VALIDATIONS,
 } from "@/lib/r2";
 import { createAuditLog } from "@/lib/audit";
 import type { AssetVisibility, Prisma, ResourceType } from "@/generated/prisma";
+import { LESSON_RESOURCE_MAX_SIZE_MB } from "@/lib/resource-upload";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -157,7 +158,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       const validation = validateFile(
         file,
         FILE_VALIDATIONS.document.allowedTypes,
-        FILE_VALIDATIONS.document.maxSizeMB,
+        LESSON_RESOURCE_MAX_SIZE_MB,
       );
       if (!validation.valid) {
         return NextResponse.json({ error: validation.error }, { status: 400 });
