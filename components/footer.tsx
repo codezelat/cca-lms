@@ -57,15 +57,6 @@ export function Footer() {
                 <Instagram className="h-4 w-4 text-terminal-green" />
               </a>
               <a
-                href="https://codezela.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="CodeZela Website"
-                className="flex h-9 w-9 items-center justify-center rounded-md border border-terminal-green/20 bg-terminal-darker transition-all hover:border-terminal-green hover:shadow-[0_0_10px_rgba(34,197,94,0.3)]"
-              >
-                <Globe className="h-4 w-4 text-terminal-green" />
-              </a>
-              <a
                 href="https://cca.it.com"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -89,7 +80,14 @@ export function Footer() {
             </div>
             <p className="text-sm font-mono text-terminal-text-muted">
               Developed with <span className="text-red-500">❤️</span> by{" "}
-              <span className="text-terminal-green">Codezela Technologies</span>
+              <a
+                href="https://codezela.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-terminal-green transition-colors hover:text-terminal-green/80"
+              >
+                Codezela Technologies
+              </a>
             </p>
           </div>
         </div>
