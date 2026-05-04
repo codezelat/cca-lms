@@ -12,3 +12,8 @@
 **Vulnerability:** Admin user creation and password reset endpoints used `Math.random()` to generate temporary passwords. This is cryptographically insecure and predictable, potentially allowing attackers to guess generated passwords if they can observe the state of the RNG.
 **Learning:** `Math.random()` should never be used for security-critical values like passwords or tokens.
 **Prevention:** Use `crypto.getRandomValues()` (Web Crypto API) for all security-sensitive random value generation. Implemented `generateSecurePassword` helper in `lib/security.ts`.
+
+## 2024-05-24 - Timing Attacks in Authentication Checks
+**Vulnerability:** API key and token checks in cron and admin routes (`/api/admin/backups/route.ts`, `/api/cron/db-backup/route.ts`, etc.) were using strict equality (`===`) for comparing authorization secrets. This allows timing attacks where an attacker can theoretically guess the secret byte by byte.
+**Learning:** Security-sensitive checks like API key validation must use a constant-time comparison algorithm. The algorithm must also be compatible with Next.js Edge runtimes.
+**Prevention:** Created a utility `timingSafeStringCompare` in `lib/security.ts` using a constant-time XOR loop. Replaced `===` with this function across authorization validations.

@@ -5,6 +5,7 @@ import {
   triggerDatabaseBackupWorkflow,
 } from "@/lib/db-backups";
 import { getMostRecentDbBackupSlot } from "@/lib/db-backup-schedule";
+import { timingSafeStringCompare } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ function verifyCronAuthorization(request: NextRequest) {
     };
   }
 
-  if (authHeader === `Bearer ${cronSecret}`) {
+  if (authHeader && timingSafeStringCompare(authHeader, `Bearer ${cronSecret}`)) {
     return { authorized: true };
   }
 

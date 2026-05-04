@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getDatabaseBackupsOverview } from "@/lib/db-backups";
 import { createAuditLog } from "@/lib/audit";
+import { timingSafeStringCompare } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,8 @@ export async function GET(request: NextRequest) {
 
     const authHeader = request.headers.get("authorization");
     const adminSecret = process.env.ADMIN_API_SECRET || process.env.CRON_SECRET;
-    const isApiKeyAuth = Boolean(adminSecret && authHeader === `Bearer ${adminSecret}`);
+    const expectedAuth = adminSecret ? `Bearer ${adminSecret}` : null;
+    const isApiKeyAuth = Boolean(expectedAuth && authHeader && timingSafeStringCompare(authHeader, expectedAuth));
 
     if (!isAdmin && !isApiKeyAuth) {
       await createAuditLog({

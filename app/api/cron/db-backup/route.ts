@@ -5,6 +5,7 @@ import {
   isValidBackupReport,
   type BackupReportPayload,
 } from "@/lib/db-backups";
+import { timingSafeStringCompare } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ function verifyAuthorization(request: NextRequest): AuthResult {
     };
   }
 
-  if (authHeader === `Bearer ${cronSecret}`) {
+  if (authHeader && timingSafeStringCompare(authHeader, `Bearer ${cronSecret}`)) {
     return {
       authorized: true,
       triggeredBy: "github-actions-report",
