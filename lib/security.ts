@@ -37,13 +37,15 @@ export function timingSafeStringCompare(a: string, b: string): boolean {
   const aStr = a || "";
   const bStr = b || "";
 
-  if (aStr.length !== bStr.length) {
-    return false;
-  }
+  // Fold length difference into result to avoid early return
+  let result = aStr.length ^ bStr.length;
 
-  let result = 0;
-  for (let i = 0; i < aStr.length; i++) {
-    result |= aStr.charCodeAt(i) ^ bStr.charCodeAt(i);
+  // Iterate to the maximum length, using 0 for out-of-range indices
+  const maxLength = Math.max(aStr.length, bStr.length);
+  for (let i = 0; i < maxLength; i++) {
+    const aChar = aStr.charCodeAt(i) || 0;
+    const bChar = bStr.charCodeAt(i) || 0;
+    result |= aChar ^ bChar;
   }
 
   return result === 0;
