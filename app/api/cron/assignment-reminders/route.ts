@@ -1,21 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendAssignmentDueSoonReminders } from "@/lib/resend";
+import { timingSafeStringCompare } from "@/lib/security";
 
 // GET /api/cron/assignment-reminders - Send due soon reminders
 // Called by Vercel Cron daily at 9 AM (Vercel Cron always sends GET requests)
 export async function GET(request: NextRequest) {
   try {
-    // Verify this is called from Vercel Cron (check user-agent for Vercel)
-    const userAgent = request.headers.get("user-agent") || "";
+    // Verify authorization using cron secret
     const authHeader = request.headers.get("authorization");
     const cronSecret = process.env.CRON_SECRET;
 
-    // Allow Vercel Cron or manual calls with proper auth
-    const isVercelCron = userAgent.includes("vercel");
-    const isAuthorized = cronSecret && authHeader === `Bearer ${cronSecret}`;
+    // In production, always require the secret-based auth check
+    if (!cronSecret || !authHeader) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    if (!isVercelCron && !isAuthorized) {
+    const expectedAuth = `Bearer ${cronSecret}`;
+    const isAuthorized = timingSafeStringCompare(authHeader, expectedAuth);
+
+    if (!isAuthorized) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
