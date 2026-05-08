@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { BookOpen, Search, Users, FileText, Terminal } from "lucide-react";
+import { BookOpen, Search, FileText, Terminal } from "lucide-react";
 import Link from "next/link";
 
 interface Programme {
@@ -91,7 +91,7 @@ export default function LecturerProgrammesClient() {
         </div>
 
         {/* Statistics */}
-        <div className="grid gap-6 md:grid-cols-3 mb-8">
+        <div className="grid gap-6 md:grid-cols-2 mb-8">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -102,19 +102,6 @@ export default function LecturerProgrammesClient() {
               </div>
               <p className="font-mono text-sm text-terminal-text-muted mt-2">
                 My Programmes
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <Users className="h-6 w-6 text-terminal-green" />
-                <div className="text-3xl font-bold font-mono text-terminal-green">
-                  {programmes.reduce((sum, p) => sum + p.enrollmentCount, 0)}
-                </div>
-              </div>
-              <p className="font-mono text-sm text-terminal-text-muted mt-2">
-                Total Students
               </p>
             </CardContent>
           </Card>
@@ -179,15 +166,7 @@ export default function LecturerProgrammesClient() {
                       {programme.description}
                     </p>
 
-                    <div className="grid grid-cols-1 gap-2 mb-4 min-[420px]:grid-cols-3">
-                      <div className="text-center p-2 rounded bg-terminal-dark/50">
-                        <div className="font-mono text-lg font-bold text-terminal-green">
-                          {programme.enrollmentCount}
-                        </div>
-                        <p className="text-xs font-mono text-terminal-text-muted">
-                          Students
-                        </p>
-                      </div>
+                    <div className="grid grid-cols-1 gap-2 mb-4 min-[420px]:grid-cols-2">
                       <div className="text-center p-2 rounded bg-terminal-dark/50">
                         <div className="font-mono text-lg font-bold text-terminal-green">
                           {programme.moduleCount}
