@@ -114,6 +114,13 @@ interface AvailableUser {
   status: string;
 }
 
+interface AvailableUsersPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 export default function ProgrammesClient() {
   const router = useRouter();
   const confirm = useConfirm();
@@ -174,6 +181,16 @@ export default function ProgrammesClient() {
   const [userRoleFilter, setUserRoleFilter] = useState<"STUDENT" | "LECTURER">(
     "STUDENT",
   );
+  const debouncedUserSearch = useDebouncedValue(userSearch.trim());
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersPagination, setUsersPagination] =
+    useState<AvailableUsersPagination>({
+      page: 1,
+      limit: 20,
+      total: 0,
+      totalPages: 1,
+    });
+  const availableUsersRequestRef = useRef(0);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [enrollError, setEnrollError] = useState("");
 
@@ -194,6 +211,18 @@ export default function ProgrammesClient() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, debouncedSearchQuery, statusFilter]);
+
+  useEffect(() => {
+    if (!showAddUsersDialog) return;
+
+    const controller = new AbortController();
+    fetchAvailableUsers(controller.signal);
+
+    return () => {
+      controller.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAddUsersDialog, userRoleFilter, usersPage, debouncedUserSearch]);
 
   const fetchProgrammes = async (signal?: AbortSignal) => {
     const requestId = ++programmesRequestRef.current;
@@ -452,25 +481,53 @@ export default function ProgrammesClient() {
     setShowAddUsersDialog(true);
     setSelectedUsers([]);
     setUserSearch("");
+    setUsersPage(1);
     setEnrollError("");
-    fetchAvailableUsers();
   };
 
-  const fetchAvailableUsers = async () => {
+  const fetchAvailableUsers = async (signal?: AbortSignal) => {
+    const requestId = ++availableUsersRequestRef.current;
+
     try {
       setIsLoadingUsers(true);
+      setEnrollError("");
+
+      const params = new URLSearchParams({
+        role: userRoleFilter,
+        status: "ACTIVE",
+        page: usersPage.toString(),
+        limit: usersPagination.limit.toString(),
+        ...(debouncedUserSearch && { search: debouncedUserSearch }),
+      });
+
       const response = await fetch(
-        `/api/admin/users?role=${userRoleFilter}&limit=100&status=ACTIVE`,
+        `/api/admin/users?${params}`,
+        { signal },
       );
       if (!response.ok) throw new Error("Failed to fetch users");
 
       const data = await response.json();
+      if (signal?.aborted || requestId !== availableUsersRequestRef.current) {
+        return;
+      }
+
       setAvailableUsers(data.users);
+      setUsersPagination({
+        page: data.pagination?.page ?? usersPage,
+        limit: data.pagination?.limit ?? usersPagination.limit,
+        total: data.pagination?.total ?? data.users.length,
+        totalPages: Math.max(data.pagination?.totalPages ?? 1, 1),
+      });
     } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        return;
+      }
       console.error("Error fetching users:", error);
       setEnrollError("Failed to load users");
     } finally {
-      setIsLoadingUsers(false);
+      if (!signal?.aborted && requestId === availableUsersRequestRef.current) {
+        setIsLoadingUsers(false);
+      }
     }
   };
 
@@ -1479,6 +1536,7 @@ export default function ProgrammesClient() {
                     onClick={() => {
                       setUserRoleFilter("STUDENT");
                       setSelectedUsers([]);
+                      setUsersPage(1);
                     }}
                   >
                     <GraduationCap className="h-4 w-4 mr-2" />
@@ -1492,6 +1550,7 @@ export default function ProgrammesClient() {
                     onClick={() => {
                       setUserRoleFilter("LECTURER");
                       setSelectedUsers([]);
+                      setUsersPage(1);
                     }}
                   >
                     <User className="h-4 w-4 mr-2" />
@@ -1502,18 +1561,21 @@ export default function ProgrammesClient() {
                   type="text"
                   placeholder="$ search users..."
                   value={userSearch}
-                  onChange={(e) => setUserSearch(e.target.value)}
+                  onChange={(e) => {
+                    setUserSearch(e.target.value);
+                    setUsersPage(1);
+                  }}
                   className="flex-1 font-mono"
                 />
                 <Button
-                  onClick={fetchAvailableUsers}
+                  onClick={() => fetchAvailableUsers()}
                   variant="outline"
                   size="sm"
                 >
                   <Loader2
                     className={`h-4 w-4 mr-2 ${isLoadingUsers ? "animate-spin" : ""}`}
                   />
-                  Load
+                  Refresh
                 </Button>
               </div>
 
@@ -1553,7 +1615,9 @@ export default function ProgrammesClient() {
                   <div className="text-center py-8">
                     <Users className="h-8 w-8 text-terminal-text-muted mx-auto mb-2" />
                     <p className="font-mono text-sm text-terminal-text-muted">
-                      Click &quot;Load&quot; to fetch available users
+                      {debouncedUserSearch
+                        ? "No users found matching your search"
+                        : `No active ${userRoleFilter.toLowerCase()}s available`}
                     </p>
                   </div>
                 ) : (
@@ -1629,6 +1693,17 @@ export default function ProgrammesClient() {
                     })
                 )}
               </div>
+
+              {usersPagination.total > 0 && (
+                <Pagination
+                  currentPage={usersPagination.page}
+                  totalPages={usersPagination.totalPages}
+                  totalCount={usersPagination.total}
+                  pageSize={usersPagination.limit}
+                  onPageChange={setUsersPage}
+                  showPageJump={false}
+                />
+              )}
 
               {/* Actions */}
               <div className="flex gap-2 pt-4 border-t">
