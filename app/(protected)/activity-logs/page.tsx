@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Activity,
@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/select";
 import { format, formatDistanceToNow } from "date-fns";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+
+export const dynamic = "force-dynamic";
 
 interface ActivityLog {
   id: string;
@@ -60,7 +62,21 @@ interface Filters {
   entityTypes: string[];
 }
 
-export default function ActivityLogsPage() {
+function ActivityLogsPageFallback() {
+  return (
+    <div className="min-h-screen overflow-x-hidden bg-terminal-dark">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-terminal-green" />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function ActivityLogsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -518,5 +534,13 @@ export default function ActivityLogsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ActivityLogsPage() {
+  return (
+    <Suspense fallback={<ActivityLogsPageFallback />}>
+      <ActivityLogsPageContent />
+    </Suspense>
   );
 }

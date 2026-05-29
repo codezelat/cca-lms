@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { auditActions } from "@/lib/audit";
 import { sendUserCreatedEmail } from "@/lib/resend";
-import { generateSecurePassword } from "@/lib/security";
+import { generateSecurePassword, verifyTurnstileToken } from "@/lib/security";
 import type { AccountStatus, Prisma, UserRole } from "@/generated/prisma";
 
 // GET /api/admin/users - List all users with filters
@@ -118,33 +118,11 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { name, email, role, generatePassword, turnstileToken } = body;
 
-    // Verify Turnstile token
-    if (!turnstileToken) {
+    const turnstileVerification = await verifyTurnstileToken(turnstileToken);
+
+    if (!turnstileVerification.ok) {
       return NextResponse.json(
-        { error: "CAPTCHA verification required" },
-        { status: 400 },
-      );
-    }
-
-    const turnstileResponse = await fetch(
-      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          secret: process.env.TURNSTILE_SECRET_KEY!,
-          response: turnstileToken,
-        }),
-      },
-    );
-
-    const turnstileResult = await turnstileResponse.json();
-
-    if (!turnstileResult.success) {
-      return NextResponse.json(
-        { error: "CAPTCHA verification failed" },
+        { error: turnstileVerification.error },
         { status: 400 },
       );
     }

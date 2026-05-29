@@ -4,6 +4,7 @@ import { prisma } from "./prisma";
 import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
 import { auditActions } from "./audit";
+import { verifyTurnstileToken } from "./security";
 
 const SESSION_REVALIDATION_INTERVAL_MS = 10 * 60 * 1000;
 
@@ -53,35 +54,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             return null; // Return null instead of throwing to avoid Configuration error
           }
 
-          // Skip Turnstile verification in development mode
-          const isDevelopment =
-            (process.env.NODE_ENV || "production") === "development";
+          const turnstileVerification = await verifyTurnstileToken(
+            typeof credentials.turnstileToken === "string"
+              ? credentials.turnstileToken
+              : undefined,
+          );
 
-          if (!isDevelopment) {
-            // Verify Turnstile token in production
-            if (!credentials.turnstileToken) {
-              throw new Error("CAPTCHA verification required");
-            }
-
-            const turnstileResponse = await fetch(
-              "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/x-www-form-urlencoded",
-                },
-                body: new URLSearchParams({
-                  secret: process.env.TURNSTILE_SECRET_KEY!,
-                  response: credentials.turnstileToken as string,
-                }),
-              },
-            );
-
-            const turnstileResult = await turnstileResponse.json();
-
-            if (!turnstileResult.success) {
-              throw new Error("CAPTCHA verification failed");
-            }
+          if (!turnstileVerification.ok) {
+            throw new Error(turnstileVerification.error);
           }
 
           const user = await prisma.user.findUnique({

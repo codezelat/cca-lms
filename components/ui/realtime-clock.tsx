@@ -1,18 +1,35 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getServerTime } from "@/lib/utils";
 
+const CLOCK_PLACEHOLDER = "\u2014\u2014:\u2014\u2014:\u2014\u2014";
+
 export function RealTimeClock() {
-  const [currentTime, setCurrentTime] = useState(getServerTime());
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
   useEffect(() => {
-    const timer = setInterval(() => {
+    const updateClock = () => {
       setCurrentTime(getServerTime());
+    };
+
+    updateClock();
+
+    const timer = setInterval(() => {
+      updateClock();
     }, 1000);
 
     return () => clearInterval(timer);
   }, []);
+
+  if (!currentTime) {
+    return (
+      <div className="text-terminal-text-muted text-sm font-mono">
+        {CLOCK_PLACEHOLDER}{" "}
+        <span className="text-terminal-green">(UTC+5:30)</span>
+      </div>
+    );
+  }
 
   return (
     <div className="text-terminal-text-muted text-sm font-mono">
