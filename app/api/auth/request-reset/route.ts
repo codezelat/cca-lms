@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { nanoid } from "nanoid";
 import { createAuditLog } from "@/lib/audit";
 import { sendPasswordResetEmail } from "@/lib/resend";
+import { verifyTurnstileToken } from "@/lib/security";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,33 +11,11 @@ export async function POST(request: NextRequest) {
     const normalizedEmail =
       typeof email === "string" ? email.trim().toLowerCase() : "";
 
-    // Verify Turnstile token
-    if (!turnstileToken) {
+    const turnstileVerification = await verifyTurnstileToken(turnstileToken);
+
+    if (!turnstileVerification.ok) {
       return NextResponse.json(
-        { error: "CAPTCHA verification required" },
-        { status: 400 },
-      );
-    }
-
-    const turnstileResponse = await fetch(
-      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          secret: process.env.TURNSTILE_SECRET_KEY!,
-          response: turnstileToken,
-        }),
-      },
-    );
-
-    const turnstileResult = await turnstileResponse.json();
-
-    if (!turnstileResult.success) {
-      return NextResponse.json(
-        { error: "CAPTCHA verification failed" },
+        { error: turnstileVerification.error },
         { status: 400 },
       );
     }

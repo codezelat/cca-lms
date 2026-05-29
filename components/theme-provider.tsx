@@ -10,8 +10,6 @@ type ThemeProviderProps = React.ComponentPropsWithoutRef<
 
 function ToasterWithTheme() {
   const { theme } = useTheme();
-
-  // Determine if current theme is dark
   const isDark = theme?.includes("dark") || theme === "dark";
 
   return (

@@ -50,3 +50,56 @@ export function timingSafeStringCompare(a: string, b: string): boolean {
 
   return result === 0;
 }
+
+type TurnstileVerificationResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
+export async function verifyTurnstileToken(
+  token: string | null | undefined,
+): Promise<TurnstileVerificationResult> {
+  const isDevelopment =
+    (process.env.NODE_ENV || "production") === "development";
+
+  if (isDevelopment && token === "dev-bypass") {
+    return { ok: true };
+  }
+
+  if (!token) {
+    return { ok: false, error: "CAPTCHA verification required" };
+  }
+
+  if (!process.env.TURNSTILE_SECRET_KEY) {
+    return { ok: false, error: "CAPTCHA verification is not configured" };
+  }
+
+  try {
+    const response = await fetch(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          secret: process.env.TURNSTILE_SECRET_KEY,
+          response: token,
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      return { ok: false, error: "CAPTCHA verification failed" };
+    }
+
+    const result = (await response.json()) as { success?: boolean };
+
+    if (!result.success) {
+      return { ok: false, error: "CAPTCHA verification failed" };
+    }
+
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "CAPTCHA verification failed" };
+  }
+}

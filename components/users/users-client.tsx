@@ -383,7 +383,9 @@ export default function UsersClient() {
         body: JSON.stringify({
           ...createForm,
           generatePassword: true,
-          turnstileToken: createTurnstileToken,
+          turnstileToken: isDevelopment
+            ? "dev-bypass"
+            : createTurnstileToken,
         }),
       });
 
