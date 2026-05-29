@@ -2,9 +2,16 @@ import type { NextConfig } from "next";
 
 // Set global server timezone to Sri Lanka
 process.env.TZ = "Asia/Colombo";
+const isDevelopmentBuild = process.env.NODE_ENV === "development";
 
 const nextConfig: NextConfig = {
   experimental: {
+    ...(isDevelopmentBuild
+      ? {
+          allowDevelopmentBuild: true,
+          prerenderEarlyExit: false,
+        }
+      : {}),
     serverActions: {
       bodySizeLimit: "15mb",
     },

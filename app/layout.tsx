@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: "%s | Codezela Career Accelerator",
   },
   description:
-    "Codezela Career Accelerator Learning Management System - Empowering future tech leaders with comprehensive programming courses, career development, and hands-on learning experiences.",
+    "Codezela Career Accelerator Learning Management System for programming courses, career development, and hands-on learning experiences.",
   keywords: [
     "Codezela",
     "Career Accelerator",
@@ -29,10 +29,12 @@ export const metadata: Metadata = {
     "Learning Management System",
     "Programming Courses",
     "Tech Education",
-    "Online Learning",
     "Career Development",
   ],
   authors: [{ name: "Codezela" }],
+  creator: "Codezela",
+  publisher: "Codezela",
+  applicationName: "Codezela Career Accelerator LMS",
   robots: {
     index: false,
     follow: false,
@@ -41,12 +43,22 @@ export const metadata: Metadata = {
       follow: false,
     },
   },
+  openGraph: {
+    type: "website",
+    siteName: "Codezela Career Accelerator",
+    title: "Codezela Career Accelerator - LMS",
+    description:
+      "Codezela Career Accelerator Learning Management System for programming courses and career development.",
+  },
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f0f4f0" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0f0a" },
+  ],
 };
 
 export default function RootLayout({
@@ -56,8 +68,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        {/* Google Analytics */}
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col scanline`}
+      >
+        <Script
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+          strategy="beforeInteractive"
+        />
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-S1F397DHHS"
           strategy="afterInteractive"
@@ -70,15 +87,6 @@ export default function RootLayout({
             gtag('config', 'G-S1F397DHHS');
           `}
         </Script>
-        {/* Cloudflare Turnstile */}
-        <Script
-          src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-          strategy="beforeInteractive"
-        />
-      </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col scanline`}
-      >
         <ThemeProvider>
           {children}
           <Footer />
